@@ -1,0 +1,133 @@
+# ============================================================================
+# release.yml
+# Triggers ONLY when you push a tag like v1.0.1
+# Automatically:
+#   1. Builds the WPF app in Release mode
+#   2. Publishes as self-contained win-x64
+#   3. ZIPs the publish output
+#   4. Creates a GitHub Release with the ZIP attached
+# ============================================================================
+
+name: Build and Release
+
+on:
+  push:
+    tags:
+      - 'v*'          # triggers on any tag starting with v (v1.0.1, v2.0.0, etc.)
+
+jobs:
+  build-and-release:
+    runs-on: windows-latest   # must be Windows — WPF only builds on Windows
+
+    steps:
+      # ── 1. Checkout code ──────────────────────────────────────────────────
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      # ── 2. Setup .NET 8 ───────────────────────────────────────────────────
+      - name: Setup .NET
+        uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: '8.0.x'
+
+      # ── 3. Extract version from tag (v1.0.1 → 1.0.1) ─────────────────────
+      - name: Get version from tag
+        id: version
+        shell: bash
+        run: echo "VERSION=${GITHUB_REF_NAME#v}" >> $GITHUB_OUTPUT
+
+      # ── 4. Update version in .csproj automatically from the tag ───────────
+      #       So you ONLY need to bump the tag — .csproj updates itself
+      - name: Set version in csproj
+        shell: pwsh
+        run: |
+          $version = "${{ steps.version.outputs.VERSION }}"
+          $csproj = Get-ChildItem -Filter "*.csproj" | Select-Object -First 1
+          $content = Get-Content $csproj.FullName -Raw
+          $content = $content -replace '<Version>.*?</Version>', "<Version>$version</Version>"
+          $content = $content -replace '<AssemblyVersion>.*?</AssemblyVersion>', "<AssemblyVersion>$version.0</AssemblyVersion>"
+          $content = $content -replace '<FileVersion>.*?</FileVersion>', "<FileVersion>$version.0</FileVersion>"
+          Set-Content $csproj.FullName $content
+          Write-Host "Version set to $version"
+
+      # ── 5. Restore NuGet packages ─────────────────────────────────────────
+      - name: Restore
+        run: dotnet restore
+
+      # ── 6. Publish self-contained win-x64 ────────────────────────────────
+      - name: Publish
+        run: |
+          dotnet publish -c Release -r win-x64 `
+            --self-contained true `
+            -p:PublishSingleFile=false `
+            -o publish/
+
+      # ── 7. Download MySQL ZIP from previous release and add to publish ────
+      #       This means you only upload mysql zip ONCE (in v1.0.0)
+      #       and every future release re-uses it automatically
+      - name: Fetch MySQL ZIP from latest release
+        shell: pwsh
+        run: |
+          $response = Invoke-RestMethod `
+            -Uri "https://api.github.com/repos/${{ github.repository }}/releases" `
+            -Headers @{ "User-Agent" = "GitHub-Actions" }
+
+          # Find most recent release that has the mysql zip
+          $mysqlUrl = $null
+          foreach ($release in $response) {
+            $asset = $release.assets | Where-Object { $_.name -like "mysql-*.zip" }
+            if ($asset) {
+              $mysqlUrl = $asset.browser_download_url
+              Write-Host "Found MySQL ZIP in release: $($release.tag_name)"
+              break
+            }
+          }
+
+          if ($mysqlUrl) {
+            Write-Host "Downloading MySQL ZIP from: $mysqlUrl"
+            Invoke-WebRequest -Uri $mysqlUrl -OutFile "publish/mysql-8.0.45-winx64.zip"
+            Write-Host "MySQL ZIP added to publish folder."
+          } else {
+            Write-Host "No MySQL ZIP found in previous releases."
+            Write-Host "Checking if it exists in repo root..."
+            if (Test-Path "mysql-8.0.45-winx64.zip") {
+              Copy-Item "mysql-8.0.45-winx64.zip" "publish/"
+              Write-Host "Copied from repo root."
+            } else {
+              Write-Host "WARNING: MySQL ZIP not found. Fresh installs will fail."
+            }
+          }
+
+      # ── 8. Create the release ZIP ─────────────────────────────────────────
+      - name: Create ZIP
+        shell: pwsh
+        run: |
+          $version = "${{ steps.version.outputs.VERSION }}"
+          $zipName = "BillX_v$version.zip"
+          Compress-Archive -Path "publish/*" -DestinationPath $zipName
+          Write-Host "Created: $zipName"
+          $size = (Get-Item $zipName).Length / 1MB
+          Write-Host "Size: $([math]::Round($size, 1)) MB"
+          echo "ZIP_NAME=$zipName" >> $env:GITHUB_ENV
+
+      # ── 9. Create GitHub Release and upload ZIP ───────────────────────────
+      - name: Create GitHub Release
+        uses: softprops/action-gh-release@v2
+        with:
+          tag_name: ${{ github.ref_name }}
+          name: "Version ${{ steps.version.outputs.VERSION }}"
+          body: |
+            ## BillX ${{ github.ref_name }}
+
+            ### Installation
+            1. Download `${{ env.ZIP_NAME }}` below
+            2. Extract all files to a folder
+            3. Run `MyWPFCRUDApp.exe` as Administrator
+
+            ### Existing users
+            The app will prompt you to update automatically on next launch.
+          files: ${{ env.ZIP_NAME }}
+          draft: false
+          prerelease: false
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
