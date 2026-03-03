@@ -54,10 +54,22 @@ namespace WpfMySqlCrud
         /// downloads, extracts, and relaunches. Returns true if app is
         /// restarting (caller should return immediately and not continue).
         /// </summary>
+        private static readonly string JustUpdatedFlagPath =
+            Path.Combine(Path.GetTempPath(), "billx_just_updated.flag");
+
         public static async Task<bool> CheckAndUpdateAsync(Window owner = null)
         {
             try
             {
+                // If we just applied an update, skip the check this one launch
+                // so we don't loop. Delete the flag and continue to app.
+                if (File.Exists(JustUpdatedFlagPath))
+                {
+                    File.Delete(JustUpdatedFlagPath);
+                    Log("Skipping update check — app was just updated.");
+                    return false;
+                }
+
                 Log("Checking for updates...");
 
                 Version current = GetCurrentVersion();
@@ -78,7 +90,6 @@ namespace WpfMySqlCrud
                     return false;
                 }
 
-                // ── New version available ────────────────────────────────────
                 Log($"Update available: {current} → {latest.Version}");
 
                 bool accepted = ShowUpdateDialog(owner, current, latest);
@@ -88,14 +99,13 @@ namespace WpfMySqlCrud
                     return false;
                 }
 
-                // ── Download + apply ─────────────────────────────────────────
                 await DownloadAndApplyUpdateAsync(owner, latest);
-                return true;   // app is restarting
+                return true;
             }
             catch (Exception ex)
             {
                 Log($"Update check failed (non-fatal): {ex.Message}");
-                return false;  // never block startup due to update errors
+                return false;
             }
         }
 
@@ -247,6 +257,8 @@ namespace WpfMySqlCrud
                     $")\r\n" +
                     $"echo Copying new files...\r\n" +
                     $"xcopy /E /Y /I \"{sourceDir}\\*\" \"{appDir}\"\r\n" +
+                    $"echo Writing just-updated flag...\r\n" +
+                    $"echo updated > \"{JustUpdatedFlagPath}\"\r\n" +
                     $"echo Launching updated app...\r\n" +
                     $"start \"\" \"{exePath}\"\r\n" +
                     $"echo Cleaning up...\r\n" +
@@ -323,16 +335,43 @@ namespace WpfMySqlCrud
         // ====================================================================
         private static Version GetCurrentVersion()
         {
-            // Reads <Version> from .csproj (e.g. 1.0.0) via InformationalVersion
-            // This is more reliable than AssemblyVersion which needs 4 parts
-            string infoVersion = System.Diagnostics.FileVersionInfo
-                .GetVersionInfo(Assembly.GetExecutingAssembly().Location)
-                .ProductVersion ?? "0.0.0";
+            // Method 1: Read FileVersion (maps directly to <FileVersion> in .csproj)
+            // This is the most reliable — no hash suffixes, no single-file issues
+            try
+            {
+                string exePath = Environment.ProcessPath  // .NET 6+ — actual .exe path
+                              ?? System.Diagnostics.Process.GetCurrentProcess().MainModule?.FileName
+                              ?? Assembly.GetExecutingAssembly().Location;
 
-            // Strip any suffix like "1.0.0+abc123" (added by .NET during build)
-            string clean = infoVersion.Split('+')[0].Split('-')[0];
+                if (!string.IsNullOrEmpty(exePath) && File.Exists(exePath))
+                {
+                    var fvi = System.Diagnostics.FileVersionInfo.GetVersionInfo(exePath);
 
-            return Version.TryParse(clean, out Version v) ? v : new Version(0, 0, 0);
+                    // Try FileVersion first (e.g. "1.9.0.0" → 1.9.0)
+                    if (Version.TryParse(fvi.FileVersion, out Version fv))
+                    {
+                        Log($"Version from FileVersion: {fv}");
+                        return new Version(fv.Major, fv.Minor, fv.Build);
+                    }
+
+                    // Fallback: ProductVersion strips any +hash suffix
+                    string pv = (fvi.ProductVersion ?? "").Split('+')[0].Split('-')[0].Trim();
+                    if (Version.TryParse(pv, out Version pver))
+                    {
+                        Log($"Version from ProductVersion: {pver}");
+                        return new Version(pver.Major, pver.Minor, pver.Build);
+                    }
+                }
+            }
+            catch (Exception ex)
+            {
+                Log($"GetCurrentVersion error: {ex.Message}");
+            }
+
+            // Method 2: AssemblyVersion as last resort
+            var av = Assembly.GetExecutingAssembly().GetName().Version ?? new Version(0, 0, 0);
+            Log($"Version from AssemblyVersion: {av}");
+            return new Version(av.Major, av.Minor, av.Build);
         }
 
         private static string GetCurrentExePath()
