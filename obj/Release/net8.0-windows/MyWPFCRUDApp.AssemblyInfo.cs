@@ -15,7 +15,7 @@ using System.Reflection;
 [assembly: System.Reflection.AssemblyConfigurationAttribute("Release")]
 [assembly: System.Reflection.AssemblyCopyrightAttribute("Copyright © 2026")]
 [assembly: System.Reflection.AssemblyFileVersionAttribute("1.0.0.0")]
-[assembly: System.Reflection.AssemblyInformationalVersionAttribute("1.0.0+1829823196b53a0348364f0bb585b6e57193ab69")]
+[assembly: System.Reflection.AssemblyInformationalVersionAttribute("1.1.0+97ec43b1e5135a16c56608ee4b8d0ab36c11df12")]
 [assembly: System.Reflection.AssemblyProductAttribute("BillX")]
 [assembly: System.Reflection.AssemblyTitleAttribute("MyWPFCRUDApp")]
 [assembly: System.Reflection.AssemblyVersionAttribute("1.0.0.0")]

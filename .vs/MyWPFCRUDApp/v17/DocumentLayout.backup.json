@@ -3,12 +3,12 @@
   "WorkspaceRootPath": "E:\\Mohua\u0027s_fashion\\MyWPFCRUDApp\\",
   "Documents": [
     {
-      "AbsoluteMoniker": "D:0:0:{63FD5C72-1F5C-48F0-8CE4-22CDA6BF3658}|MyWPFCRUDApp.csproj|e:\\mohua\u0027s_fashion\\mywpfcrudapp\\mywpfcrudapp.csproj||{FA3CD31E-987B-443A-9B81-186104E8DAC1}|",
-      "RelativeMoniker": "D:0:0:{63FD5C72-1F5C-48F0-8CE4-22CDA6BF3658}|MyWPFCRUDApp.csproj|solutionrelative:mywpfcrudapp.csproj||{FA3CD31E-987B-443A-9B81-186104E8DAC1}|"
-    },
-    {
       "AbsoluteMoniker": "D:0:0:{63FD5C72-1F5C-48F0-8CE4-22CDA6BF3658}|MyWPFCRUDApp.csproj|e:\\mohua\u0027s_fashion\\mywpfcrudapp\\mainwindow.xaml||{F11ACC28-31D1-4C80-A34B-F4E09D3D753C}",
       "RelativeMoniker": "D:0:0:{63FD5C72-1F5C-48F0-8CE4-22CDA6BF3658}|MyWPFCRUDApp.csproj|solutionrelative:mainwindow.xaml||{F11ACC28-31D1-4C80-A34B-F4E09D3D753C}"
+    },
+    {
+      "AbsoluteMoniker": "D:0:0:{63FD5C72-1F5C-48F0-8CE4-22CDA6BF3658}|MyWPFCRUDApp.csproj|e:\\mohua\u0027s_fashion\\mywpfcrudapp\\mywpfcrudapp.csproj||{FA3CD31E-987B-443A-9B81-186104E8DAC1}|",
+      "RelativeMoniker": "D:0:0:{63FD5C72-1F5C-48F0-8CE4-22CDA6BF3658}|MyWPFCRUDApp.csproj|solutionrelative:mywpfcrudapp.csproj||{FA3CD31E-987B-443A-9B81-186104E8DAC1}|"
     }
   ],
   "DocumentGroupContainers": [
@@ -18,7 +18,7 @@
       "DocumentGroups": [
         {
           "DockedWidth": 200,
-          "SelectedChildIndex": 8,
+          "SelectedChildIndex": 7,
           "Children": [
             {
               "$type": "Bookmark",
@@ -50,7 +50,7 @@
             },
             {
               "$type": "Document",
-              "DocumentIndex": 1,
+              "DocumentIndex": 0,
               "Title": "MainWindow.xaml",
               "DocumentMoniker": "E:\\Mohua\u0027s_fashion\\MyWPFCRUDApp\\MainWindow.xaml",
               "RelativeDocumentMoniker": "MainWindow.xaml",
@@ -62,16 +62,15 @@
             },
             {
               "$type": "Document",
-              "DocumentIndex": 0,
+              "DocumentIndex": 1,
               "Title": "MyWPFCRUDApp.csproj",
               "DocumentMoniker": "E:\\Mohua\u0027s_fashion\\MyWPFCRUDApp\\MyWPFCRUDApp.csproj",
               "RelativeDocumentMoniker": "MyWPFCRUDApp.csproj",
               "ToolTip": "E:\\Mohua\u0027s_fashion\\MyWPFCRUDApp\\MyWPFCRUDApp.csproj",
               "RelativeToolTip": "MyWPFCRUDApp.csproj",
-              "ViewState": "AgIAAAAAAAAAAAAAAAAAAA0AAAAAAAAAAAAAAA==",
+              "ViewState": "AgIAAAAAAAAAAAAAAAAAAAoAAAAaAAAAAAAAAA==",
               "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.000758|",
-              "WhenOpened": "2026-03-03T21:48:43.723Z",
-              "EditorCaption": ""
+              "WhenOpened": "2026-03-03T21:48:43.723Z"
             }
           ]
         }
