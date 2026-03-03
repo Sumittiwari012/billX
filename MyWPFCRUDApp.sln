@@ -1,0 +1,25 @@
+﻿
+Microsoft Visual Studio Solution File, Format Version 12.00
+# Visual Studio Version 17
+VisualStudioVersion = 17.14.36327.8 d17.14
+MinimumVisualStudioVersion = 10.0.40219.1
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "MyWPFCRUDApp", "MyWPFCRUDApp.csproj", "{63FD5C72-1F5C-48F0-8CE4-22CDA6BF3658}"
+EndProject
+Global
+	GlobalSection(SolutionConfigurationPlatforms) = preSolution
+		Debug|Any CPU = Debug|Any CPU
+		Release|Any CPU = Release|Any CPU
+	EndGlobalSection
+	GlobalSection(ProjectConfigurationPlatforms) = postSolution
+		{63FD5C72-1F5C-48F0-8CE4-22CDA6BF3658}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{63FD5C72-1F5C-48F0-8CE4-22CDA6BF3658}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{63FD5C72-1F5C-48F0-8CE4-22CDA6BF3658}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{63FD5C72-1F5C-48F0-8CE4-22CDA6BF3658}.Release|Any CPU.Build.0 = Release|Any CPU
+	EndGlobalSection
+	GlobalSection(SolutionProperties) = preSolution
+		HideSolutionNode = FALSE
+	EndGlobalSection
+	GlobalSection(ExtensibilityGlobals) = postSolution
+		SolutionGuid = {19B715D7-6539-4BE3-963F-7B13EE4F9F02}
+	EndGlobalSection
+EndGlobal
