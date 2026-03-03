@@ -24,6 +24,13 @@ namespace WpfMySqlCrud
 
         private async void MainWindow_Loaded(object sender, RoutedEventArgs e)
         {
+            // ── STEP 0: Check for updates FIRST ─────────────────────────────
+            // If an update is found and user accepts, app will restart.
+            // Return immediately so MySQL setup doesn't run on the old version.
+            bool restarting = await AutoUpdater.CheckAndUpdateAsync(this);
+            if (restarting) return;
+
+            // ── STEP 1: MySQL setup (existing logic) ─────────────────────────
             var setup = new MySQLAutoSetup();
             var state = await setup.DetectStateAsync();
 

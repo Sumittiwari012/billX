@@ -1,0 +1,1 @@
+server=localhost;port=3306;user id=root;password=25Sept*2003;database=WpfCrudDB;allowpublickeyretrieval=True;sslmode=None;connectiontimeout=10

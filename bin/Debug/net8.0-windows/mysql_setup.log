@@ -1,0 +1,14 @@
+[03:11:32] === Detecting MySQL state ===
+[03:11:33] Found service: MySQL80
+[03:11:33] Service present: True
+[03:11:33] Service is running.
+[03:11:33] Service found, probing credentials...
+[03:11:34] TryConnect failed: Authentication to host 'localhost' for user 'root' using method 'caching_sha2_password' failed with message: Access denied for user 'root'@'localhost' (using password: NO)
+[03:11:34] TryConnect failed: Authentication to host 'localhost' for user 'root' using method 'caching_sha2_password' failed with message: Access denied for user 'root'@'localhost' (using password: NO)
+[03:11:34] TryConnect failed: Authentication to host 'localhost' for user 'root' using method 'caching_sha2_password' failed with message: Access denied for user 'root'@'localhost' (using password: YES)
+[03:11:34] TryConnect failed: Authentication to host 'localhost' for user 'root' using method 'caching_sha2_password' failed with message: Access denied for user 'root'@'localhost' (using password: YES)
+[03:11:34] TryConnect failed: Authentication to host 'localhost' for user 'root' using method 'caching_sha2_password' failed with message: Access denied for user 'root'@'localhost' (using password: YES)
+[03:11:34] TryConnect failed: Authentication to host 'localhost' for user 'root' using method 'caching_sha2_password' failed with message: Access denied for user 'root'@'localhost' (using password: YES)
+[03:11:34] TryConnect failed: Authentication to host 'localhost' for user 'root' using method 'caching_sha2_password' failed with message: Access denied for user 'root'@'localhost' (using password: YES)
+[03:11:35] TryConnect failed: Authentication to host 'localhost' for user 'root' using method 'caching_sha2_password' failed with message: Access denied for user 'root'@'localhost' (using password: YES)
+[03:11:35] Service present but all probes failed → ServiceExistsUnknownPassword

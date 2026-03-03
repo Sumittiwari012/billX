@@ -1,0 +1,4 @@
+[03:11:31] [Updater] Checking for updates...
+[03:11:31] [Updater] Current version: 1.0.0
+[03:11:32] [Updater] GitHub API returned NotFound
+[03:11:32] [Updater] Could not fetch release info (no internet or no releases yet).
