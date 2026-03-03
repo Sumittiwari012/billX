@@ -35,8 +35,8 @@ namespace WpfMySqlCrud
     public static class AutoUpdater
     {
         // ── CONFIGURE THESE ──────────────────────────────────────────────────
-        private const string GITHUB_OWNER = "Sumittiwari012";   // ← change this
-        private const string GITHUB_REPO = "billX";         // ← change this
+        private const string GITHUB_OWNER = "Sumittiwari012";
+        private const string GITHUB_REPO = "billX";
         // ─────────────────────────────────────────────────────────────────────
 
         private static readonly string ApiUrl =
@@ -323,10 +323,16 @@ namespace WpfMySqlCrud
         // ====================================================================
         private static Version GetCurrentVersion()
         {
-            var v = Assembly.GetExecutingAssembly().GetName().Version
-                 ?? new Version(0, 0, 0, 0);
-            // Return only Major.Minor.Build to match GitHub tag format (1.2.3)
-            return new Version(v.Major, v.Minor, v.Build);
+            // Reads <Version> from .csproj (e.g. 1.0.0) via InformationalVersion
+            // This is more reliable than AssemblyVersion which needs 4 parts
+            string infoVersion = System.Diagnostics.FileVersionInfo
+                .GetVersionInfo(Assembly.GetExecutingAssembly().Location)
+                .ProductVersion ?? "0.0.0";
+
+            // Strip any suffix like "1.0.0+abc123" (added by .NET during build)
+            string clean = infoVersion.Split('+')[0].Split('-')[0];
+
+            return Version.TryParse(clean, out Version v) ? v : new Version(0, 0, 0);
         }
 
         private static string GetCurrentExePath()
