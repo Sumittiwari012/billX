@@ -76,7 +76,7 @@ namespace WpfMySqlCrud {
                 return;
             }
             _contentLoaded = true;
-            System.Uri resourceLocater = new System.Uri("/MyWPFCRUDApp;V1.1.0.0;component/passwordinputdialog.xaml", System.UriKind.Relative);
+            System.Uri resourceLocater = new System.Uri("/MyWPFCRUDApp;V1.2.1.0;component/passwordinputdialog.xaml", System.UriKind.Relative);
             
             #line 1 "..\..\..\PasswordInputDialog.xaml"
             System.Windows.Application.LoadComponent(this, resourceLocater);

@@ -27,8 +27,8 @@
                 <RowDefinition Height="Auto"/>
             </Grid.RowDefinitions>
 
-            <Label Content="Student:"  Grid.Row="0" Grid.Column="0" VerticalAlignment="Center"/>
-            <TextBox x:Name="txtName"  Grid.Row="0" Grid.Column="1" Margin="0,4,12,4" Padding="4"/>
+            <Label Content="Student's Name:"  Grid.Row="0" Grid.Column="0" VerticalAlignment="Center"/>
+            <TextBox x:Name="txtName"  Grid.Row="0" Grid.Column="1" Margin="4,8,16,8" Padding="4"/>
 
             <Label Content="Age:"   Grid.Row="0" Grid.Column="2" VerticalAlignment="Center"/>
             <TextBox x:Name="txtAge"   Grid.Row="0" Grid.Column="3" Margin="0,4,0,4"  Padding="4"/>
