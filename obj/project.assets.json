@@ -201,32 +201,6 @@
           "buildTransitive/net6.0/_._": {}
         }
       },
-      "System.Diagnostics.EventLog/10.0.3": {
-        "type": "package",
-        "compile": {
-          "lib/net8.0/System.Diagnostics.EventLog.dll": {
-            "related": ".xml"
-          }
-        },
-        "runtime": {
-          "lib/net8.0/System.Diagnostics.EventLog.dll": {
-            "related": ".xml"
-          }
-        },
-        "build": {
-          "buildTransitive/net8.0/_._": {}
-        },
-        "runtimeTargets": {
-          "runtimes/win/lib/net8.0/System.Diagnostics.EventLog.Messages.dll": {
-            "assetType": "runtime",
-            "rid": "win"
-          },
-          "runtimes/win/lib/net8.0/System.Diagnostics.EventLog.dll": {
-            "assetType": "runtime",
-            "rid": "win"
-          }
-        }
-      },
       "System.Drawing.Common/4.7.0": {
         "type": "package",
         "dependencies": {
@@ -430,31 +404,6 @@
             "rid": "unix"
           },
           "runtimes/win/lib/netcoreapp2.1/System.Security.Principal.Windows.dll": {
-            "assetType": "runtime",
-            "rid": "win"
-          }
-        }
-      },
-      "System.ServiceProcess.ServiceController/10.0.3": {
-        "type": "package",
-        "dependencies": {
-          "System.Diagnostics.EventLog": "10.0.3"
-        },
-        "compile": {
-          "lib/net8.0/System.ServiceProcess.ServiceController.dll": {
-            "related": ".xml"
-          }
-        },
-        "runtime": {
-          "lib/net8.0/System.ServiceProcess.ServiceController.dll": {
-            "related": ".xml"
-          }
-        },
-        "build": {
-          "buildTransitive/net8.0/_._": {}
-        },
-        "runtimeTargets": {
-          "runtimes/win/lib/net8.0/System.ServiceProcess.ServiceController.dll": {
             "assetType": "runtime",
             "rid": "win"
           }
@@ -865,44 +814,6 @@
         "lib/netstandard2.0/System.Diagnostics.DiagnosticSource.xml",
         "system.diagnostics.diagnosticsource.7.0.2.nupkg.sha512",
         "system.diagnostics.diagnosticsource.nuspec",
-        "useSharedDesignerContext.txt"
-      ]
-    },
-    "System.Diagnostics.EventLog/10.0.3": {
-      "sha512": "+bZnyzt0/vt4g3QSllhsRNGTpa09p7Juy5K8spcK73cOTOefu4+HoY89hZOgIOmzB5A4hqPyEDKnzra7KKnhZw==",
-      "type": "package",
-      "path": "system.diagnostics.eventlog/10.0.3",
-      "files": [
-        ".nupkg.metadata",
-        ".signature.p7s",
-        "Icon.png",
-        "PACKAGE.md",
-        "THIRD-PARTY-NOTICES.TXT",
-        "buildTransitive/net461/System.Diagnostics.EventLog.targets",
-        "buildTransitive/net462/_._",
-        "buildTransitive/net8.0/_._",
-        "buildTransitive/netcoreapp2.0/System.Diagnostics.EventLog.targets",
-        "lib/net10.0/System.Diagnostics.EventLog.dll",
-        "lib/net10.0/System.Diagnostics.EventLog.xml",
-        "lib/net462/System.Diagnostics.EventLog.dll",
-        "lib/net462/System.Diagnostics.EventLog.xml",
-        "lib/net8.0/System.Diagnostics.EventLog.dll",
-        "lib/net8.0/System.Diagnostics.EventLog.xml",
-        "lib/net9.0/System.Diagnostics.EventLog.dll",
-        "lib/net9.0/System.Diagnostics.EventLog.xml",
-        "lib/netstandard2.0/System.Diagnostics.EventLog.dll",
-        "lib/netstandard2.0/System.Diagnostics.EventLog.xml",
-        "runtimes/win/lib/net10.0/System.Diagnostics.EventLog.Messages.dll",
-        "runtimes/win/lib/net10.0/System.Diagnostics.EventLog.dll",
-        "runtimes/win/lib/net10.0/System.Diagnostics.EventLog.xml",
-        "runtimes/win/lib/net8.0/System.Diagnostics.EventLog.Messages.dll",
-        "runtimes/win/lib/net8.0/System.Diagnostics.EventLog.dll",
-        "runtimes/win/lib/net8.0/System.Diagnostics.EventLog.xml",
-        "runtimes/win/lib/net9.0/System.Diagnostics.EventLog.Messages.dll",
-        "runtimes/win/lib/net9.0/System.Diagnostics.EventLog.dll",
-        "runtimes/win/lib/net9.0/System.Diagnostics.EventLog.xml",
-        "system.diagnostics.eventlog.10.0.3.nupkg.sha512",
-        "system.diagnostics.eventlog.nuspec",
         "useSharedDesignerContext.txt"
       ]
     },
@@ -1506,41 +1417,6 @@
         "version.txt"
       ]
     },
-    "System.ServiceProcess.ServiceController/10.0.3": {
-      "sha512": "lOvEbCrTMl4EB7Ckp1suhgcnUEwUs2qRWLYZvquKU33hpRLZfjTXBSHFWQiRshxqd7dA+Nj9Yiw8EbOwd3T/eQ==",
-      "type": "package",
-      "path": "system.serviceprocess.servicecontroller/10.0.3",
-      "files": [
-        ".nupkg.metadata",
-        ".signature.p7s",
-        "Icon.png",
-        "PACKAGE.md",
-        "THIRD-PARTY-NOTICES.TXT",
-        "buildTransitive/net461/System.ServiceProcess.ServiceController.targets",
-        "buildTransitive/net462/_._",
-        "buildTransitive/net8.0/_._",
-        "buildTransitive/netcoreapp2.0/System.ServiceProcess.ServiceController.targets",
-        "lib/net10.0/System.ServiceProcess.ServiceController.dll",
-        "lib/net10.0/System.ServiceProcess.ServiceController.xml",
-        "lib/net462/System.ServiceProcess.ServiceController.dll",
-        "lib/net462/System.ServiceProcess.ServiceController.xml",
-        "lib/net8.0/System.ServiceProcess.ServiceController.dll",
-        "lib/net8.0/System.ServiceProcess.ServiceController.xml",
-        "lib/net9.0/System.ServiceProcess.ServiceController.dll",
-        "lib/net9.0/System.ServiceProcess.ServiceController.xml",
-        "lib/netstandard2.0/System.ServiceProcess.ServiceController.dll",
-        "lib/netstandard2.0/System.ServiceProcess.ServiceController.xml",
-        "runtimes/win/lib/net10.0/System.ServiceProcess.ServiceController.dll",
-        "runtimes/win/lib/net10.0/System.ServiceProcess.ServiceController.xml",
-        "runtimes/win/lib/net8.0/System.ServiceProcess.ServiceController.dll",
-        "runtimes/win/lib/net8.0/System.ServiceProcess.ServiceController.xml",
-        "runtimes/win/lib/net9.0/System.ServiceProcess.ServiceController.dll",
-        "runtimes/win/lib/net9.0/System.ServiceProcess.ServiceController.xml",
-        "system.serviceprocess.servicecontroller.10.0.3.nupkg.sha512",
-        "system.serviceprocess.servicecontroller.nuspec",
-        "useSharedDesignerContext.txt"
-      ]
-    },
     "System.Text.Encoding/4.3.0": {
       "sha512": "BiIg+KWaSDOITze6jGQynxg64naAPtqGHBwDrLaCtixsa5bKiR8dpPOHA7ge3C0JJQizJE+sfkz1wV+BAKAYZw==",
       "type": "package",
@@ -1906,8 +1782,7 @@
   },
   "projectFileDependencyGroups": {
     "net8.0-windows7.0": [
-      "MySql.Data >= 8.4.0",
-      "System.ServiceProcess.ServiceController >= 10.0.3"
+      "MySql.Data >= 8.4.0"
     ]
   },
   "packageFolders": {
@@ -1915,7 +1790,7 @@
     "C:\\Program Files (x86)\\Microsoft Visual Studio\\Shared\\NuGetPackages": {}
   },
   "project": {
-    "version": "1.2.1",
+    "version": "1.2.2",
     "restore": {
       "projectUniqueName": "E:\\Mohua's_fashion\\MyWPFCRUDApp\\MyWPFCRUDApp.csproj",
       "projectName": "MyWPFCRUDApp",
@@ -1963,10 +1838,6 @@
           "MySql.Data": {
             "target": "Package",
             "version": "[8.4.0, )"
-          },
-          "System.ServiceProcess.ServiceController": {
-            "target": "Package",
-            "version": "[10.0.3, )"
           }
         },
         "imports": [

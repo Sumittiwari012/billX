@@ -13,7 +13,11 @@ name: Build and Release
 on:
   push:
     tags:
-      - 'v*'          # triggers on any tag starting with v (v1.0.1, v2.0.0, etc.)
+      - 'v*'
+
+# Explicitly grant write permission to create releases
+permissions:
+  contents: write
 
 jobs:
   build-and-release:

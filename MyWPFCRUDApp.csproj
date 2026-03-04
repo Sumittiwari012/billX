@@ -8,19 +8,24 @@
 		<ApplicationManifest>app.manifest</ApplicationManifest>
 
 		<!-- Auto-updater reads this to compare against GitHub release tag -->
-		<Version>1.2.1</Version>
-		<AssemblyVersion>1.2.1.0</AssemblyVersion>
-		<FileVersion>1.2.1.0</FileVersion>
+		<Version>1.2.2</Version>
+		<AssemblyVersion>1.2.2.0</AssemblyVersion>
+		<FileVersion>1.2.2.0</FileVersion>
 
 		<!-- Shown in Windows Add/Remove Programs -->
 		<Product>BillX</Product>
 		<Company>YourCompanyName</Company>
 		<Copyright>Copyright © 2026</Copyright>
+		<StartupObject>MyWPFCRUDApp.App</StartupObject>
+		
+		<CopyLocalLockFileAssemblies>true</CopyLocalLockFileAssemblies>
+		<SelfContained>false</SelfContained>
+		<PublishReadyToRun>false</PublishReadyToRun>
 	</PropertyGroup>
 
 	<ItemGroup>
 		<PackageReference Include="MySql.Data" Version="8.4.0" />
-		<PackageReference Include="System.ServiceProcess.ServiceController" Version="10.0.3" />
+		
 	</ItemGroup>
 
 	<!-- Copy MySQL ZIP to output folder so GetBundledZip() finds it next to .exe -->

@@ -7,6 +7,18 @@
       "RelativeMoniker": "D:0:0:{63FD5C72-1F5C-48F0-8CE4-22CDA6BF3658}|MyWPFCRUDApp.csproj|solutionrelative:mywpfcrudapp.csproj||{FA3CD31E-987B-443A-9B81-186104E8DAC1}|"
     },
     {
+      "AbsoluteMoniker": "D:0:0:{63FD5C72-1F5C-48F0-8CE4-22CDA6BF3658}|MyWPFCRUDApp.csproj|e:\\mohua\u0027s_fashion\\mywpfcrudapp\\mysqlautosetup.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}",
+      "RelativeMoniker": "D:0:0:{63FD5C72-1F5C-48F0-8CE4-22CDA6BF3658}|MyWPFCRUDApp.csproj|solutionrelative:mysqlautosetup.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}"
+    },
+    {
+      "AbsoluteMoniker": "D:0:0:{63FD5C72-1F5C-48F0-8CE4-22CDA6BF3658}|MyWPFCRUDApp.csproj|e:\\mohua\u0027s_fashion\\mywpfcrudapp\\mywpfcrudapp.csproj||{04B8AB82-A572-4FEF-95CE-5222444B6B64}|",
+      "RelativeMoniker": "D:0:0:{63FD5C72-1F5C-48F0-8CE4-22CDA6BF3658}|MyWPFCRUDApp.csproj|solutionrelative:mywpfcrudapp.csproj||{04B8AB82-A572-4FEF-95CE-5222444B6B64}|"
+    },
+    {
+      "AbsoluteMoniker": "D:0:0:{63FD5C72-1F5C-48F0-8CE4-22CDA6BF3658}|MyWPFCRUDApp.csproj|e:\\mohua\u0027s_fashion\\mywpfcrudapp\\passwordinputdialog.xaml||{F11ACC28-31D1-4C80-A34B-F4E09D3D753C}",
+      "RelativeMoniker": "D:0:0:{63FD5C72-1F5C-48F0-8CE4-22CDA6BF3658}|MyWPFCRUDApp.csproj|solutionrelative:passwordinputdialog.xaml||{F11ACC28-31D1-4C80-A34B-F4E09D3D753C}"
+    },
+    {
       "AbsoluteMoniker": "D:0:0:{63FD5C72-1F5C-48F0-8CE4-22CDA6BF3658}|MyWPFCRUDApp.csproj|e:\\mohua\u0027s_fashion\\mywpfcrudapp\\mainwindow.xaml||{F11ACC28-31D1-4C80-A34B-F4E09D3D753C}",
       "RelativeMoniker": "D:0:0:{63FD5C72-1F5C-48F0-8CE4-22CDA6BF3658}|MyWPFCRUDApp.csproj|solutionrelative:mainwindow.xaml||{F11ACC28-31D1-4C80-A34B-F4E09D3D753C}"
     },
@@ -22,7 +34,7 @@
       "DocumentGroups": [
         {
           "DockedWidth": 200,
-          "SelectedChildIndex": 9,
+          "SelectedChildIndex": 12,
           "Children": [
             {
               "$type": "Bookmark",
@@ -54,7 +66,43 @@
             },
             {
               "$type": "Document",
+              "DocumentIndex": 1,
+              "Title": "MySQLAutoSetup.cs",
+              "DocumentMoniker": "E:\\Mohua\u0027s_fashion\\MyWPFCRUDApp\\MySQLAutoSetup.cs",
+              "RelativeDocumentMoniker": "MySQLAutoSetup.cs",
+              "ToolTip": "E:\\Mohua\u0027s_fashion\\MyWPFCRUDApp\\MySQLAutoSetup.cs",
+              "RelativeToolTip": "MySQLAutoSetup.cs",
+              "ViewState": "AgIAAE8BAAAAAAAAAAAAwGIBAAAJAAAAAAAAAA==",
+              "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.000738|",
+              "WhenOpened": "2026-03-04T09:44:59.808Z",
+              "EditorCaption": ""
+            },
+            {
+              "$type": "Document",
               "DocumentIndex": 2,
+              "Title": "MyWPFCRUDApp",
+              "DocumentMoniker": "E:\\Mohua\u0027s_fashion\\MyWPFCRUDApp\\MyWPFCRUDApp.csproj",
+              "RelativeDocumentMoniker": "MyWPFCRUDApp.csproj",
+              "ToolTip": "E:\\Mohua\u0027s_fashion\\MyWPFCRUDApp\\MyWPFCRUDApp.csproj",
+              "RelativeToolTip": "MyWPFCRUDApp.csproj",
+              "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.000758|",
+              "WhenOpened": "2026-03-04T09:01:02.948Z",
+              "EditorCaption": ""
+            },
+            {
+              "$type": "Document",
+              "DocumentIndex": 3,
+              "Title": "PasswordInputDialog.xaml",
+              "DocumentMoniker": "E:\\Mohua\u0027s_fashion\\MyWPFCRUDApp\\PasswordInputDialog.xaml",
+              "RelativeDocumentMoniker": "PasswordInputDialog.xaml",
+              "ToolTip": "E:\\Mohua\u0027s_fashion\\MyWPFCRUDApp\\PasswordInputDialog.xaml",
+              "RelativeToolTip": "PasswordInputDialog.xaml",
+              "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.003549|",
+              "WhenOpened": "2026-03-04T07:04:00.082Z"
+            },
+            {
+              "$type": "Document",
+              "DocumentIndex": 5,
               "Title": "AutoUpdater.cs",
               "DocumentMoniker": "E:\\Mohua\u0027s_fashion\\MyWPFCRUDApp\\AutoUpdater.cs",
               "RelativeDocumentMoniker": "AutoUpdater.cs",
@@ -66,15 +114,14 @@
             },
             {
               "$type": "Document",
-              "DocumentIndex": 1,
+              "DocumentIndex": 4,
               "Title": "MainWindow.xaml",
               "DocumentMoniker": "E:\\Mohua\u0027s_fashion\\MyWPFCRUDApp\\MainWindow.xaml",
               "RelativeDocumentMoniker": "MainWindow.xaml",
               "ToolTip": "E:\\Mohua\u0027s_fashion\\MyWPFCRUDApp\\MainWindow.xaml",
               "RelativeToolTip": "MainWindow.xaml",
               "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.003549|",
-              "WhenOpened": "2026-03-03T21:49:04.713Z",
-              "EditorCaption": ""
+              "WhenOpened": "2026-03-03T21:49:04.713Z"
             },
             {
               "$type": "Document",
@@ -84,7 +131,7 @@
               "RelativeDocumentMoniker": "MyWPFCRUDApp.csproj",
               "ToolTip": "E:\\Mohua\u0027s_fashion\\MyWPFCRUDApp\\MyWPFCRUDApp.csproj",
               "RelativeToolTip": "MyWPFCRUDApp.csproj",
-              "ViewState": "AgIAAAIAAAAAAAAAAADwvw8AAAAaAAAAAAAAAA==",
+              "ViewState": "AgIAAAMAAAAAAAAAAAAAAAoAAAAQAAAAAAAAAA==",
               "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.000758|",
               "WhenOpened": "2026-03-03T21:48:43.723Z",
               "EditorCaption": ""

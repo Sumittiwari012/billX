@@ -313,16 +313,32 @@ namespace WpfMySqlCrud
             Log("Starting MySQL service...");
             try
             {
-                using var sc = new ServiceController(ServiceName);
-                if (sc.Status == ServiceControllerStatus.Running) { Log("Already running."); return; }
-                sc.Start();
-                sc.WaitForStatus(ServiceControllerStatus.Running, TimeSpan.FromSeconds(60));
+                string state = GetServiceState(ServiceName);
+                if (state == "Running") { Log("Already running."); return; }
+                Exec("net", $"start {ServiceName}", throwOnFail: true);
                 Log("Service started.");
             }
             catch (Exception ex)
             {
-                Log($"ServiceController failed: {ex.Message}. Trying net start...");
-                Exec("net", $"start {ServiceName}", throwOnFail: true);
+                Log($"StartService failed: {ex.Message}");
+                throw;
+            }
+        }
+
+        private string GetServiceState(string serviceName)
+        {
+            try
+            {
+                string output = Exec("sc", $"query \"{serviceName}\"", throwOnFail: false);
+                if (output.Contains("RUNNING")) return "Running";
+                if (output.Contains("STOPPED")) return "Stopped";
+                if (output.Contains("START_PENDING")) return "StartPending";
+                return "NotFound";
+            }
+            catch (Exception ex)
+            {
+                Log($"GetServiceState failed: {ex.Message}");
+                return "Unknown";
             }
         }
 
@@ -330,12 +346,9 @@ namespace WpfMySqlCrud
         {
             try
             {
-                using var sc = new ServiceController(ServiceName);
-                if (sc.Status != ServiceControllerStatus.Running)
-                {
-                    sc.Start();
-                    sc.WaitForStatus(ServiceControllerStatus.Running, TimeSpan.FromSeconds(30));
-                }
+                string state = GetServiceState(ServiceName);
+                if (state != "Running")
+                    Exec("net", $"start {ServiceName}", throwOnFail: false);
                 Log("Service is running.");
             }
             catch { Exec("net", $"start {ServiceName}", throwOnFail: false); }
@@ -566,18 +579,19 @@ namespace WpfMySqlCrud
 
         private bool IsMySQLServicePresent()
         {
-            foreach (var name in new[] { "MySQL80", "MySQL", "MySQL57", "MariaDB" })
+            try
             {
-                try
-                {
-                    using var sc = new ServiceController(name);
-                    _ = sc.Status;
-                    Log($"Found service: {name}");
-                    return true;
-                }
-                catch { }
+                string output = Exec("sc", "query type= all state= all", throwOnFail: false);
+                bool found = output.IndexOf("mysql", StringComparison.OrdinalIgnoreCase) >= 0 ||
+                             output.IndexOf("mariadb", StringComparison.OrdinalIgnoreCase) >= 0;
+                Log($"Service present: {found}");
+                return found;
             }
-            return false;
+            catch (Exception ex)
+            {
+                Log($"Service check failed: {ex.Message}");
+                return false;
+            }
         }
 
         private string GetMySQLClientPath()

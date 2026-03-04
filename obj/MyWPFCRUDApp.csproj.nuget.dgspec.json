@@ -5,7 +5,7 @@
   },
   "projects": {
     "E:\\Mohua's_fashion\\MyWPFCRUDApp\\MyWPFCRUDApp.csproj": {
-      "version": "1.2.1",
+      "version": "1.2.2",
       "restore": {
         "projectUniqueName": "E:\\Mohua's_fashion\\MyWPFCRUDApp\\MyWPFCRUDApp.csproj",
         "projectName": "MyWPFCRUDApp",
@@ -53,10 +53,6 @@
             "MySql.Data": {
               "target": "Package",
               "version": "[8.4.0, )"
-            },
-            "System.ServiceProcess.ServiceController": {
-              "target": "Package",
-              "version": "[10.0.3, )"
             }
           },
           "imports": [
