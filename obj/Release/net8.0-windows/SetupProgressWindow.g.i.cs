@@ -76,7 +76,7 @@ namespace WpfMySqlCrud {
                 return;
             }
             _contentLoaded = true;
-            System.Uri resourceLocater = new System.Uri("/MyWPFCRUDApp;V1.2.3.0;component/setupprogresswindow.xaml", System.UriKind.Relative);
+            System.Uri resourceLocater = new System.Uri("/MyWPFCRUDApp;V1.2.4.0;component/setupprogresswindow.xaml", System.UriKind.Relative);
             
             #line 1 "..\..\..\SetupProgressWindow.xaml"
             System.Windows.Application.LoadComponent(this, resourceLocater);
