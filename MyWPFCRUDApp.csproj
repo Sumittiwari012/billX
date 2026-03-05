@@ -1,0 +1,40 @@
+﻿<Project Sdk="Microsoft.NET.Sdk">
+	<PropertyGroup>
+		<OutputType>WinExe</OutputType>
+		<TargetFramework>net8.0-windows</TargetFramework>
+		<Nullable>enable</Nullable>
+		<ImplicitUsings>enable</ImplicitUsings>
+		<UseWPF>true</UseWPF>
+		<ApplicationManifest>app.manifest</ApplicationManifest>
+
+		<!-- Auto-updater reads this to compare against GitHub release tag -->
+		<Version>1.2.5</Version>
+		<AssemblyVersion>1.2.5.0</AssemblyVersion>
+		<FileVersion>1.2.5.0</FileVersion>
+
+		<!-- Shown in Windows Add/Remove Programs -->
+		<Product>BillX</Product>
+		<Company>YourCompanyName</Company>
+		<Copyright>Copyright © 2026</Copyright>
+		<StartupObject>MyWPFCRUDApp.App</StartupObject>
+		
+		<CopyLocalLockFileAssemblies>true</CopyLocalLockFileAssemblies>
+		<SelfContained>false</SelfContained>
+		<PublishReadyToRun>false</PublishReadyToRun>
+	</PropertyGroup>
+
+	<ItemGroup>
+		<PackageReference Include="MySql.Data" Version="8.4.0" />
+		
+	</ItemGroup>
+
+	<!-- Copy MySQL ZIP to output folder so GetBundledZip() finds it next to .exe -->
+	<ItemGroup>
+		<None Update="mysql-8.0.45-winx64.zip">
+			<CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+		</None>
+	</ItemGroup>
+	<ItemGroup>
+	  <Folder Include="ViewModels\BaseViewModel\" />
+	</ItemGroup>
+</Project>

@@ -1,0 +1,52 @@
+﻿<Window x:Class="MyWPFCRUDApp.Views.MainWindow"
+        xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        xmlns:vm="clr-namespace:MyWPFCRUDApp.ViewModels"
+        xmlns:views="clr-namespace:MyWPFCRUDApp.Views"
+        Title="BillX - Management" Height="620" Width="850"
+        WindowStartupLocation="CenterScreen">
+
+    <Window.Resources>
+
+        <DataTemplate DataType="{x:Type vm:CategoryViewModel}">
+            <views:CategoryControl/>
+        </DataTemplate>
+
+    </Window.Resources>
+
+    <Grid Margin="16">
+        <Grid.RowDefinitions>
+            <RowDefinition Height="Auto"/>
+            <RowDefinition Height="*"/>
+        </Grid.RowDefinitions>
+
+        <!-- Nav Buttons -->
+        <WrapPanel Grid.Row="0" Margin="0,0,0,12">
+            <Button Content="🏢 About Company"   Width="130" Margin="0,0,8,8" Padding="6"
+                    Command="{Binding CompanyCommand}"
+                    Background="#2c3e50" Foreground="White"/>
+            <Button Content="📁 Category"        Width="100" Margin="0,0,8,8" Padding="6"
+                    Command="{Binding CategoryCommand}"
+                    Background="#2c3e50" Foreground="White"/>
+            <Button Content="📂 Subcategory"     Width="110" Margin="0,0,8,8" Padding="6"
+                    Command="{Binding SubcategoryCommand}"
+                    Background="#2c3e50" Foreground="White"/>
+            <Button Content="📦 Products"        Width="100" Margin="0,0,8,8" Padding="6"
+                    Command="{Binding ProductsCommand}"
+                    Background="#2c3e50" Foreground="White"/>
+            <Button Content="🤝 Supplier"        Width="100" Margin="0,0,8,8" Padding="6"
+                    Command="{Binding SupplierCommand}"
+                    Background="#2c3e50" Foreground="White"/>
+            <Button Content="📝 Purchase Entry"  Width="120" Margin="0,0,8,8" Padding="6"
+                    Command="{Binding PurchaseCommand}"
+                    Background="#d35400" Foreground="White"/>
+            <Button Content="💻 Terminal"        Width="100" Margin="0,0,8,8" Padding="6"
+                    Command="{Binding TerminalCommand}"
+                    Background="#8e44ad" Foreground="White"/>
+        </WrapPanel>
+
+        <!-- Content Area -->
+        <ContentControl Grid.Row="1"
+                        Content="{Binding CurrentView}"/>
+    </Grid>
+</Window>
