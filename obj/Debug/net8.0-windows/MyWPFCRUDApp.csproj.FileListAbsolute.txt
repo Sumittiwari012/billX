@@ -35,6 +35,7 @@ E:\Mohua's_fashion\MyWPFCRUDApp\obj\Debug\net8.0-windows\MyWPFCRUDApp.GeneratedM
 E:\Mohua's_fashion\MyWPFCRUDApp\obj\Debug\net8.0-windows\MyWPFCRUDApp.AssemblyInfoInputs.cache
 E:\Mohua's_fashion\MyWPFCRUDApp\obj\Debug\net8.0-windows\MyWPFCRUDApp.AssemblyInfo.cs
 E:\Mohua's_fashion\MyWPFCRUDApp\obj\Debug\net8.0-windows\MyWPFCRUDApp.csproj.CoreCompileInputs.cache
+E:\Mohua's_fashion\MyWPFCRUDApp\obj\Debug\net8.0-windows\MyWPFCRUDApp.sourcelink.json
 E:\Mohua's_fashion\MyWPFCRUDApp\obj\Debug\net8.0-windows\MyWPFCRU.97FB062A.Up2Date
 E:\Mohua's_fashion\MyWPFCRUDApp\obj\Debug\net8.0-windows\MyWPFCRUDApp.dll
 E:\Mohua's_fashion\MyWPFCRUDApp\obj\Debug\net8.0-windows\refint\MyWPFCRUDApp.dll

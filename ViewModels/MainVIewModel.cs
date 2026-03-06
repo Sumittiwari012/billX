@@ -1,156 +1,180 @@
 ﻿using MyWPFCRUDApp.Helpers;
-using MyWPFCRUDApp.Models;
-using MyWPFCRUDApp.Services;
-using MyWPFCRUDApp.ViewModels;
 using MyWPFCRUDApp.Views;
+
 using System;
 using System.Collections.Generic;
 using System.Collections.ObjectModel;
 using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
 using System.Windows;
 using System.Windows.Input;
-namespace MyWPFCRUDApp
+
+namespace MyWPFCRUDApp.ViewModels
 {
-    
+    public class SubOption
+    {
+        public string Name { get; set; }
+        public string Section { get; set; }
+        public string Icon { get; set; }
+    }
+
     public class MainViewModel : BaseViewModel
     {
+        private bool _sidebarOpen = false;
+
+        private Visibility _sidebarTextVisibility = Visibility.Collapsed;
+        public Visibility SidebarTextVisibility
+        {
+            get => _sidebarTextVisibility;
+            set => SetProperty(ref _sidebarTextVisibility, value);
+        }
+
+        private GridLength _sidebarWidth = new GridLength(60);
+        public GridLength SidebarWidth
+        {
+            get => _sidebarWidth;
+            set => SetProperty(ref _sidebarWidth, value);
+        }
+
+        private string _currentSectionTitle = "Master Entry";
+        public string CurrentSectionTitle
+        {
+            get => _currentSectionTitle;
+            set => SetProperty(ref _currentSectionTitle, value);
+        }
+
+        private ObservableCollection<SubOption> _subOptions;
+        public ObservableCollection<SubOption> SubOptions
+        {
+            get => _subOptions;
+            set => SetProperty(ref _subOptions, value);
+        }
+
         private object _currentView;
         public object CurrentView
         {
             get => _currentView;
             set => SetProperty(ref _currentView, value);
         }
-        private readonly StudentService _studentService = new();
+
+        public ICommand ToggleSidebarCommand { get; }
+        public ICommand SelectSectionCommand { get; }
+        public ICommand SelectOptionCommand { get; }
+
+        // ── Icon Map ──────────────────────────────────────────────
+        private readonly Dictionary<string, string> _iconMap = new()
+        {
+            // Master
+            ["Company Info"] = "🏢",
+            ["Category"] = "📁",
+            ["Sub Category"] = "📂",
+            ["Unit Master"] = "📏",
+            ["Tax Category"] = "🪙",
+            ["Products"] = "📦",
+            ["Customer"] = "👥",
+            ["Supplier"] = "🚚",
+            ["Sales Person"] = "🧑‍💼",
+            ["Account Head"] = "💼",
+            // Transactions
+            ["Receipt Entry"] = "🧾",
+            ["Payment"] = "💳",
+            ["Income Voucher"] = "💰",
+            ["Expense Voucher"] = "💸",
+            ["Contra Voucher"] = "🔁",
+            ["General Voucher"] = "📝",
+            ["Quotation"] = "📄",
+            ["Transaction Status"] = "📊",
+            ["Purchase Entry"] = "🛒",
+            ["Purchase Order"] = "📋",
+            // Inventory
+            ["Stock Entry"] = "📥",
+            ["Stock Adjustment"] = "⚖️",
+            ["Branch Stock Inward"] = "📤",
+            ["Branch Stock Outward"] = "📦",
+            // Banking
+            ["Bank Master"] = "🏦",
+            ["Branch Master"] = "🏛️",
+            ["Bank Account Registration"] = "📑",
+            ["Fund Deposit"] = "💵",
+            ["Fund Transfer"] = "🔄",
+            ["Payment Withdrawal"] = "🏧",
+            ["Account Statement"] = "📃",
+            // Reports
+            ["Supplier Ledger"] = "📒",
+            ["Customer Ledger"] = "📓",
+            ["Cash Ledger"] = "💹",
+            ["Income Report"] = "📈",
+            ["Expense Report"] = "📉",
+            ["Sales Report"] = "🗃️",
+            ["Purchase Report"] = "🗂️",
+            ["Balance Sheet"] = "⚖️",
+            ["Profit & Loss"] = "💡",
+            ["Trial Balance"] = "🔢",
+            ["Low Stock Item"] = "⚠️",
+            // Settings
+            ["User"] = "👤",
+            ["Add Company"] = "🏗️",
+            ["Terminal Settings"] = "💻",
+            ["Sales Invoice Settings"] = "🧾",
+            ["Auto Round Off"] = "🔃",
+            ["WhatsApp"] = "💬",
+            ["Printer Setting"] = "🖨️",
+            ["Payment Setting"] = "💰",
+            // Tax
+            ["Tax Type"] = "🏷️",
+            ["GSTR1"] = "📜",
+            ["GSTR3B"] = "📜",
+        };
+
+        private readonly Dictionary<string, (string Title, string[] Options)> _menuData = new()
+        {
+            ["master"] = ("Master Entry", new[] { "Company Info", "Category", "Sub Category", "Unit Master", "Tax Category", "Products", "Customer", "Supplier", "Sales Person", "Account Head" }),
+            ["transaction"] = ("Transactions", new[] { "Receipt Entry", "Payment", "Income Voucher", "Expense Voucher", "Contra Voucher", "General Voucher", "Quotation", "Transaction Status", "Purchase Entry", "Purchase Order" }),
+            ["inventory"] = ("Inventory", new[] { "Stock Entry", "Stock Adjustment", "Branch Stock Inward", "Branch Stock Outward" }),
+            ["banking"] = ("Banking", new[] { "Bank Master", "Branch Master", "Bank Account Registration", "Fund Deposit", "Fund Transfer", "Payment Withdrawal", "Account Statement" }),
+            ["reports"] = ("Reports", new[] { "Supplier Ledger", "Customer Ledger", "Cash Ledger", "Income Report", "Expense Report", "Sales Report", "Purchase Report", "Balance Sheet", "Profit & Loss", "Trial Balance", "Low Stock Item" }),
+            ["settings"] = ("Settings", new[] { "User", "Add Company", "Terminal Settings", "Sales Invoice Settings", "Auto Round Off", "WhatsApp", "Printer Setting", "Payment Setting" }),
+            ["tax"] = ("Tax", new[] { "Tax Type", "GSTR1", "GSTR3B" })
+        };
+
         public MainViewModel()
         {
-            AddCommand = new RelayCommand(_ => Add());
-            UpdateCommand = new RelayCommand(_ => Update(), _ => SelectedStudent != null);
-            DeleteCommand = new RelayCommand(_ => Delete(), _ => SelectedStudent != null);
-            RefreshCommand = new RelayCommand(_ => { ClearFields(); LoadData(); });
-            CategoryCommand = new RelayCommand(_ => CurrentView = new CategoryViewModel());
-            LoadData();
+            ToggleSidebarCommand = new RelayCommand(_ => ToggleSidebar());
+            SelectSectionCommand = new RelayCommand(section => SelectSection(section?.ToString()));
+            SelectOptionCommand = new RelayCommand(option => SelectOption(option as SubOption));
+            SelectSection("master");
         }
 
-        // ── Properties ────────────────────────────────────────────────────────
-        private ObservableCollection<Student> _students;
-        public ObservableCollection<Student> Students
+        private void ToggleSidebar()
         {
-            get => _students;
-            set => SetProperty(ref _students, value);
+            _sidebarOpen = !_sidebarOpen;
+            SidebarTextVisibility = _sidebarOpen ? Visibility.Visible : Visibility.Collapsed;
+            SidebarWidth = _sidebarOpen ? new GridLength(220) : new GridLength(60);
         }
 
-        private Student _selectedStudent;
-        public Student SelectedStudent
+        private void SelectSection(string sectionKey)
         {
-            get => _selectedStudent;
-            set
-            {
-                if (SetProperty(ref _selectedStudent, value) && value != null)
+            if (!_menuData.ContainsKey(sectionKey)) return;
+            var (title, options) = _menuData[sectionKey];
+            CurrentSectionTitle = title;
+            SubOptions = new ObservableCollection<SubOption>(
+                options.Select(o => new SubOption
                 {
-                    Name = value.Name;
-                    Age = value.Age.ToString();
-                    Email = value.Email;
-                }
-            }
+                    Name = o,
+                    Section = sectionKey,
+                    Icon = _iconMap.TryGetValue(o, out var ic) ? ic : "🔹"
+                })
+            );
+            CurrentView = null;
         }
 
-        private string _name;
-        public string Name
+        private void SelectOption(SubOption option)
         {
-            get => _name;
-            set => SetProperty(ref _name, value);
-        }
-
-        private string _age;
-        public string Age
-        {
-            get => _age;
-            set => SetProperty(ref _age, value);
-        }
-
-        private string _email;
-        public string Email
-        {
-            get => _email;
-            set => SetProperty(ref _email, value);
-        }
-
-        // ── Commands ──────────────────────────────────────────────────────────
-        public ICommand AddCommand { get; }
-        public ICommand UpdateCommand { get; }
-        public ICommand DeleteCommand { get; }
-        public ICommand RefreshCommand { get; }
-        public ICommand CategoryCommand { get; }  // ← ADD THIS
-
-        // ── Constructor ───────────────────────────────────────────────────────
-
-
-        // ── Methods ───────────────────────────────────────────────────────────
-        public void LoadData()
-        {
-            var list = _studentService.GetAllStudents();
-            Students = new ObservableCollection<Student>(list);
-        }
-
-        private void ClearFields()
-        {
-            Name = string.Empty;
-            Age = string.Empty;
-            Email = string.Empty;
-            SelectedStudent = null;
-        }
-
-        private bool TryGetStudent(out Student s)
-        {
-            s = new Student();
-            if (string.IsNullOrWhiteSpace(Name) ||
-                string.IsNullOrWhiteSpace(Age) ||
-                string.IsNullOrWhiteSpace(Email))
+            if (option == null) return;
+            CurrentView = option.Name switch
             {
-                MessageBox.Show("Please fill in all fields.", "Validation",
-                    MessageBoxButton.OK, MessageBoxImage.Warning);
-                return false;
-            }
-            if (!int.TryParse(Age, out int age) || age <= 0)
-            {
-                MessageBox.Show("Age must be a positive number.", "Validation",
-                    MessageBoxButton.OK, MessageBoxImage.Warning);
-                return false;
-            }
-            s = new Student
-            {
-                Id = SelectedStudent?.Id ?? -1,
-                Name = Name.Trim(),
-                Age = age,
-                Email = Email.Trim()
+                "Category" => new CategoryControl(),
+                _ => null
             };
-            return true;
-        }
-
-        private void Add()
-        {
-            if (!TryGetStudent(out var s)) return;
-            if (_studentService.InsertStudent(s)) { ClearFields(); LoadData(); }
-        }
-
-        private void Update()
-        {
-            if (SelectedStudent == null)
-            { MessageBox.Show("Select a row first."); return; }
-            if (!TryGetStudent(out var s)) return;
-            if (_studentService.UpdateStudent(s)) { ClearFields(); LoadData(); }
-        }
-
-        private void Delete()
-        {
-            if (SelectedStudent == null)
-            { MessageBox.Show("Select a row first."); return; }
-            var r = MessageBox.Show("Delete this student?", "Confirm",
-                MessageBoxButton.YesNo, MessageBoxImage.Question);
-            if (r == MessageBoxResult.Yes && _studentService.DeleteStudent(SelectedStudent.Id))
-            { ClearFields(); LoadData(); }
         }
     }
 }
