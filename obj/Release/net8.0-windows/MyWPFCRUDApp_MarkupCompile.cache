@@ -1,5 +1,5 @@
 ﻿MyWPFCRUDApp
-1.2.5.0
+1.2.7.0
 
 winexe
 C#
@@ -12,7 +12,7 @@ TRACE;RELEASE;NET;NET8_0;NETCOREAPP;WINDOWS;WINDOWS7_0;NET5_0_OR_GREATER;NET6_0_
 E:\Mohua's_fashion\MyWPFCRUDApp\App.xaml
 41214378060
 
-21-1355836496
+211891106094
 206-573896450
 Views\CategoryControl.xaml;Views\MainWindow.xaml;Views\PasswordInputDialog.xaml;Views\SetupProgressWindow.xaml;
 

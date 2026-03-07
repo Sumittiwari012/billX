@@ -6,7 +6,8 @@
         Title="BillX" Height="680" Width="1100"
         WindowStartupLocation="CenterScreen"
         Background="#f0f0f0"
-        FontSize="15">
+        FontSize="15"
+        Icon="pack://application:,,,/BillXLogo.ico">
 
     <Window.Resources>
 

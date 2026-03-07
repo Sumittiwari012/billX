@@ -39,3 +39,6 @@ E:\Mohua's_fashion\MyWPFCRUDApp\obj\Release\net8.0-windows\Views\MainWindow.baml
 E:\Mohua's_fashion\MyWPFCRUDApp\obj\Release\net8.0-windows\Views\MainWindow.g.cs
 E:\Mohua's_fashion\MyWPFCRUDApp\obj\Release\net8.0-windows\Views\CategoryControl.baml
 E:\Mohua's_fashion\MyWPFCRUDApp\obj\Release\net8.0-windows\Views\CategoryControl.g.cs
+E:\Mohua's_fashion\MyWPFCRUDApp\obj\Release\net8.0-windows\GeneratedInternalTypeHelper.g.cs
+E:\Mohua's_fashion\MyWPFCRUDApp\obj\Release\net8.0-windows\MyWPFCRUDApp_MarkupCompile.lref
+E:\Mohua's_fashion\MyWPFCRUDApp\obj\Release\net8.0-windows\MyWPFCRUDApp.sourcelink.json

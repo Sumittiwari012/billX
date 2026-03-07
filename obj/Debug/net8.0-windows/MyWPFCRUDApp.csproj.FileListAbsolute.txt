@@ -1,5 +1,5 @@
-E:\Mohua's_fashion\MyWPFCRUDApp\bin\Debug\net8.0-windows\mysql-8.0.45-winx64.zip
 E:\Mohua's_fashion\MyWPFCRUDApp\bin\Debug\net8.0-windows\MyWPFCRUDApp.exe
+E:\Mohua's_fashion\MyWPFCRUDApp\bin\Debug\net8.0-windows\mysql-8.0.45-winx64.zip
 E:\Mohua's_fashion\MyWPFCRUDApp\bin\Debug\net8.0-windows\MyWPFCRUDApp.deps.json
 E:\Mohua's_fashion\MyWPFCRUDApp\bin\Debug\net8.0-windows\MyWPFCRUDApp.runtimeconfig.json
 E:\Mohua's_fashion\MyWPFCRUDApp\bin\Debug\net8.0-windows\MyWPFCRUDApp.dll

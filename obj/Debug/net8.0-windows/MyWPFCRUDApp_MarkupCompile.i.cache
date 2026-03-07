@@ -1,5 +1,5 @@
 ﻿MyWPFCRUDApp
-1.2.5.0
+1.2.7.0
 
 winexe
 C#
@@ -16,5 +16,5 @@ E:\Mohua's_fashion\MyWPFCRUDApp\App.xaml
 206-573896450
 Views\CategoryControl.xaml;Views\MainWindow.xaml;Views\PasswordInputDialog.xaml;Views\SetupProgressWindow.xaml;
 
-True
+False
 

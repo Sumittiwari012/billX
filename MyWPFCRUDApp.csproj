@@ -5,12 +5,11 @@
 		<Nullable>enable</Nullable>
 		<ImplicitUsings>enable</ImplicitUsings>
 		<UseWPF>true</UseWPF>
-		<ApplicationManifest>app.manifest</ApplicationManifest>
 
 		<!-- Auto-updater reads this to compare against GitHub release tag -->
-		<Version>1.2.7</Version>
-		<AssemblyVersion>1.2.7.0</AssemblyVersion>
-		<FileVersion>1.2.7.0</FileVersion>
+		<Version>1.2.10</Version>
+		<AssemblyVersion>1.2.10.0</AssemblyVersion>
+		<FileVersion>1.2.10.0</FileVersion>
 
 		<!-- Shown in Windows Add/Remove Programs -->
 		<Product>BillX</Product>
@@ -21,7 +20,12 @@
 		<CopyLocalLockFileAssemblies>true</CopyLocalLockFileAssemblies>
 		<SelfContained>false</SelfContained>
 		<PublishReadyToRun>false</PublishReadyToRun>
+		<ApplicationIcon>BillXLogo.ico</ApplicationIcon>
+		<ApplicationManifest>app.manifest</ApplicationManifest>
 	</PropertyGroup>
+	<ItemGroup>
+	  <Resource Include="BillXLogo.ico" />
+	</ItemGroup>
 
 	<ItemGroup>
 		<PackageReference Include="MySql.Data" Version="8.4.0" />
@@ -31,7 +35,7 @@
 	<!-- Copy MySQL ZIP to output folder so GetBundledZip() finds it next to .exe -->
 	<ItemGroup>
 		<None Update="mysql-8.0.45-winx64.zip">
-			<CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+			<CopyToOutputDirectory>Always</CopyToOutputDirectory>
 		</None>
 	</ItemGroup>
 	<ItemGroup>
