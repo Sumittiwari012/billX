@@ -52,7 +52,7 @@ namespace MyWPFCRUDApp.Views {
                 return;
             }
             _contentLoaded = true;
-            System.Uri resourceLocater = new System.Uri("/MyWPFCRUDApp;V1.2.7.0;component/views/setupprogresswindow.xaml", System.UriKind.Relative);
+            System.Uri resourceLocater = new System.Uri("/MyWPFCRUDApp;V1.2.10.0;component/views/setupprogresswindow.xaml", System.UriKind.Relative);
             
             #line 1 "..\..\..\..\Views\SetupProgressWindow.xaml"
             System.Windows.Application.LoadComponent(this, resourceLocater);

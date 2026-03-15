@@ -5,9 +5,12 @@
         xmlns:views="clr-namespace:MyWPFCRUDApp.Views"
         Title="BillX" Height="680" Width="1100"
         WindowStartupLocation="CenterScreen"
-        Background="#f0f0f0"
         FontSize="15"
-        Icon="pack://application:,,,/BillXLogo.ico">
+        Icon="pack://application:,,,/BillXLogo.ico"
+        ResizeMode="CanResize"
+        Background="#22FFFFFF" 
+        AllowsTransparency="True"
+        WindowStyle="None">
 
     <Window.Resources>
 
@@ -20,30 +23,31 @@
             <Setter Property="Foreground" Value="#b2bec3"/>
             <Setter Property="BorderThickness" Value="0"/>
             <Setter Property="Height" Value="52"/>
+            
             <Setter Property="Cursor" Value="Hand"/>
             <Setter Property="HorizontalContentAlignment" Value="Left"/>
             <Setter Property="Padding" Value="14,0,0,0"/>
             <Setter Property="FontSize" Value="15"/>
             <Style.Triggers>
                 <Trigger Property="IsMouseOver" Value="True">
-                    <Setter Property="Background" Value="#1e1e2e"/>
+                    <Setter Property="Background" Value="black"/>
                     <Setter Property="Foreground" Value="White"/>
                 </Trigger>
             </Style.Triggers>
         </Style>
 
         <Style x:Key="TopNavBtnStyle" TargetType="Button">
-            <Setter Property="Background" Value="White"/>
+            <Setter Property="Background" Value="#CCFFFFFF"/>
             <Setter Property="Foreground" Value="#2d3436"/>
             <Setter Property="BorderThickness" Value="1"/>
-            <Setter Property="BorderBrush" Value="#dfe6e9"/>
-            <Setter Property="Padding" Value="12,8"/>
-            <Setter Property="Margin" Value="0,0,8,0"/>
+            <Setter Property="BorderBrush" Value="#66dfe6e9"/>
+            <Setter Property="Width" Value="130"/>
+            <Setter Property="Height" Value="130"/>
+            <Setter Property="Margin" Value="0,0,15,15"/>
             <Setter Property="Cursor" Value="Hand"/>
-            <Setter Property="FontSize" Value="14"/>
             <Style.Triggers>
                 <Trigger Property="IsMouseOver" Value="True">
-                    <Setter Property="Background" Value="#11101d"/>
+                    <Setter Property="Background" Value="#EE11101d"/>
                     <Setter Property="Foreground" Value="White"/>
                 </Trigger>
             </Style.Triggers>
@@ -149,58 +153,66 @@
 
         <!-- ── MAIN CONTENT ── -->
         <DockPanel Grid.Column="1">
-
+            
             <!-- Section Title -->
             <Border DockPanel.Dock="Top"
-                    Background="#11101d"
-                    Padding="16,12">
-                <TextBlock Text="{Binding CurrentSectionTitle}"
-                           Foreground="White"
-                           FontSize="19"
-                           FontWeight="SemiBold"/>
+        Background="#11101d"
+        Padding="16,12"
+        MouseDown="Border_MouseDown">
+                <Grid>
+                    <TextBlock Text="{Binding CurrentSectionTitle}"
+                   Foreground="White"
+                   FontSize="19"
+                   FontWeight="SemiBold"
+                   HorizontalAlignment="Left"
+                   VerticalAlignment="Center"/>
+
+                    <StackPanel Orientation="Horizontal" HorizontalAlignment="Right">
+                        <Button Content="−" Style="{StaticResource SidebarBtnStyle}" Width="45" Height="32" Click="MinimizeBtn_Click"/>
+                        <Button Content="▢" Style="{StaticResource SidebarBtnStyle}" Width="45" Height="32" Click="MaximizeBtn_Click"/>
+                        <Button Content="✕" Style="{StaticResource SidebarBtnStyle}" Width="45" Height="32" Foreground="#ff7675" Click="CloseBtn_Click"/>
+                    </StackPanel>
+                </Grid>
             </Border>
 
             <!-- Top Nav Sub Options -->
             <Border DockPanel.Dock="Top"
-                    Background="White"
-                    BorderBrush="#dfe6e9"
-                    BorderThickness="0,0,0,1"
-                    Height="58"
-                    Padding="8,0">
-                <ScrollViewer HorizontalScrollBarVisibility="Auto"
-                              VerticalScrollBarVisibility="Disabled">
-                    <ItemsControl ItemsSource="{Binding SubOptions}"
-                                  VerticalAlignment="Center">
-                        <ItemsControl.ItemsPanel>
-                            <ItemsPanelTemplate>
-                                <StackPanel Orientation="Horizontal"
-                                            VerticalAlignment="Center"/>
-                            </ItemsPanelTemplate>
-                        </ItemsControl.ItemsPanel>
-                        <ItemsControl.ItemTemplate>
-                            <DataTemplate>
-                                <Button Style="{StaticResource TopNavBtnStyle}"
-                                        Command="{Binding DataContext.SelectOptionCommand,
-                                            RelativeSource={RelativeSource AncestorType=Window}}"
-                                        CommandParameter="{Binding}">
-                                    <StackPanel Orientation="Horizontal"
-                                                VerticalAlignment="Center">
-                                        <TextBlock Text="{Binding Icon}"
-                                                   FontSize="15"
-                                                   Margin="0,0,5,0"
-                                                   VerticalAlignment="Center"/>
-                                        <TextBlock Text="{Binding Name}"
-                                                   VerticalAlignment="Center"/>
-                                    </StackPanel>
-                                </Button>
-                            </DataTemplate>
-                        </ItemsControl.ItemTemplate>
-                    </ItemsControl>
-                </ScrollViewer>
+        Background="Transparent"
+        BorderBrush="Transparent"
+        BorderThickness="0,0,0,1"
+        MinHeight="58"
+        Padding="8,10">
+                <ItemsControl ItemsSource="{Binding SubOptions}">
+                    <ItemsControl.ItemsPanel>
+                        <ItemsPanelTemplate>
+                            <WrapPanel Orientation="Horizontal" />
+                        </ItemsPanelTemplate>
+                    </ItemsControl.ItemsPanel>
+                    <ItemsControl.ItemTemplate>
+                        <DataTemplate>
+                            <Button Style="{StaticResource TopNavBtnStyle}"
+                        Command="{Binding DataContext.SelectOptionCommand,
+                                  RelativeSource={RelativeSource AncestorType=Window}}"
+                        CommandParameter="{Binding}"
+                        Margin="0,0,8,8">
+                                <StackPanel Orientation="Vertical" HorizontalAlignment="Center">
+                                    <TextBlock Text="{Binding Icon}"
+                                   FontSize="25"
+                                   Margin="0,0,0,5"
+                                   HorizontalAlignment="Center"/>
+                                    <TextBlock Text="{Binding Name}"
+                                   FontSize="14"
+                                   FontWeight="SemiBold"
+                                   HorizontalAlignment="Center"/>
+                                </StackPanel>
+                            </Button>
+                        </DataTemplate>
+                    </ItemsControl.ItemTemplate>
+                </ItemsControl>
             </Border>
 
             <!-- Display Area -->
-            <Border Background="White"
+            <Border Background="Transparent"
                     Margin="12"
                     CornerRadius="8">
                 <ContentControl Content="{Binding CurrentView}"

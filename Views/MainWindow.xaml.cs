@@ -4,6 +4,7 @@ using System;
 using System.IO;
 using System.Threading.Tasks;
 using System.Windows;
+using System.Windows.Input;
 using WpfMySqlCrud;
 
 namespace MyWPFCRUDApp.Views
@@ -16,6 +17,10 @@ namespace MyWPFCRUDApp.Views
         {
             InitializeComponent();
             Loaded += MainWindow_Loaded;
+            this.Left = SystemParameters.WorkArea.Left;
+            this.Top = SystemParameters.WorkArea.Top;
+            this.Width = SystemParameters.WorkArea.Width;
+            this.Height = SystemParameters.WorkArea.Height;
         }
 
         private async void MainWindow_Loaded(object sender, RoutedEventArgs e)
@@ -158,6 +163,31 @@ namespace MyWPFCRUDApp.Views
             var dlg = new PasswordInputDialog();
             dlg.ShowDialog();
             return dlg.Confirmed ? dlg.EnteredPassword : string.Empty;
+        }
+        private void Border_MouseDown(object sender, MouseButtonEventArgs e)
+        {
+            if (e.ChangedButton == MouseButton.Left)
+            {
+                this.DragMove();
+            }
+        }
+
+        private void MinimizeBtn_Click(object sender, RoutedEventArgs e)
+        {
+            this.WindowState = WindowState.Minimized;
+        }
+
+        private void MaximizeBtn_Click(object sender, RoutedEventArgs e)
+        {
+            if (this.WindowState == WindowState.Maximized)
+                this.WindowState = WindowState.Normal;
+            else
+                this.WindowState = WindowState.Maximized;
+        }
+
+        private void CloseBtn_Click(object sender, RoutedEventArgs e)
+        {
+            this.Close();
         }
     }
 }
