@@ -170,11 +170,29 @@ namespace MyWPFCRUDApp.ViewModels
         private void SelectOption(SubOption option)
         {
             if (option == null) return;
-            CurrentView = option.Name switch
+            switch (option.Name)
             {
-                "Category" => new CategoryControl(),
-                _ => null
-            };
+                case "Company Info":
+                    // Set CurrentView to a new instance of your Company page
+                    CurrentView = new CompanyInfoViews();
+                    break;
+                case "Category":
+                    // Set CurrentView to a new instance of your Company page
+                    CurrentView = new CategoryViews();
+                    break;
+                case "Sub Category":
+                    // Set CurrentView to a new instance of your Company page
+                    CurrentView = new SubCategoryViews();
+                    break;
+                case "Unit Master":
+                    // Set CurrentView to a new instance of your Company page
+                    CurrentView = new UnitViews();
+                    break;
+                default:
+                    CurrentView = new MainWindow(); // Or a "Work In Progress" view
+                    break;
+            }
+
         }
     }
 }

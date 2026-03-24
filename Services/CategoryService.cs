@@ -1,5 +1,10 @@
 ﻿using MySql.Data.MySqlClient;
 using MyWPFCRUDApp.Models;
+using System;
+using System.Collections.Generic;
+using System.Linq;
+using System.Text;
+using System.Threading.Tasks;
 
 namespace MyWPFCRUDApp.Services
 {
@@ -7,59 +12,74 @@ namespace MyWPFCRUDApp.Services
     {
         private string Con => DatabaseHelper.ConnectionString;
 
-        // ─── CREATE ───────────────────────────────────────────────
-
         public bool InsertCategory(MCategory c)
         {
             using var conn = new MySqlConnection(Con);
             conn.Open();
-            var cmd = new MySqlCommand(
-                "INSERT INTO MCategory (CategoryName) VALUES (@name)", conn);
-            cmd.Parameters.AddWithValue("@name", c.CategoryName);
-            
+            var sql = @"INSERT INTO MCategory (
+                CategoryName
+            ) 
+            VALUES (
+                @CategoryName
+            )";
+
+            var cmd = new MySqlCommand(sql, conn);
+            cmd.Parameters.AddWithValue("@CategoryName", c.CategoryName);
+            cmd.Parameters.AddWithValue("@createdDate", DateTime.Now);
+            cmd.Parameters.AddWithValue("@modifiedDate", DateTime.Now);
+            cmd.Parameters.AddWithValue("@createdBy", "ADMIN");
+            cmd.Parameters.AddWithValue("@modifiedBy", "");
+
             return cmd.ExecuteNonQuery() > 0;
         }
-
-        // ─── READ ─────────────────────────────────────────────────
-        public List<MCategory> GetAllCategory()
+        public List<MCategory> GetCategory()
         {
             var list = new List<MCategory>();
             using var conn = new MySqlConnection(Con);
             conn.Open();
-            var cmd = new MySqlCommand("SELECT Id, CategoryName FROM MCategory", conn);
+            var cmd = new MySqlCommand("SELECT * FROM MCategory", conn);
             using var reader = cmd.ExecuteReader();
             while (reader.Read())
             {
                 list.Add(new MCategory
                 {
-                    Id = reader.GetInt64("Id"),
+                    Id = reader.GetInt32("Id"),
                     CategoryName = reader.GetString("CategoryName"),
-                    
                 });
             }
             return list;
         }
-
-        // ─── UPDATE ───────────────────────────────────────────────
         public bool UpdateCategory(MCategory c)
         {
             using var conn = new MySqlConnection(Con);
             conn.Open();
-            var cmd = new MySqlCommand(
-                "UPDATE MCategory SET CategoryName=@name WHERE Id=@id", conn);
-            cmd.Parameters.AddWithValue("@name", c.CategoryName);
-            cmd.Parameters.AddWithValue("@id", c.Id);
+            var sql = @"UPDATE MCategory SET 
+                CategoryName = @CategoryName, 
+                
+                ModifiedBy = @ModifiedBy,
+                ModifiedDate = CURRENT_TIMESTAMP
+            WHERE Id = @Id";
+
+            var cmd = new MySqlCommand(sql, conn);
+
+            // Primary Key for WHERE clause
+            cmd.Parameters.AddWithValue("@Id", c.Id);
+
+            // Basic Company Details
+            cmd.Parameters.AddWithValue("@CategoryName", c.CategoryName);
+
+            cmd.Parameters.AddWithValue("@ModifiedBy", "ADMIN");
 
             return cmd.ExecuteNonQuery() > 0;
         }
-
-        // ─── DELETE ───────────────────────────────────────────────
-        public bool DeleteCategory(long id)
+        public bool DeleteCategory(long Id)
         {
             using var conn = new MySqlConnection(Con);
             conn.Open();
-            var cmd = new MySqlCommand("DELETE FROM MCategory WHERE Id=@id", conn);
-            cmd.Parameters.AddWithValue("@id", id);
+            var sql = @"DELETE FROM MCategory WHERE Id = @Id";
+            var cmd = new MySqlCommand(sql, conn);
+            cmd.Parameters.AddWithValue("@Id", Id);
+            
             return cmd.ExecuteNonQuery() > 0;
         }
     }

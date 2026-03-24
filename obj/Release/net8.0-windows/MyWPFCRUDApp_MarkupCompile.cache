@@ -1,5 +1,5 @@
 ﻿MyWPFCRUDApp
-1.2.10.0
+1.2.11.0
 
 winexe
 C#
@@ -10,11 +10,11 @@ none
 false
 TRACE;RELEASE;NET;NET8_0;NETCOREAPP;WINDOWS;WINDOWS7_0;NET5_0_OR_GREATER;NET6_0_OR_GREATER;NET7_0_OR_GREATER;NET8_0_OR_GREATER;NETCOREAPP3_0_OR_GREATER;NETCOREAPP3_1_OR_GREATER;WINDOWS7_0_OR_GREATER
 E:\Mohua's_fashion\MyWPFCRUDApp\App.xaml
-41214378060
+7-1480015234
 
-211891106094
+33-409605954
 206-573896450
-Views\CategoryControl.xaml;Views\MainWindow.xaml;Views\PasswordInputDialog.xaml;Views\SetupProgressWindow.xaml;
+Views\CategoryViews.xaml;Views\CompanyInfoViews.xaml;Views\MainWindow.xaml;Views\PasswordInputDialog.xaml;Views\SetupProgressWindow.xaml;Views\SubCategoryViews.xaml;Views\UnitViews.xaml;
 
 False
 

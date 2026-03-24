@@ -14,9 +14,7 @@
 
     <Window.Resources>
 
-        <DataTemplate DataType="{x:Type vm:CategoryViewModel}">
-            <views:CategoryControl/>
-        </DataTemplate>
+        
 
         <Style x:Key="SidebarBtnStyle" TargetType="Button">
             <Setter Property="Background" Value="Transparent"/>
