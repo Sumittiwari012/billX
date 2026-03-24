@@ -139,7 +139,7 @@ namespace MyWPFCRUDApp.Services
 
     -- Foreign Key Constraints
     CONSTRAINT FK_Product_Category FOREIGN KEY (CategoryId) REFERENCES MCategory(Id),
-    CONSTRAINT FK_Product_SubCategory FOREIGN KEY (SubCategoryId) REFERENCES MSubCategory(Id)
+    CONSTRAINT FK_Product_SubCategory FOREIGN KEY (SubCategoryId) REFERENCES MSubCategory(Id),
     CONSTRAINT FK_Product_Unit FOREIGN KEY (UnitId) REFERENCES MUnit(Id)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;",
 
