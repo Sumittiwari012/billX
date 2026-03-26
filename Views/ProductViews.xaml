@@ -1,0 +1,133 @@
+﻿<UserControl x:Class="MyWPFCRUDApp.Views.ProductViews"
+             xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006" 
+             xmlns:d="http://schemas.microsoft.com/expression/blend/2008" 
+             mc:Ignorable="d" 
+             d:DesignHeight="700" d:DesignWidth="1000"
+             Background="GhostWhite">
+    <Grid Margin="10">
+        <Grid.ColumnDefinitions>
+            <ColumnDefinition Width="1*"/>
+            <ColumnDefinition Width="1.5*"/>
+        </Grid.ColumnDefinitions>
+
+        <GroupBox Header="Product Inventory" Margin="5">
+            <DataGrid ItemsSource="{Binding Products}" 
+                      SelectedItem="{Binding SelectedProduct}" 
+                      AutoGenerateColumns="False" 
+                      IsReadOnly="True"
+                      SelectionMode="Single"
+                      AlternatingRowBackground="#F0F0F0">
+                <DataGrid.Columns>
+                    <DataGridTextColumn Header="Barcode" Binding="{Binding Barcode}" Width="100"/>
+                    <DataGridTextColumn Header="Product Name" Binding="{Binding ProductName}" Width="*"/>
+                    <DataGridTextColumn Header="Stock" Binding="{Binding CurrentStock}" Width="60"/>
+                    <DataGridTextColumn Header="MRP" Binding="{Binding MRP, StringFormat={}{0:C}}" Width="80"/>
+                </DataGrid.Columns>
+            </DataGrid>
+        </GroupBox>
+
+        <ScrollViewer Grid.Column="1" VerticalScrollBarVisibility="Auto" Margin="5">
+            <StackPanel>
+                <GroupBox Header="Basic Identity" Margin="0,0,0,10">
+                    <UniformGrid Columns="2" Margin="5">
+                        <StackPanel Margin="5">
+                            <Label Content="Barcode (Unique)*"/>
+                            <TextBox Text="{Binding MProduct.Barcode, UpdateSourceTrigger=PropertyChanged}" Height="28"/>
+                        </StackPanel>
+                        <StackPanel Margin="5">
+                            <Label Content="Product Code"/>
+                            <TextBox Text="{Binding MProduct.ProductCode, UpdateSourceTrigger=PropertyChanged}" Height="28"/>
+                        </StackPanel>
+                        <StackPanel Margin="5" Grid.ColumnSpan="2">
+                            <Label Content="Product Name*"/>
+                            <TextBox Text="{Binding MProduct.ProductName, UpdateSourceTrigger=PropertyChanged}" Height="28"/>
+                        </StackPanel>
+                        <StackPanel Margin="5">
+                            <Label Content="Category*"/>
+                            <ComboBox ItemsSource="{Binding Categories}" 
+                                      SelectedItem="{Binding SelectedCategory}"
+                                      DisplayMemberPath="CategoryName" Height="28"/>
+                        </StackPanel>
+                        <StackPanel Margin="5">
+                            <Label Content="Sub-Category*"/>
+                            <ComboBox ItemsSource="{Binding FilteredSubCategories}" 
+                                      SelectedItem="{Binding SelectedSubCategory}"
+                                      DisplayMemberPath="SubCategoryName" Height="28"/>
+                        </StackPanel>
+                    </UniformGrid>
+                </GroupBox>
+
+                <GroupBox Header="Pricing &amp; Taxation" Margin="0,0,0,10">
+                    <Grid Margin="5">
+                        <Grid.ColumnDefinitions>
+                            <ColumnDefinition Width="*"/>
+                            <ColumnDefinition Width="*"/>
+                            <ColumnDefinition Width="*"/>
+                        </Grid.ColumnDefinitions>
+                        <Grid.RowDefinitions>
+                            <RowDefinition Height="Auto"/>
+                            <RowDefinition Height="Auto"/>
+                        </Grid.RowDefinitions>
+
+                        <StackPanel Grid.Row="0" Grid.Column="0" Margin="5">
+                            <Label Content="Purchase Price"/>
+                            <TextBox Text="{Binding MProduct.PurchasePrice}" Height="28"/>
+                        </StackPanel>
+                        <StackPanel Grid.Row="0" Grid.Column="1" Margin="5">
+                            <Label Content="Sale Price*"/>
+                            <TextBox Text="{Binding MProduct.RetailSalePrice}" Height="28" Background="#EEFFF0"/>
+                        </StackPanel>
+                        <StackPanel Grid.Row="0" Grid.Column="2" Margin="5">
+                            <Label Content="MRP*"/>
+                            <TextBox Text="{Binding MProduct.MRP}" Height="28" FontWeight="Bold"/>
+                        </StackPanel>
+
+                        <StackPanel Grid.Row="1" Grid.Column="0" Margin="5">
+                            <Label Content="CGST %"/>
+                            <TextBox Text="{Binding MProduct.CGST}" Height="28"/>
+                        </StackPanel>
+                        <StackPanel Grid.Row="1" Grid.Column="1" Margin="5">
+                            <Label Content="SGST %"/>
+                            <TextBox Text="{Binding MProduct.SGST}" Height="28"/>
+                        </StackPanel>
+                        <StackPanel Grid.Row="1" Grid.Column="2" Margin="5">
+                            <Label Content="Unit*"/>
+                            <ComboBox ItemsSource="{Binding Units}" 
+                                      SelectedItem="{Binding SelectedUnit}"
+                                      DisplayMemberPath="UnitName" Height="28"/>
+                        </StackPanel>
+                    </Grid>
+                </GroupBox>
+
+                <GroupBox Header="Attributes &amp; Inventory" Margin="0,0,0,10">
+                    <UniformGrid Columns="2" Margin="5">
+                        <StackPanel Margin="5">
+                            <Label Content="Size"/>
+                            <TextBox Text="{Binding MProduct.Size}" Height="28"/>
+                        </StackPanel>
+                        <StackPanel Margin="5">
+                            <Label Content="Colour"/>
+                            <TextBox Text="{Binding MProduct.Colour}" Height="28"/>
+                        </StackPanel>
+                        <StackPanel Margin="5">
+                            <Label Content="Rack Location"/>
+                            <TextBox Text="{Binding MProduct.Rack}" Height="28"/>
+                        </StackPanel>
+                        <StackPanel Margin="5">
+                            <Label Content="HSN Code"/>
+                            <TextBox Text="{Binding MProduct.HSNCode}" Height="28"/>
+                        </StackPanel>
+                    </UniformGrid>
+                </GroupBox>
+
+                <StackPanel Orientation="Horizontal" HorizontalAlignment="Right" Margin="0,10,5,30">
+                    <Button Content="Reset" Command="{Binding ProductResetCommand}" Width="80" Height="35" Margin="5"/>
+                    <Button Content="Delete" Command="{Binding ProductDeleteCommand}" Width="80" Height="35" Margin="5" Background="#FFFFEBEB" Foreground="DarkRed"/>
+                    <Button Content="Save Product" Command="{Binding ProductSaveCommand}" Width="150" Height="35" Margin="5" Background="#FF007ACC" Foreground="White" FontWeight="Bold"/>
+                </StackPanel>
+            </StackPanel>
+        </ScrollViewer>
+    </Grid>
+</UserControl>

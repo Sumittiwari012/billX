@@ -188,6 +188,18 @@ namespace MyWPFCRUDApp.ViewModels
                     // Set CurrentView to a new instance of your Company page
                     CurrentView = new UnitViews();
                     break;
+                case "Products":
+                    CurrentView = new ProductViews();
+                    break;
+                case "Customer":
+                    CurrentView = new CustomerViews();
+                    break;
+                case "Supplier":
+                    CurrentView = new SupplierViews();
+                    break;
+                case "Tax Category":
+                    CurrentView = new TaxCategoryViews();
+                    break;
                 default:
                     CurrentView = new MainWindow(); // Or a "Work In Progress" view
                     break;

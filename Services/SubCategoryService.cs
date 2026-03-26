@@ -96,5 +96,25 @@ namespace MyWPFCRUDApp.Services
 
             return cmd.ExecuteNonQuery() > 0;
         }
+        // Returns raw list for dropdown filtering by CategoryId
+        public List<MSubCategory> GetSubCategoryList()
+        {
+            var list = new List<MSubCategory>();
+            using var conn = new MySqlConnection(Con);
+            conn.Open();
+            var sql = "SELECT * FROM MSubCategory";
+            var cmd = new MySqlCommand(sql, conn);
+            using var reader = cmd.ExecuteReader();
+            while (reader.Read())
+            {
+                list.Add(new MSubCategory
+                {
+                    Id = reader.GetInt64("Id"),
+                    SubCategoryName = reader.GetString("SubCategoryName"),
+                    CategoryId = reader.GetInt64("CategoryId"),
+                });
+            }
+            return list;
+        }
     }
 }

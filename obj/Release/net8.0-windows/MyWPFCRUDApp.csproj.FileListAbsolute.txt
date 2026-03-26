@@ -47,3 +47,5 @@ E:\Mohua's_fashion\MyWPFCRUDApp\obj\Release\net8.0-windows\Views\SubCategoryView
 E:\Mohua's_fashion\MyWPFCRUDApp\obj\Release\net8.0-windows\Views\SubCategoryViews.g.cs
 E:\Mohua's_fashion\MyWPFCRUDApp\obj\Release\net8.0-windows\Views\UnitViews.g.cs
 E:\Mohua's_fashion\MyWPFCRUDApp\obj\Release\net8.0-windows\Views\UnitViews.baml
+E:\Mohua's_fashion\MyWPFCRUDApp\obj\Release\net8.0-windows\Views\ProductViews.baml
+E:\Mohua's_fashion\MyWPFCRUDApp\obj\Release\net8.0-windows\Views\ProductViews.g.cs

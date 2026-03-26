@@ -10,13 +10,25 @@
     <Compile Update="Views\CompanyInfoViews.xaml.cs">
       <SubType>Code</SubType>
     </Compile>
+    <Compile Update="Views\CustomerViews.xaml.cs">
+      <SubType>Code</SubType>
+    </Compile>
     <Compile Update="Views\PasswordInputDialog.xaml.cs">
+      <SubType>Code</SubType>
+    </Compile>
+    <Compile Update="Views\ProductViews.xaml.cs">
       <SubType>Code</SubType>
     </Compile>
     <Compile Update="Views\SetupProgressWindow.xaml.cs">
       <SubType>Code</SubType>
     </Compile>
     <Compile Update="Views\SubCategoryViews.xaml.cs">
+      <SubType>Code</SubType>
+    </Compile>
+    <Compile Update="Views\SupplierViews.xaml.cs">
+      <SubType>Code</SubType>
+    </Compile>
+    <Compile Update="Views\TaxCategoryViews.xaml.cs">
       <SubType>Code</SubType>
     </Compile>
     <Compile Update="Views\UnitViews.xaml.cs">

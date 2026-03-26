@@ -157,6 +157,80 @@ namespace MyWPFCRUDApp.Services
 
     -- Link back to Products
     CONSTRAINT FK_Quantity_Product FOREIGN KEY (Barcode) REFERENCES MProducts(Barcode) ON DELETE CASCADE
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;",
+        @"CREATE TABLE IF NOT EXISTS Customer (
+    -- BaseEntity Columns
+    Id BIGINT AUTO_INCREMENT PRIMARY KEY,
+    CreatedBy VARCHAR(100) DEFAULT 'System',
+    CreatedDate DATETIME DEFAULT CURRENT_TIMESTAMP,
+    ModifiedBy VARCHAR(100) DEFAULT 'System',
+    ModifiedDate DATETIME DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+
+    -- Basic Details
+    CustomerName VARCHAR(200) NOT NULL,
+    ContactPerson VARCHAR(100),
+    MobileNumber VARCHAR(15) NOT NULL,
+    Email VARCHAR(200),
+    GSTIN VARCHAR(50),
+
+    -- Address
+    Address VARCHAR(300),
+    City VARCHAR(100),
+    State VARCHAR(100),
+
+    -- Financials
+    OpeningBalance DECIMAL(18,2) DEFAULT 0.00,
+    CurrentBalance DECIMAL(18,2) DEFAULT 0.00,
+    AccountNumber VARCHAR(50),
+    BankName VARCHAR(200),
+    IFSCCode VARCHAR(20),
+
+    -- Metadata
+    IsActive TINYINT(1) DEFAULT 1
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;",
+
+@"CREATE TABLE IF NOT EXISTS MSupplier (
+    -- BaseEntity Columns
+    Id BIGINT AUTO_INCREMENT PRIMARY KEY,
+    CreatedBy VARCHAR(100) DEFAULT 'System',
+    CreatedDate DATETIME DEFAULT CURRENT_TIMESTAMP,
+    ModifiedBy VARCHAR(100) DEFAULT 'System',
+    ModifiedDate DATETIME DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+
+    -- Basic Details
+    SupplierName VARCHAR(200) NOT NULL,
+    ContactPerson VARCHAR(100),
+    MobileNumber VARCHAR(15) NOT NULL,
+    Email VARCHAR(200),
+    GSTIN VARCHAR(50),
+
+    -- Address
+    Address VARCHAR(300),
+    City VARCHAR(100),
+    State VARCHAR(100),
+
+    -- Financials
+    OpeningBalance DECIMAL(18,2) DEFAULT 0.00,
+    CurrentBalance DECIMAL(18,2) DEFAULT 0.00,
+    AccountNumber VARCHAR(50),
+    BankName VARCHAR(200),
+    IFSCCode VARCHAR(20),
+
+    -- Metadata
+    IsActive TINYINT(1) DEFAULT 1
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;",
+
+@"CREATE TABLE IF NOT EXISTS MTaxCategory (
+    -- BaseEntity Columns
+    Id BIGINT AUTO_INCREMENT PRIMARY KEY,
+    CreatedBy VARCHAR(100) DEFAULT 'System',
+    CreatedDate DATETIME DEFAULT CURRENT_TIMESTAMP,
+    ModifiedBy VARCHAR(100) DEFAULT 'System',
+    ModifiedDate DATETIME DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+
+    -- Tax Details
+    CategoryName VARCHAR(100) NOT NULL UNIQUE,
+    TaxPercentage INT NOT NULL
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;"
 
 
