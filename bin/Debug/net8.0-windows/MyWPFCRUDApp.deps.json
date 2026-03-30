@@ -6,7 +6,7 @@
   "compilationOptions": {},
   "targets": {
     ".NETCoreApp,Version=v8.0": {
-      "MyWPFCRUDApp/1.2.13": {
+      "MyWPFCRUDApp/1.2.14": {
         "dependencies": {
           "MySql.Data": "8.4.0"
         },
@@ -232,7 +232,7 @@
     }
   },
   "libraries": {
-    "MyWPFCRUDApp/1.2.13": {
+    "MyWPFCRUDApp/1.2.14": {
       "type": "project",
       "serviceable": false,
       "sha512": ""

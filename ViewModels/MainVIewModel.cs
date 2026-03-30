@@ -200,6 +200,9 @@ namespace MyWPFCRUDApp.ViewModels
                 case "Tax Category":
                     CurrentView = new TaxCategoryViews();
                     break;
+                case "Purchase Entry":
+                    CurrentView = new PurchaseViews();
+                    break;
                 default:
                     CurrentView = new MainWindow(); // Or a "Work In Progress" view
                     break;

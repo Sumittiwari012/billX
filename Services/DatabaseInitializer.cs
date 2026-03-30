@@ -219,6 +219,49 @@ namespace MyWPFCRUDApp.Services
     -- Metadata
     IsActive TINYINT(1) DEFAULT 1
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;",
+@"CREATE TABLE IF NOT EXISTS MPurchaseMaster (
+    -- Primary Key (Mapping as Id for consistency, though InvoiceNumber is unique)
+    Id BIGINT AUTO_INCREMENT PRIMARY KEY,
+    InvoiceNumber VARCHAR(100) NOT NULL UNIQUE, 
+    SupplierId BIGINT NOT NULL,
+    PurchaseDate DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    
+    -- Financials
+    TotalAmount DECIMAL(18,2) DEFAULT 0.00,
+    Discount DECIMAL(18,2) DEFAULT 0.00,
+    
+    -- Additional Info
+    PaymentMode VARCHAR(50), -- Cash, Credit, Online
+    Remarks TEXT,
+
+    -- Metadata (Keeping consistent with your other tables)
+    CreatedBy VARCHAR(100) DEFAULT 'System',
+    CreatedDate DATETIME DEFAULT CURRENT_TIMESTAMP,
+    ModifiedBy VARCHAR(100) DEFAULT 'System',
+    ModifiedDate DATETIME DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+
+    -- Relationship with Supplier
+    CONSTRAINT FK_PurchaseMaster_Supplier FOREIGN KEY (SupplierId) 
+    REFERENCES MSupplier(Id)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;",
+
+@"CREATE TABLE IF NOT EXISTS MPurchaseDetail (
+    Id BIGINT AUTO_INCREMENT PRIMARY KEY,
+    PurchaseMasterId BIGINT NOT NULL,
+    ProductId BIGINT NOT NULL,
+    
+    -- Item Specifics
+    Quantity DOUBLE NOT NULL DEFAULT 0,
+    PurchasePrice DECIMAL(18,2) NOT NULL DEFAULT 0.00,
+    AfterTaxation DECIMAL(18,2) NOT NULL DEFAULT 0.00,
+
+    -- Foreign Key Constraints
+    CONSTRAINT FK_PurchaseDetail_Master FOREIGN KEY (PurchaseMasterId) 
+    REFERENCES MPurchaseMaster(Id) ON DELETE CASCADE,
+    
+    CONSTRAINT FK_PurchaseDetail_Product FOREIGN KEY (ProductId) 
+    REFERENCES MProducts(Id)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;",
 
 @"CREATE TABLE IF NOT EXISTS MTaxCategory (
     -- BaseEntity Columns

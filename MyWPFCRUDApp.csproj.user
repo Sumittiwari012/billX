@@ -19,6 +19,9 @@
     <Compile Update="Views\ProductViews.xaml.cs">
       <SubType>Code</SubType>
     </Compile>
+    <Compile Update="Views\PurchaseViews.xaml.cs">
+      <SubType>Code</SubType>
+    </Compile>
     <Compile Update="Views\SetupProgressWindow.xaml.cs">
       <SubType>Code</SubType>
     </Compile>
