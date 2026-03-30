@@ -27,7 +27,7 @@
                 <StackPanel Grid.Column="0" Margin="5,0">
                     <Label Content="Supplier*" FontSize="11" FontWeight="Bold"/>
                     <DockPanel>
-                        <Button Content="+ New" Command="{Binding openAddSupplier}" DockPanel.Dock="Right" Padding="10,0" Margin="5,0,0,0"/>
+                        <Button Content="+ New" Command="{Binding OpenAddSupplierCommand}" DockPanel.Dock="Right" Padding="10,0" Margin="5,0,0,0"/>
                         <ComboBox ItemsSource="{Binding Suppliers}" 
                                   SelectedItem="{Binding SelectedSupplier}"
                                   DisplayMemberPath="SupplierName" Height="32" VerticalContentAlignment="Center"/>
@@ -50,7 +50,9 @@
                         <Label Content="SCAN BARCODE / SEARCH CODE" Foreground="#1971C2" FontWeight="ExtraBold" FontSize="10"/>
                         <TextBox x:Name="SearchBox" Height="32" BorderBrush="#A5D8FF" BorderThickness="2" VerticalContentAlignment="Center">
                             <TextBox.InputBindings>
-                                <KeyBinding Key="Enter" Command="{Binding AddItemCommand}" CommandParameter="{Binding ElementName=SearchBox, Path=Text}"/>
+                                <KeyBinding Key="Enter" 
+                    Command="{Binding BarcodeSearchCommand}" 
+                    CommandParameter="{Binding ElementName=SearchBox, Path=Text}"/>
                             </TextBox.InputBindings>
                         </TextBox>
                     </StackPanel>
@@ -58,31 +60,7 @@
             </Grid>
         </Border>
 
-        <GroupBox Header="Quick Add Product" Grid.Row="1" Margin="0,0,0,10" Padding="5">
-            <Grid>
-                <Grid.ColumnDefinitions>
-                    <ColumnDefinition Width="3*"/>
-                    <ColumnDefinition Width="1*"/>
-                    <ColumnDefinition Width="1*"/>
-                    <ColumnDefinition Width="Auto"/>
-                </Grid.ColumnDefinitions>
-
-                <StackPanel Margin="5,0">
-                    <Label Content="Select Product" FontSize="11"/>
-                    <ComboBox ItemsSource="{Binding Products}" SelectedItem="{Binding SelectedProduct}" DisplayMemberPath="ProductName" Height="28"/>
-                </StackPanel>
-                <StackPanel Grid.Column="1" Margin="5,0">
-                    <Label Content="Quantity" FontSize="11"/>
-                    <TextBox Text="{Binding NewItem.Quantity, UpdateSourceTrigger=PropertyChanged, TargetNullValue=''}" Height="28"/>
-                </StackPanel>
-                <StackPanel Grid.Column="2" Margin="5,0">
-                    <Label Content="Purchase Price" FontSize="11"/>
-                    <TextBox Text="{Binding NewItem.PurchasePrice, UpdateSourceTrigger=PropertyChanged, TargetNullValue=''}" Height="28"/>
-                </StackPanel>
-                <Button Grid.Column="3" Content="Add to List" Command="{Binding AddItemCommand}" 
-                        Background="#2F9E44" Foreground="White" FontWeight="Bold" Width="100" Height="28" VerticalAlignment="Bottom" Margin="5,0"/>
-            </Grid>
-        </GroupBox>
+        
 
         <GroupBox Header="Invoice Items" Grid.Row="2" Background="White">
             <DataGrid ItemsSource="{Binding PurchaseItems}" AutoGenerateColumns="False" IsReadOnly="True" AlternatingRowBackground="#F8F9FA" GridLinesVisibility="Horizontal" HorizontalGridLinesBrush="#E9ECEF">
@@ -98,7 +76,9 @@
                     </DataGridTextColumn>
 
                     <DataGridTextColumn Header="Price" Binding="{Binding PurchasePrice, StringFormat={}{0:C}}" Width="100"/>
-                    <DataGridTextColumn Header="Qty" Binding="{Binding Quantity}" Width="70"/>
+                    <DataGridTextColumn Header="Qty" 
+                    Binding="{Binding Quantity}" 
+                    Width="70"/>
 
                     <DataGridTextColumn Header="CGST %" Binding="{Binding Product.CGST, StringFormat={}{0}%}" Width="70"/>
                     <DataGridTextColumn Header="SGST %" Binding="{Binding Product.SGST, StringFormat={}{0}%}" Width="70"/>
@@ -117,8 +97,13 @@
                     <DataGridTemplateColumn Header="Action" Width="80">
                         <DataGridTemplateColumn.CellTemplate>
                             <DataTemplate>
-                                <Button Content="Remove" Command="{Binding DataContext.PurchaseDeleteCommand, RelativeSource={RelativeSource AncestorType=DataGrid}}" 
-                                        CommandParameter="{Binding}" Background="Transparent" BorderThickness="0" Foreground="#E03131" Cursor="Hand"/>
+                                <Button Content="Remove" 
+                    Command="{Binding DataContext.PurchaseDeleteCommand, RelativeSource={RelativeSource AncestorType=UserControl}}" 
+                    CommandParameter="{Binding}" 
+                    Background="Transparent" 
+                    BorderThickness="0" 
+                    Foreground="#E03131" 
+                    Cursor="Hand"/>
                             </DataTemplate>
                         </DataGridTemplateColumn.CellTemplate>
                     </DataGridTemplateColumn>

@@ -4,6 +4,12 @@
     <_LastSelectedProfileId>E:\Mohua%27s_fashion\MyWPFCRUDApp\Properties\PublishProfiles\FolderProfile.pubxml</_LastSelectedProfileId>
   </PropertyGroup>
   <ItemGroup>
+    <Compile Update="Views\AddProductWindow.xaml.cs">
+      <SubType>Code</SubType>
+    </Compile>
+    <Compile Update="Views\AddSupplierWindow.xaml.cs">
+      <SubType>Code</SubType>
+    </Compile>
     <Compile Update="Views\CategoryViews.xaml.cs">
       <SubType>Code</SubType>
     </Compile>

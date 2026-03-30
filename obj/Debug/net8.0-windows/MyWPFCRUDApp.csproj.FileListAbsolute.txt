@@ -57,3 +57,7 @@ E:\Mohua's_fashion\MyWPFCRUDApp\obj\Debug\net8.0-windows\Views\SupplierViews.g.c
 E:\Mohua's_fashion\MyWPFCRUDApp\obj\Debug\net8.0-windows\Views\TaxCategoryViews.g.cs
 E:\Mohua's_fashion\MyWPFCRUDApp\obj\Debug\net8.0-windows\Views\PurchaseViews.g.cs
 E:\Mohua's_fashion\MyWPFCRUDApp\obj\Debug\net8.0-windows\Views\PurchaseViews.baml
+E:\Mohua's_fashion\MyWPFCRUDApp\obj\Debug\net8.0-windows\Views\AddSupplierWindow.g.cs
+E:\Mohua's_fashion\MyWPFCRUDApp\obj\Debug\net8.0-windows\Views\AddSupplierWindow.baml
+E:\Mohua's_fashion\MyWPFCRUDApp\obj\Debug\net8.0-windows\Views\AddProductWindow.baml
+E:\Mohua's_fashion\MyWPFCRUDApp\obj\Debug\net8.0-windows\Views\AddProductWindow.g.cs

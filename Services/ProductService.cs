@@ -127,13 +127,13 @@ namespace MyWPFCRUDApp.Services
     HSNCode, PartGroup, Description, PurchasePrice, RetailSalePrice, 
     WholesalePrice, DiscountPercentage, CGST, SGST, CESS, MRP, 
     Godown, Rack, Batch, MfgDate, ExpDate, Size, Colour, 
-    IMEI1, IMEI2, createdDate, createdBy, modifiedBy, modifiedDate
+    IMEI1, IMEI2, CreatedDate, CreatedBy -- Match case sensitivity of SQL
 ) VALUES (
     @ProductCode, @ProductName, @Barcode, @CategoryId, @SubCategoryId, @UnitId,
     @HSNCode, @PartGroup, @Description, @PurchasePrice, @RetailSalePrice, 
     @WholesalePrice, @DiscountPercentage, @CGST, @SGST, @CESS, @MRP, 
     @Godown, @Rack, @Batch, @MfgDate, @ExpDate, @Size, @Colour, 
-    @IMEI1, @IMEI2, @createdDate, @createdBy, @modifiedBy, @modifiedDate
+    @IMEI1, @IMEI2, @CreatedDate, @CreatedBy
 )";
 
                 using var cmdProd = new MySqlCommand(productSql, conn, trans);

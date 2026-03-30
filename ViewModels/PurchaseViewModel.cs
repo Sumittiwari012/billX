@@ -1,6 +1,7 @@
 ﻿using MyWPFCRUDApp.Helpers;
 using MyWPFCRUDApp.Models;
 using MyWPFCRUDApp.Services;
+using MyWPFCRUDApp.Views;
 using System;
 using System.Collections.ObjectModel;
 using System.Linq;
@@ -22,6 +23,8 @@ namespace MyWPFCRUDApp.ViewModels
         public ICommand PurchaseDeleteCommand { get; }
         public ICommand PurchaseSaveCommand { get; }
         public ICommand PurchaseResetCommand { get; }
+        public ICommand BarcodeSearchCommand { get; }
+        public ICommand OpenAddSupplierCommand { get; }
 
         // --- Collections ---
         public ObservableCollection<MSupplier> Suppliers { get; set; }
@@ -82,8 +85,96 @@ namespace MyWPFCRUDApp.ViewModels
             PurchaseDeleteCommand = new RelayCommand(p => RemoveItemFromGrid(p as MPurchaseDetail));
             PurchaseSaveCommand = new RelayCommand(_ => SavePurchase());
             PurchaseResetCommand = new RelayCommand(_ => ResetForm());
-
+            BarcodeSearchCommand = new RelayCommand(p => HandleBarcodeSearch(p?.ToString()));
+            OpenAddSupplierCommand = new RelayCommand(_ => OpenSupplierWindow());
             InitializeData();
+        }
+        // Replace/Update these methods in PurchaseViewModel.cs
+
+        // Inside PurchaseViewModel.cs
+
+        // Replace these methods in your PurchaseViewModel.cs
+
+        private void HandleBarcodeSearch(string barcode)
+        {
+            if (string.IsNullOrWhiteSpace(barcode)) return;
+
+            // 1. Search in the local list (loaded from DB during InitializeData)
+            var product = Products.FirstOrDefault(p => p.Barcode == barcode || p.ProductCode == barcode);
+
+            if (product != null)
+            {
+                // 2. Product exists -> Add to cart or increment quantity
+                AddToCart(product);
+            }
+            else
+            {
+                // 3. Product not found -> Open Addition Window
+                var result = MessageBox.Show($"Barcode '{barcode}' not found. Create new product?",
+                                             "Product Missing", MessageBoxButton.YesNo);
+                if (result == MessageBoxResult.Yes)
+                {
+                    var addWin = new AddProductWindow(barcode); // Pass barcode to window
+                    addWin.Owner = Application.Current.MainWindow;
+                    if (addWin.ShowDialog() == true)
+                    {
+                        // Reload products from DB to get the new one
+                        Products = new ObservableCollection<MProducts>(_productService.GetProducts());
+                        var newProd = Products.FirstOrDefault(p => p.Barcode == barcode);
+                        if (newProd != null) AddToCart(newProd);
+                    }
+                }
+            }
+        }
+
+        private void AddToCart(MProducts product)
+        {
+            var existingItem = PurchaseItems.FirstOrDefault(i => i.ProductId == product.Id);
+
+            if (existingItem != null)
+            {
+                int index = PurchaseItems.IndexOf(existingItem);
+
+                existingItem.Quantity += 1;
+
+                decimal taxRate = (decimal)(product.CGST + product.SGST + product.CESS);
+                decimal subtotal = (decimal)existingItem.Quantity * existingItem.PurchasePrice;
+
+                existingItem.AfterTaxation = subtotal + (subtotal * taxRate / 100);
+
+                // FORCE UI REFRESH
+                PurchaseItems.RemoveAt(index);
+                PurchaseItems.Insert(index, existingItem);
+            }
+            else
+            {
+                decimal taxRate = (decimal)(product.CGST + product.SGST + product.CESS);
+
+                PurchaseItems.Add(new MPurchaseDetail
+                {
+                    ProductId = product.Id,
+                    Product = product,
+                    Quantity = 1,
+                    PurchasePrice = product.PurchasePrice,
+                    AfterTaxation = product.PurchasePrice + (product.PurchasePrice * taxRate / 100)
+                });
+            }
+
+            CalculateTotal();
+        }
+
+
+        private void OpenSupplierWindow()
+        {
+            var win = new AddSupplierWindow();
+            win.Owner = Application.Current.MainWindow;
+            if (win.ShowDialog() == true)
+            {
+                // Refresh list and select the new one
+                Suppliers = new ObservableCollection<MSupplier>(_supplierService.GetAllSuppliers());
+                OnPropertyChanged(nameof(Suppliers));
+                SelectedSupplier = Suppliers.FirstOrDefault(s => s.SupplierName == win.NewSupplier.SupplierName);
+            }
         }
 
         private void InitializeData()
@@ -104,26 +195,18 @@ namespace MyWPFCRUDApp.ViewModels
                 return;
             }
 
-            // Calculate AfterTaxation if needed (Simplified logic)
-            NewItem.AfterTaxation = NewItem.PurchasePrice * (decimal)NewItem.Quantity;
-            NewItem.Product = SelectedProduct; // For display in DataGrid
+            AddToCart(SelectedProduct);
 
-            PurchaseItems.Add(NewItem);
-
-            // Recalculate Master Total
-            CalculateTotal();
-
-            // Reset Item Entry Form
             NewItem = new MPurchaseDetail();
             SelectedProduct = null;
         }
 
         private void RemoveItemFromGrid(MPurchaseDetail item)
         {
-            if (item != null)
+            if (item != null && PurchaseItems.Contains(item))
             {
                 PurchaseItems.Remove(item);
-                CalculateTotal();
+                CalculateTotal(); // Updates Grand Total after removal
             }
         }
 

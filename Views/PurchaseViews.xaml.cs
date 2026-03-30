@@ -21,11 +21,25 @@ namespace MyWPFCRUDApp.Views
     /// </summary>
     public partial class PurchaseViews : UserControl
     {
+
         public PurchaseViews()
         {
             InitializeComponent();
             this.DataContext = new PurchaseViewModel();
-        }
 
+            SearchBox.KeyDown += (s, e) =>
+            {
+                if (e.Key == System.Windows.Input.Key.Enter)
+                {
+                    // Execute clearing after the ViewModel command has had time to process
+                    Dispatcher.BeginInvoke(new Action(() =>
+                    {
+                        SearchBox.Clear();
+                        SearchBox.Focus();
+                    }), System.Windows.Threading.DispatcherPriority.Background);
+                }
+            };
+        }
     }
+
 }
