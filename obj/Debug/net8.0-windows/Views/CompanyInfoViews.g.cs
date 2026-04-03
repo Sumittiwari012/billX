@@ -52,7 +52,7 @@ namespace MyWPFCRUDApp.Views {
                 return;
             }
             _contentLoaded = true;
-            System.Uri resourceLocater = new System.Uri("/MyWPFCRUDApp;V1.2.14.0;component/views/companyinfoviews.xaml", System.UriKind.Relative);
+            System.Uri resourceLocater = new System.Uri("/MyWPFCRUDApp;V1.2.16.0;component/views/companyinfoviews.xaml", System.UriKind.Relative);
             
             #line 1 "..\..\..\..\Views\CompanyInfoViews.xaml"
             System.Windows.Application.LoadComponent(this, resourceLocater);

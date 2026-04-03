@@ -17,10 +17,12 @@ namespace MyWPFCRUDApp.Views
         {
             InitializeComponent();
             Loaded += MainWindow_Loaded;
-            this.Left = SystemParameters.WorkArea.Left;
-            this.Top = SystemParameters.WorkArea.Top;
-            this.Width = SystemParameters.WorkArea.Width;
-            this.Height = SystemParameters.WorkArea.Height;
+
+            MaxHeight = SystemParameters.WorkArea.Height;
+            MaxWidth = SystemParameters.WorkArea.Width;
+
+            // Don't manually set Height/Width — let Maximized state handle it correctly
+            this.WindowState = WindowState.Maximized;
         }
 
         private async void MainWindow_Loaded(object sender, RoutedEventArgs e)
@@ -177,12 +179,25 @@ namespace MyWPFCRUDApp.Views
             this.WindowState = WindowState.Minimized;
         }
 
+        private double _normalLeft, _normalTop, _normalWidth, _normalHeight;
+
         private void MaximizeBtn_Click(object sender, RoutedEventArgs e)
         {
             if (this.WindowState == WindowState.Maximized)
+            {
                 this.WindowState = WindowState.Normal;
+                // Restore to a reasonable centered window
+                this.Width = 1100;
+                this.Height = 680;
+                this.Left = (SystemParameters.WorkArea.Width - 1100) / 2;
+                this.Top = (SystemParameters.WorkArea.Height - 680) / 2;
+            }
             else
+            {
+                this.Left = SystemParameters.WorkArea.Left;
+                this.Top = SystemParameters.WorkArea.Top;
                 this.WindowState = WindowState.Maximized;
+            }
         }
 
         private void CloseBtn_Click(object sender, RoutedEventArgs e)

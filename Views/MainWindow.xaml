@@ -8,45 +8,41 @@
         FontSize="15"
         Icon="pack://application:,,,/BillXLogo.ico"
         ResizeMode="CanResize"
-        Background="#22FFFFFF" 
-        AllowsTransparency="True"
+        Background="#F5F0E8"
         WindowStyle="None">
 
     <Window.Resources>
 
-        
-
         <Style x:Key="SidebarBtnStyle" TargetType="Button">
             <Setter Property="Background" Value="Transparent"/>
-            <Setter Property="Foreground" Value="#b2bec3"/>
+            <Setter Property="Foreground" Value="#8fa3c8"/>
             <Setter Property="BorderThickness" Value="0"/>
             <Setter Property="Height" Value="52"/>
-            
             <Setter Property="Cursor" Value="Hand"/>
             <Setter Property="HorizontalContentAlignment" Value="Left"/>
             <Setter Property="Padding" Value="14,0,0,0"/>
             <Setter Property="FontSize" Value="15"/>
             <Style.Triggers>
                 <Trigger Property="IsMouseOver" Value="True">
-                    <Setter Property="Background" Value="black"/>
+                    <Setter Property="Background" Value="#2C3E6B"/>
                     <Setter Property="Foreground" Value="White"/>
                 </Trigger>
             </Style.Triggers>
         </Style>
 
         <Style x:Key="TopNavBtnStyle" TargetType="Button">
-            <Setter Property="Background" Value="#CCFFFFFF"/>
-            <Setter Property="Foreground" Value="#2d3436"/>
-            <Setter Property="BorderThickness" Value="1"/>
-            <Setter Property="BorderBrush" Value="#66dfe6e9"/>
+            <Setter Property="Background" Value="#F5F0E8"/>
+            <Setter Property="Foreground" Value="#1B2A4A"/>
+            <Setter Property="BorderThickness" Value="0.5"/>
+            <Setter Property="BorderBrush" Value="#C4B99A"/>
             <Setter Property="Width" Value="130"/>
             <Setter Property="Height" Value="130"/>
-            <Setter Property="Margin" Value="0,0,15,15"/>
+            <Setter Property="Margin" Value="0,0,10,10"/>
             <Setter Property="Cursor" Value="Hand"/>
             <Style.Triggers>
                 <Trigger Property="IsMouseOver" Value="True">
-                    <Setter Property="Background" Value="#EE11101d"/>
-                    <Setter Property="Foreground" Value="White"/>
+                    <Setter Property="Background" Value="#1B2A4A"/>
+                    <Setter Property="Foreground" Value="#F5F0E8"/>
                 </Trigger>
             </Style.Triggers>
         </Style>
@@ -60,12 +56,15 @@
         </Grid.ColumnDefinitions>
 
         <!-- ── SIDEBAR ── -->
-        <Border Grid.Column="0" Background="#11101d">
+        <Border Grid.Column="0" Background="#1B2A4A">
             <ScrollViewer VerticalScrollBarVisibility="Auto">
                 <StackPanel>
 
                     <Button Style="{StaticResource SidebarBtnStyle}"
-                            Command="{Binding ToggleSidebarCommand}">
+                            Command="{Binding ToggleSidebarCommand}"
+                            BorderThickness="0,0,0,1"
+                            BorderBrush="#2e3f60"
+                            Height="56">
                         <StackPanel Orientation="Horizontal">
                             <TextBlock Text="☰" FontSize="20" Foreground="White"
                                        VerticalAlignment="Center"/>
@@ -79,7 +78,7 @@
                             Command="{Binding SelectSectionCommand}"
                             CommandParameter="master">
                         <StackPanel Orientation="Horizontal">
-                            <TextBlock Text="🏢" FontSize="18" VerticalAlignment="Center"/>
+                            <TextBlock Text="🏢" FontSize="16" VerticalAlignment="Center"/>
                             <TextBlock Text=" Master Entry" VerticalAlignment="Center"
                                        Visibility="{Binding SidebarTextVisibility}"/>
                         </StackPanel>
@@ -89,7 +88,7 @@
                             Command="{Binding SelectSectionCommand}"
                             CommandParameter="transaction">
                         <StackPanel Orientation="Horizontal">
-                            <TextBlock Text="💰" FontSize="18" VerticalAlignment="Center"/>
+                            <TextBlock Text="💰" FontSize="16" VerticalAlignment="Center"/>
                             <TextBlock Text=" Transactions" VerticalAlignment="Center"
                                        Visibility="{Binding SidebarTextVisibility}"/>
                         </StackPanel>
@@ -99,7 +98,7 @@
                             Command="{Binding SelectSectionCommand}"
                             CommandParameter="inventory">
                         <StackPanel Orientation="Horizontal">
-                            <TextBlock Text="📦" FontSize="18" VerticalAlignment="Center"/>
+                            <TextBlock Text="📦" FontSize="16" VerticalAlignment="Center"/>
                             <TextBlock Text=" Inventory" VerticalAlignment="Center"
                                        Visibility="{Binding SidebarTextVisibility}"/>
                         </StackPanel>
@@ -109,7 +108,7 @@
                             Command="{Binding SelectSectionCommand}"
                             CommandParameter="banking">
                         <StackPanel Orientation="Horizontal">
-                            <TextBlock Text="🏦" FontSize="18" VerticalAlignment="Center"/>
+                            <TextBlock Text="🏦" FontSize="16" VerticalAlignment="Center"/>
                             <TextBlock Text=" Banking" VerticalAlignment="Center"
                                        Visibility="{Binding SidebarTextVisibility}"/>
                         </StackPanel>
@@ -119,7 +118,7 @@
                             Command="{Binding SelectSectionCommand}"
                             CommandParameter="reports">
                         <StackPanel Orientation="Horizontal">
-                            <TextBlock Text="📊" FontSize="18" VerticalAlignment="Center"/>
+                            <TextBlock Text="📊" FontSize="16" VerticalAlignment="Center"/>
                             <TextBlock Text=" Reports" VerticalAlignment="Center"
                                        Visibility="{Binding SidebarTextVisibility}"/>
                         </StackPanel>
@@ -129,7 +128,7 @@
                             Command="{Binding SelectSectionCommand}"
                             CommandParameter="settings">
                         <StackPanel Orientation="Horizontal">
-                            <TextBlock Text="⚙️" FontSize="18" VerticalAlignment="Center"/>
+                            <TextBlock Text="⚙️" FontSize="16" VerticalAlignment="Center"/>
                             <TextBlock Text=" Settings" VerticalAlignment="Center"
                                        Visibility="{Binding SidebarTextVisibility}"/>
                         </StackPanel>
@@ -139,7 +138,7 @@
                             Command="{Binding SelectSectionCommand}"
                             CommandParameter="tax">
                         <StackPanel Orientation="Horizontal">
-                            <TextBlock Text="🧾" FontSize="18" VerticalAlignment="Center"/>
+                            <TextBlock Text="🧾" FontSize="16" VerticalAlignment="Center"/>
                             <TextBlock Text=" Tax" VerticalAlignment="Center"
                                        Visibility="{Binding SidebarTextVisibility}"/>
                         </StackPanel>
@@ -151,57 +150,56 @@
 
         <!-- ── MAIN CONTENT ── -->
         <DockPanel Grid.Column="1">
-            
-            <!-- Section Title -->
+
+            <!-- Title Bar -->
             <Border DockPanel.Dock="Top"
-        Background="#11101d"
-        Padding="16,12"
-        MouseDown="Border_MouseDown">
+                    Background="#1B2A4A"
+                    Padding="16,12"
+                    MouseDown="Border_MouseDown">
                 <Grid>
                     <TextBlock Text="{Binding CurrentSectionTitle}"
-                   Foreground="White"
-                   FontSize="19"
-                   FontWeight="SemiBold"
-                   HorizontalAlignment="Left"
-                   VerticalAlignment="Center"/>
-
+                               Foreground="White"
+                               FontSize="19"
+                               FontWeight="SemiBold"
+                               HorizontalAlignment="Left"
+                               VerticalAlignment="Center"/>
                     <StackPanel Orientation="Horizontal" HorizontalAlignment="Right">
                         <Button Content="−" Style="{StaticResource SidebarBtnStyle}" Width="45" Height="32" Click="MinimizeBtn_Click"/>
                         <Button Content="▢" Style="{StaticResource SidebarBtnStyle}" Width="45" Height="32" Click="MaximizeBtn_Click"/>
-                        <Button Content="✕" Style="{StaticResource SidebarBtnStyle}" Width="45" Height="32" Foreground="#ff7675" Click="CloseBtn_Click"/>
+                        <Button Content="✕" Style="{StaticResource SidebarBtnStyle}" Width="45" Height="32" Foreground="#e57373" Click="CloseBtn_Click"/>
                     </StackPanel>
                 </Grid>
             </Border>
 
             <!-- Top Nav Sub Options -->
             <Border DockPanel.Dock="Top"
-        Background="Transparent"
-        BorderBrush="Transparent"
-        BorderThickness="0,0,0,1"
-        MinHeight="58"
-        Padding="8,10">
+                    Background="#EDE8DC"
+                    BorderBrush="#C4B99A"
+                    BorderThickness="0,0,0,1"
+                    MinHeight="58"
+                    Padding="8,10">
                 <ItemsControl ItemsSource="{Binding SubOptions}">
                     <ItemsControl.ItemsPanel>
                         <ItemsPanelTemplate>
-                            <WrapPanel Orientation="Horizontal" />
+                            <WrapPanel Orientation="Horizontal"/>
                         </ItemsPanelTemplate>
                     </ItemsControl.ItemsPanel>
                     <ItemsControl.ItemTemplate>
                         <DataTemplate>
                             <Button Style="{StaticResource TopNavBtnStyle}"
-                        Command="{Binding DataContext.SelectOptionCommand,
-                                  RelativeSource={RelativeSource AncestorType=Window}}"
-                        CommandParameter="{Binding}"
-                        Margin="0,0,8,8">
+                                    Command="{Binding DataContext.SelectOptionCommand,
+                                              RelativeSource={RelativeSource AncestorType=Window}}"
+                                    CommandParameter="{Binding}"
+                                    Margin="0,0,8,8">
                                 <StackPanel Orientation="Vertical" HorizontalAlignment="Center">
                                     <TextBlock Text="{Binding Icon}"
-                                   FontSize="25"
-                                   Margin="0,0,0,5"
-                                   HorizontalAlignment="Center"/>
+                                               FontSize="22"
+                                               Margin="0,0,0,5"
+                                               HorizontalAlignment="Center"/>
                                     <TextBlock Text="{Binding Name}"
-                                   FontSize="14"
-                                   FontWeight="SemiBold"
-                                   HorizontalAlignment="Center"/>
+                                               FontSize="13"
+                                               FontWeight="SemiBold"
+                                               HorizontalAlignment="Center"/>
                                 </StackPanel>
                             </Button>
                         </DataTemplate>
@@ -210,14 +208,14 @@
             </Border>
 
             <!-- Display Area -->
-            <Border Background="Transparent"
+            <Border Background="#F5F0E8"
                     Margin="12"
-                    CornerRadius="8">
-                <ContentControl Content="{Binding CurrentView}"
-                                Margin="8"/>
+                    CornerRadius="8"
+                    BorderBrush="#C4B99A"
+                    BorderThickness="0.5">
+                <ContentControl Content="{Binding CurrentView}" Margin="8"/>
             </Border>
 
         </DockPanel>
-
     </Grid>
 </Window>
