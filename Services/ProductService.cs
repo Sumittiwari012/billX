@@ -38,6 +38,7 @@ namespace MyWPFCRUDApp.Services
             public double DiscountPercentage { get; set; }
             public double CGST { get; set; }
             public double SGST { get; set; }
+            public double IGST { get; set; }
             public double CESS { get; set; }
 
             // Details
@@ -97,6 +98,7 @@ namespace MyWPFCRUDApp.Services
                     MRP = reader.GetDecimal("MRP"),
                     DiscountPercentage = reader.GetDouble("DiscountPercentage"),
                     CGST = reader.GetDouble("CGST"),
+                    IGST = reader.GetDouble("IGST"),
                     SGST = reader.GetDouble("SGST"),
                     CESS = reader.GetDouble("CESS"),
                     HSNCode = reader["HSNCode"] == DBNull.Value ? null : reader.GetString("HSNCode"),
@@ -125,13 +127,13 @@ namespace MyWPFCRUDApp.Services
                 var productSql = @"INSERT INTO MProducts (
     ProductCode, ProductName, Barcode, CategoryId, SubCategoryId, UnitId, 
     HSNCode, PartGroup, Description, PurchasePrice, RetailSalePrice, 
-    WholesalePrice, DiscountPercentage, CGST, SGST, CESS, MRP, 
+    WholesalePrice, DiscountPercentage, CGST, SGST, IGST, CESS, MRP, 
     Godown, Rack, Batch, MfgDate, ExpDate, Size, Colour, 
     IMEI1, IMEI2, CreatedDate, CreatedBy -- Match case sensitivity of SQL
 ) VALUES (
     @ProductCode, @ProductName, @Barcode, @CategoryId, @SubCategoryId, @UnitId,
     @HSNCode, @PartGroup, @Description, @PurchasePrice, @RetailSalePrice, 
-    @WholesalePrice, @DiscountPercentage, @CGST, @SGST, @CESS, @MRP, 
+    @WholesalePrice, @DiscountPercentage, @CGST, @SGST, @IGST, @CESS, @MRP, 
     @Godown, @Rack, @Batch, @MfgDate, @ExpDate, @Size, @Colour, 
     @IMEI1, @IMEI2, @CreatedDate, @CreatedBy
 )";
@@ -151,6 +153,7 @@ namespace MyWPFCRUDApp.Services
                 cmdProd.Parameters.AddWithValue("@DiscountPercentage", p.DiscountPercentage);
                 cmdProd.Parameters.AddWithValue("@CGST", p.CGST);
                 cmdProd.Parameters.AddWithValue("@SGST", p.SGST);
+                cmdProd.Parameters.AddWithValue("@IGST", p.IGST);
                 cmdProd.Parameters.AddWithValue("@UnitId", p.UnitId);
                 cmdProd.Parameters.AddWithValue("@CESS", p.CESS);
                 cmdProd.Parameters.AddWithValue("@MRP", p.MRP);
@@ -214,6 +217,7 @@ namespace MyWPFCRUDApp.Services
                     MRP                = @MRP,
                     CGST               = @CGST,
                     SGST               = @SGST,
+                    IGST               = @IGST,
                     CESS               = @CESS,
                     Batch              = @Batch,
                     ExpDate            = @ExpDate,
@@ -236,6 +240,7 @@ namespace MyWPFCRUDApp.Services
                 cmd.Parameters.AddWithValue("@WholesalePrice", p.WholesalePrice);
                 cmd.Parameters.AddWithValue("@MRP", p.MRP);
                 cmd.Parameters.AddWithValue("@CGST", p.CGST);
+                cmd.Parameters.AddWithValue("@IGST", p.IGST);
                 cmd.Parameters.AddWithValue("@SGST", p.SGST);
                 cmd.Parameters.AddWithValue("@CESS", p.CESS);
                 cmd.Parameters.AddWithValue("@Batch", p.Batch ?? (object)DBNull.Value);
@@ -329,6 +334,7 @@ namespace MyWPFCRUDApp.Services
                     CGST = Convert.ToDouble(reader["CGST"]),
                     SGST = Convert.ToDouble(reader["SGST"]),
                     CESS = Convert.ToDouble(reader["CESS"]),
+                    IGST = Convert.ToDouble(reader["IGST"]),
                     MRP = Convert.ToDecimal(reader["MRP"]),
                     Godown = reader["Godown"] == DBNull.Value ? null : reader["Godown"].ToString(),
                     Rack = reader["Rack"] == DBNull.Value ? null : reader["Rack"].ToString(),
@@ -378,6 +384,7 @@ namespace MyWPFCRUDApp.Services
                 ExpDate = reader["ExpDate"] == DBNull.Value ? null : Convert.ToDateTime(reader["ExpDate"]),
                 CGST = Convert.ToDouble(reader["CGST"]),
                 SGST = Convert.ToDouble(reader["SGST"]),
+                IGST = Convert.ToDouble(reader["IGST"]),
             };
         }
 
@@ -408,6 +415,7 @@ namespace MyWPFCRUDApp.Services
                 Colour = reader["Colour"] == DBNull.Value ? null : reader["Colour"].ToString(),
                 CGST = Convert.ToDouble(reader["CGST"]),
                 SGST = Convert.ToDouble(reader["SGST"]),
+                IGST = Convert.ToDouble(reader["IGST"]),
             };
         }
 

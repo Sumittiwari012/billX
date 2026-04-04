@@ -45,6 +45,8 @@ namespace MyWPFCRUDApp.Models
         public double DiscountPercentage { get; set; }
         public double CGST { get; set; }
         public double SGST { get; set; }
+
+        public double IGST { get; set; }
         public double CESS { get; set; }
 
         [Column(TypeName = "decimal(18,2)")]

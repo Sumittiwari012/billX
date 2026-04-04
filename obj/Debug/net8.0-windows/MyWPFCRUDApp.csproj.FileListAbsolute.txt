@@ -61,3 +61,7 @@ E:\Mohua's_fashion\MyWPFCRUDApp\obj\Debug\net8.0-windows\Views\AddSupplierWindow
 E:\Mohua's_fashion\MyWPFCRUDApp\obj\Debug\net8.0-windows\Views\AddSupplierWindow.baml
 E:\Mohua's_fashion\MyWPFCRUDApp\obj\Debug\net8.0-windows\Views\AddProductWindow.baml
 E:\Mohua's_fashion\MyWPFCRUDApp\obj\Debug\net8.0-windows\Views\AddProductWindow.g.cs
+E:\Mohua's_fashion\MyWPFCRUDApp\bin\Debug\net8.0-windows\ExcelDataReader.dll
+E:\Mohua's_fashion\MyWPFCRUDApp\bin\Debug\net8.0-windows\ExcelDataReader.DataSet.dll
+E:\Mohua's_fashion\MyWPFCRUDApp\obj\Debug\net8.0-windows\Views\ExcelMappingWindow.baml
+E:\Mohua's_fashion\MyWPFCRUDApp\obj\Debug\net8.0-windows\Views\ExcelMappingWindow.g.cs

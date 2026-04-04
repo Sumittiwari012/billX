@@ -49,7 +49,7 @@
                     <!-- Header Row -->
                     <StackPanel Orientation="Horizontal">
                         <TextBlock Text="Barcode" Width="120" Margin="5" FontWeight="Bold"/>
-                        <TextBlock Text="Code" Width="120" Margin="5" FontWeight="Bold"/>
+                        <TextBlock Text="Product Code" Width="120" Margin="5" FontWeight="Bold"/>
                         <TextBlock Text="Product Name" Width="180" Margin="5" FontWeight="Bold"/>
                         <TextBlock Text="Category" Width="150" Margin="5" FontWeight="Bold"/>
                         <TextBlock Text="SubCategory" Width="150" Margin="5" FontWeight="Bold"/>
@@ -58,6 +58,7 @@
                         <TextBlock Text="MRP" Width="100" Margin="5" FontWeight="Bold"/>
                         <TextBlock Text="CGST" Width="80" Margin="5" FontWeight="Bold"/>
                         <TextBlock Text="SGST" Width="80" Margin="5" FontWeight="Bold"/>
+                        <TextBlock Text="IGST" Width="80" Margin="5" FontWeight="Bold"/>
                         <TextBlock Text="Unit" Width="120" Margin="5" FontWeight="Bold"/>
                         <TextBlock Text="Size" Width="80" Margin="5" FontWeight="Bold"/>
                         <TextBlock Text="Colour" Width="100" Margin="5" FontWeight="Bold"/>
@@ -101,6 +102,8 @@
 
                         <TextBox Width="80" Margin="5"
                          Text="{Binding MProduct.SGST}" />
+                        <TextBox Width="80" Margin="5"
+                        Text="{Binding MProduct.IGST}" />
 
                         <ComboBox Width="120" Margin="5"
                           ItemsSource="{Binding Units}"
@@ -149,6 +152,7 @@
                 <DataGridTextColumn Header="MRP" Binding="{Binding MRP}" Width="100"/>
                 <DataGridTextColumn Header="CGST" Binding="{Binding CGST}" Width="80"/>
                 <DataGridTextColumn Header="SGST" Binding="{Binding SGST}" Width="80"/>
+                <DataGridTextColumn Header="IGST" Binding="{Binding IGST}" Width="80"/>
                 <DataGridTextColumn Header="Unit" Binding="{Binding UnitName}" Width="100"/>
                 <DataGridTextColumn Header="Size" Binding="{Binding Size}" Width="80"/>
                 <DataGridTextColumn Header="Colour" Binding="{Binding Colour}" Width="100"/>
@@ -186,6 +190,12 @@
                     Background="#FF1F3A5F"
                     Foreground="White"
                     FontWeight="Bold"/>
+            <Button Content="Import from Excel"
+                Command="{Binding ImportExcelCommand}"
+                Background="#FF27AE60"
+                Foreground="White"
+                Width="140" Height="35" Margin="5"
+                FontWeight="Bold"/> 
         </StackPanel>
     </Grid>
 </UserControl>

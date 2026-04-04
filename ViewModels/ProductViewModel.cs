@@ -1,9 +1,14 @@
-﻿using MyWPFCRUDApp.Helpers;
+﻿using ExcelDataReader;
+using Microsoft.Win32;
+using MyWPFCRUDApp.Helpers;
 using MyWPFCRUDApp.Models;
 using MyWPFCRUDApp.Services;
 using System.Collections.Generic;
 using System.Collections.ObjectModel;
+using System.Data;
+using System.IO;
 using System.Linq;
+using System.Windows;
 using System.Windows.Input;
 using static MyWPFCRUDApp.Services.ProductService;
 using static MyWPFCRUDApp.Services.SubCategoryService;
@@ -16,7 +21,7 @@ namespace MyWPFCRUDApp.ViewModels
         public ICommand ProductSaveCommand { get; }
         public ICommand ProductDeleteCommand { get; }
         public ICommand ProductResetCommand { get; }
-
+        public ICommand ImportExcelCommand => new RelayCommand(_ => ExecuteImportWizard());
         // ─── Services ──────────────────────────────────────────────────────────
         private readonly ProductService _productService;
         private readonly CategoryService _categoryService;
@@ -31,6 +36,16 @@ namespace MyWPFCRUDApp.ViewModels
             set => SetProperty(ref _products, value);
         }
 
+        private ObservableCollection<string> _excelHeaders;
+        public ObservableCollection<string> ExcelHeaders
+        {
+            get => _excelHeaders;
+            set => SetProperty(ref _excelHeaders, value);
+        }
+
+        public ObservableCollection<ColumnMapping> Mappings { get; set; } = new();
+
+        
         // ─── Selected Row ──────────────────────────────────────────────────────
         private ProductDisplayModel _selectedProduct;
         public ProductDisplayModel SelectedProduct
@@ -57,6 +72,7 @@ namespace MyWPFCRUDApp.ViewModels
                         DiscountPercentage = value.DiscountPercentage,
                         CGST = value.CGST,
                         SGST = value.SGST,
+                        IGST = value.IGST,
                         CESS = value.CESS,
                         HSNCode = value.HSNCode,
                         PartGroup = value.PartGroup,
@@ -268,6 +284,131 @@ namespace MyWPFCRUDApp.ViewModels
             SelectedSubCategory = null;
             SelectedUnit = null;
             FilteredSubCategories = new ObservableCollection<MSubCategory>();
+        }
+        private void ExecuteImportWizard()
+        {
+            var openFileDialog = new OpenFileDialog { Filter = "Excel Files|*.xls;*.xlsx;*.xlsm" };
+            if (openFileDialog.ShowDialog() != true) return;
+
+            try
+            {
+                System.Text.Encoding.RegisterProvider(System.Text.CodePagesEncodingProvider.Instance);
+                using var stream = File.Open(openFileDialog.FileName, FileMode.Open, FileAccess.Read);
+                using var reader = ExcelReaderFactory.CreateReader(stream);
+                var result = reader.AsDataSet();
+                DataTable dt = result.Tables[0];
+
+                // 1. Setup Excel Headers with the "None" option
+                var headers = new List<string> { "[ None ]" };
+                foreach (DataColumn col in dt.Columns)
+                {
+                    var headerName = dt.Rows[0][col]?.ToString();
+                    if (!string.IsNullOrEmpty(headerName)) headers.Add(headerName);
+                }
+                ExcelHeaders = new ObservableCollection<string>(headers);
+
+                // 2. DYNAMIC MAPPING: Scan MProducts for all properties
+                Mappings.Clear();
+                var properties = typeof(MProducts).GetProperties();
+
+                foreach (var prop in properties)
+                {
+                    // Skip complex objects (like MCategory, MSubCategory) and only map basic types
+                    if (prop.PropertyType.IsPrimitive ||
+                        prop.PropertyType == typeof(string) ||
+                        prop.PropertyType == typeof(decimal) ||
+                        prop.PropertyType == typeof(double) ||
+                        prop.PropertyType == typeof(DateTime) ||
+                        prop.PropertyType == typeof(DateTime?) ||
+                        prop.PropertyType == typeof(long))
+                    {
+                        // Ignore BaseEntity fields like CreatedBy, ModifiedBy
+                        if (prop.Name == "Id" || prop.Name.Contains("Date") || prop.Name.Contains("By")) continue;
+
+                        var map = new ColumnMapping
+                        {
+                            DbPropertyName = prop.Name,
+                            DisplayName = prop.Name, // This will be the nomenclature used in your C# class
+                            SelectedExcelColumn = "[ None ]"
+                        };
+
+                        // Smart Auto-Mapping: Match nomenclature even if casing/spacing differs
+                        map.SelectedExcelColumn = ExcelHeaders.FirstOrDefault(h =>
+                            h.Replace(" ", "").Replace("_", "").ToLower() ==
+                            prop.Name.ToLower()) ?? "[ None ]";
+
+                        Mappings.Add(map);
+                    }
+                }
+
+                // 3. Open Mapping Window
+                var mappingWin = new MyWPFCRUDApp.Views.ExcelMappingWindow(this);
+                if (mappingWin.ShowDialog() == true)
+                {
+                    ProcessExcelData(dt);
+                }
+            }
+            catch (Exception ex) { MessageBox.Show("Selection Error: " + ex.Message); }
+        }
+
+        private void ProcessExcelData(DataTable dt)
+        {
+            int successCount = 0;
+            var productType = typeof(MProducts);
+
+            // Skip row 0 (headers)
+            for (int i = 1; i < dt.Rows.Count; i++)
+            {
+                var dr = dt.Rows[i];
+                var p = new MProducts();
+
+                foreach (var map in Mappings)
+                {
+                    if (string.IsNullOrEmpty(map.SelectedExcelColumn) || map.SelectedExcelColumn == "[ None ]")
+                        continue;
+
+                    int colIdx = ExcelHeaders.IndexOf(map.SelectedExcelColumn) - 1;
+                    var val = dr[colIdx]?.ToString();
+
+                    if (string.IsNullOrWhiteSpace(val)) continue;
+
+                    // Find the property by the nomenclature defined in the mapping
+                    var prop = productType.GetProperty(map.DbPropertyName);
+                    if (prop != null && prop.CanWrite)
+                    {
+                        try
+                        {
+                            // Handle type conversions dynamically based on the Property Type
+                            object convertedVal = null;
+                            var targetType = Nullable.GetUnderlyingType(prop.PropertyType) ?? prop.PropertyType;
+
+                            if (targetType == typeof(decimal)) convertedVal = decimal.Parse(val);
+                            else if (targetType == typeof(double)) convertedVal = double.Parse(val);
+                            else if (targetType == typeof(long)) convertedVal = long.Parse(val);
+                            else if (targetType == typeof(int)) convertedVal = int.Parse(val);
+                            else if (targetType == typeof(DateTime)) convertedVal = DateTime.Parse(val);
+                            else convertedVal = val;
+
+                            prop.SetValue(p, convertedVal);
+                        }
+                        catch { /* Log conversion error for specific cell */ }
+                    }
+                }
+
+                // Final Safety: Ensure required IDs are set
+                if (p.CategoryId == 0) p.CategoryId = Categories.FirstOrDefault()?.Id ?? 0;
+                if (p.SubCategoryId == 0) p.SubCategoryId = _allSubCategories.FirstOrDefault()?.Id ?? 0;
+                if (p.UnitId == 0) p.UnitId = Units.FirstOrDefault()?.Id ?? 0;
+
+                // Save
+                if (!string.IsNullOrEmpty(p.ProductName) && !string.IsNullOrEmpty(p.Barcode))
+                {
+                    if (_productService.InsertProduct(p)) successCount++;
+                }
+            }
+
+            MessageBox.Show($"{successCount} products imported successfully.");
+            LoadData();
         }
     }
 }

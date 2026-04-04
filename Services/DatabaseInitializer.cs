@@ -122,6 +122,7 @@ namespace MyWPFCRUDApp.Services
     DiscountPercentage DOUBLE DEFAULT 0.0,
     CGST DOUBLE DEFAULT 0.0,
     SGST DOUBLE DEFAULT 0.0,
+    IGST DOUBLE DEFAULT 0.0,
     CESS DOUBLE DEFAULT 0.0,
     MRP DECIMAL(18,2) DEFAULT 0.00,
 
@@ -284,6 +285,66 @@ namespace MyWPFCRUDApp.Services
 
             foreach (var sql in tables)
                 new MySqlCommand(sql, conn).ExecuteNonQuery();
+            RunMigrations();
         }
+        private static void EnsureMigrationTable(MySqlConnection conn)
+        {
+            string sql = @"CREATE TABLE IF NOT EXISTS __DbMigrations (
+        Id INT AUTO_INCREMENT PRIMARY KEY,
+        MigrationName VARCHAR(255) UNIQUE,
+        AppliedDate DATETIME DEFAULT CURRENT_TIMESTAMP
+    );";
+            new MySqlCommand(sql, conn).ExecuteNonQuery();
+        }
+        public static void RunMigrations()
+        {
+            using var conn = new MySqlConnection(DatabaseHelper.ConnectionString);
+            conn.Open();
+            EnsureMigrationTable(conn);
+
+            // List all your changes here in order
+            var migrations = new Dictionary<string, string>
+    {
+        { "Add_IGST_To_MProducts", "ALTER TABLE MProducts ADD COLUMN IGST DOUBLE DEFAULT 0.0 AFTER SGST;" },
+        
+        // Future changes go here:
+        // { "Remove_OldColumn", "ALTER TABLE MProducts DROP COLUMN OldColumn;" }
+    };
+
+            foreach (var migration in migrations)
+            {
+                if (!IsMigrationApplied(conn, migration.Key))
+                {
+                    try
+                    {
+                        using var cmd = new MySqlCommand(migration.Value, conn);
+                        cmd.ExecuteNonQuery();
+                        RecordMigration(conn, migration.Key);
+                        System.Diagnostics.Debug.WriteLine($"Applied migration: {migration.Key}");
+                    }
+                    catch (Exception ex)
+                    {
+                        // Log the error but don't stop the app from working if possible
+                        System.Diagnostics.Debug.WriteLine($"Migration {migration.Key} failed: {ex.Message}");
+                    }
+                }
+            }
+        }
+
+        private static bool IsMigrationApplied(MySqlConnection conn, string name)
+        {
+            using var cmd = new MySqlCommand("SELECT COUNT(*) FROM __DbMigrations WHERE MigrationName = @name", conn);
+            cmd.Parameters.AddWithValue("@name", name);
+            return Convert.ToInt64(cmd.ExecuteScalar()) > 0;
+        }
+
+        private static void RecordMigration(MySqlConnection conn, string name)
+        {
+            using var cmd = new MySqlCommand("INSERT INTO __DbMigrations (MigrationName) VALUES (@name)", conn);
+            cmd.Parameters.AddWithValue("@name", name);
+            cmd.ExecuteNonQuery();
+        }
+
     }
+
 }

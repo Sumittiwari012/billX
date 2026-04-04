@@ -19,6 +19,9 @@
     <Compile Update="Views\CustomerViews.xaml.cs">
       <SubType>Code</SubType>
     </Compile>
+    <Compile Update="Views\ExcelMappingWindow.xaml.cs">
+      <SubType>Code</SubType>
+    </Compile>
     <Compile Update="Views\PasswordInputDialog.xaml.cs">
       <SubType>Code</SubType>
     </Compile>
