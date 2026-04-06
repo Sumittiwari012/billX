@@ -18,8 +18,11 @@ namespace MyWPFCRUDApp.Views
             InitializeComponent();
             Loaded += MainWindow_Loaded;
 
-            MaxHeight = SystemParameters.WorkArea.Height;
-            MaxWidth = SystemParameters.WorkArea.Width;
+            WindowState = WindowState.Normal;
+            Left = SystemParameters.WorkArea.Left;
+            Top = SystemParameters.WorkArea.Top;
+            MaxHeight = SystemParameters.MaximizedPrimaryScreenHeight;
+            MaxWidth = SystemParameters.MaximizedPrimaryScreenWidth;
 
             // Don't manually set Height/Width — let Maximized state handle it correctly
             this.WindowState = WindowState.Maximized;

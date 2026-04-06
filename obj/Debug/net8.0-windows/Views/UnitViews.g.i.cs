@@ -53,7 +53,7 @@ namespace MyWPFCRUDApp.Views {
                 return;
             }
             _contentLoaded = true;
-            System.Uri resourceLocater = new System.Uri("/MyWPFCRUDApp;V1.2.17.0;component/views/unitviews.xaml", System.UriKind.Relative);
+            System.Uri resourceLocater = new System.Uri("/MyWPFCRUDApp;V1.2.18.0;component/views/unitviews.xaml", System.UriKind.Relative);
             
             #line 1 "..\..\..\..\Views\UnitViews.xaml"
             System.Windows.Application.LoadComponent(this, resourceLocater);

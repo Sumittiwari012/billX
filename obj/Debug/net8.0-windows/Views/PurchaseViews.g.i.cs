@@ -61,7 +61,7 @@ namespace MyWPFCRUDApp.Views {
                 return;
             }
             _contentLoaded = true;
-            System.Uri resourceLocater = new System.Uri("/MyWPFCRUDApp;V1.2.17.0;component/views/purchaseviews.xaml", System.UriKind.Relative);
+            System.Uri resourceLocater = new System.Uri("/MyWPFCRUDApp;V1.2.19.0;component/views/purchaseviews.xaml", System.UriKind.Relative);
             
             #line 1 "..\..\..\..\Views\PurchaseViews.xaml"
             System.Windows.Application.LoadComponent(this, resourceLocater);
