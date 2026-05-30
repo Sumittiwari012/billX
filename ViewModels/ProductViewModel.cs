@@ -1,4 +1,5 @@
-﻿using ExcelDataReader;
+using ClosedXML.Excel;
+using ExcelDataReader;
 using Microsoft.Win32;
 using MyWPFCRUDApp.Helpers;
 using MyWPFCRUDApp.Models;
@@ -21,7 +22,11 @@ namespace MyWPFCRUDApp.ViewModels
         public ICommand ProductSaveCommand { get; }
         public ICommand ProductDeleteCommand { get; }
         public ICommand ProductResetCommand { get; }
-        public ICommand ImportExcelCommand => new RelayCommand(_ => ExecuteImportWizard());
+        public ICommand ImportExcelCommand   => new RelayCommand(_ => ExecuteImportWizard());
+        public ICommand ExportExcelCommand   => new RelayCommand(_ => ExportToExcel());
+        public ICommand DeleteSelectedCommand => new RelayCommand(_ => DeleteSelected(), _ => CheckedProducts.Any());
+        public ICommand ClearSelectionCommand => new RelayCommand(_ => ClearSelection());
+
         // ─── Services ──────────────────────────────────────────────────────────
         private readonly ProductService _productService;
         private readonly CategoryService _categoryService;
@@ -36,6 +41,71 @@ namespace MyWPFCRUDApp.ViewModels
             set => SetProperty(ref _products, value);
         }
 
+        // ─── Multi-select tracking ─────────────────────────────────────────────
+        // The code-behind calls SyncSelectedItems() on SelectionChanged.
+        private List<ProductDisplayModel> _checkedProducts = new();
+        public IReadOnlyList<ProductDisplayModel> CheckedProducts => _checkedProducts;
+
+        public void SyncSelectedItems(List<ProductDisplayModel> selected)
+        {
+            _checkedProducts = selected;
+            OnPropertyChanged(nameof(SelectedCountText));
+            OnPropertyChanged(nameof(MultiSelectBarVisibility));
+        }
+
+        public string SelectedCountText =>
+            _checkedProducts.Count > 0
+                ? $"{_checkedProducts.Count} product(s) selected"
+                : string.Empty;
+
+        public Visibility MultiSelectBarVisibility =>
+            _checkedProducts.Count > 1 ? Visibility.Visible : Visibility.Collapsed;
+
+        // "Select All" header checkbox support
+        private bool? _allSelected = false;
+        public bool? AllSelected
+        {
+            get => _allSelected;
+            set
+            {
+                if (SetProperty(ref _allSelected, value))
+                {
+                    // Handled by code-behind DataGrid selection; this property
+                    // triggers a SelectAll / UnselectAll via the DataGrid binding.
+                }
+            }
+        }
+
+        // ─── Column Visibility ─────────────────────────────────────────────────
+        public ObservableCollection<ProductColumnOption> ProductColumns { get; } = new();
+
+        private void InitProductColumns()
+        {
+            var cols = new[]
+            {
+                ("Barcode",         "Barcode"),
+                ("ProductCode",     "Product Code"),
+                ("ProductName",     "Product Name"),
+                ("CategoryName",    "Category"),
+                ("SubCategoryName", "SubCategory"),
+                ("PurchasePrice",   "Purchase"),
+                ("RetailSalePrice", "Sale"),
+                ("MRP",             "MRP"),
+                ("CGST",            "CGST"),
+                ("SGST",            "SGST"),
+                ("IGST",            "IGST"),
+                ("UnitName",        "Unit"),
+                ("Size",            "Size"),
+                ("Colour",          "Colour"),
+                ("Rack",            "Rack"),
+                ("HSNCode",         "HSN"),
+            };
+
+            foreach (var (key, header) in cols)
+                ProductColumns.Add(new ProductColumnOption { Key = key, Header = header, IsVisible = true });
+        }
+
+        // ─── Excel Mapping ─────────────────────────────────────────────────────
         private ObservableCollection<string> _excelHeaders;
         public ObservableCollection<string> ExcelHeaders
         {
@@ -45,7 +115,6 @@ namespace MyWPFCRUDApp.ViewModels
 
         public ObservableCollection<ColumnMapping> Mappings { get; set; } = new();
 
-        
         // ─── Selected Row ──────────────────────────────────────────────────────
         private ProductDisplayModel _selectedProduct;
         public ProductDisplayModel SelectedProduct
@@ -55,44 +124,41 @@ namespace MyWPFCRUDApp.ViewModels
             {
                 if (SetProperty(ref _selectedProduct, value) && value != null)
                 {
-                    // Map display model into MProduct for editing
                     MProduct = new MProducts
                     {
-                        Id = value.Id,
-                        ProductCode = value.ProductCode,
-                        ProductName = value.ProductName,
-                        Barcode = value.Barcode,
-                        CategoryId = value.CategoryId,
-                        SubCategoryId = value.SubCategoryId,
-                        UnitId = value.UnitId,
-                        PurchasePrice = value.PurchasePrice,
-                        RetailSalePrice = value.RetailSalePrice,
-                        WholesalePrice = value.WholesalePrice,
-                        MRP = value.MRP,
+                        Id                 = value.Id,
+                        ProductCode        = value.ProductCode,
+                        ProductName        = value.ProductName,
+                        Barcode            = value.Barcode,
+                        CategoryId         = value.CategoryId,
+                        SubCategoryId      = value.SubCategoryId,
+                        UnitId             = value.UnitId,
+                        PurchasePrice      = value.PurchasePrice,
+                        RetailSalePrice    = value.RetailSalePrice,
+                        WholesalePrice     = value.WholesalePrice,
+                        MRP                = value.MRP,
                         DiscountPercentage = value.DiscountPercentage,
-                        CGST = value.CGST,
-                        SGST = value.SGST,
-                        IGST = value.IGST,
-                        CESS = value.CESS,
-                        HSNCode = value.HSNCode,
-                        PartGroup = value.PartGroup,
-                        Description = value.Description,
-                        Godown = value.Godown,
-                        Rack = value.Rack,
-                        Batch = value.Batch,
-                        MfgDate = value.MfgDate,
-                        ExpDate = value.ExpDate,
-                        Size = value.Size,
-                        Colour = value.Colour,
-                        IMEI1 = value.IMEI1,
-                        IMEI2 = value.IMEI2,
+                        CGST               = value.CGST,
+                        SGST               = value.SGST,
+                        IGST               = value.IGST,
+                        CESS               = value.CESS,
+                        HSNCode            = value.HSNCode,
+                        PartGroup          = value.PartGroup,
+                        Description        = value.Description,
+                        Godown             = value.Godown,
+                        Rack               = value.Rack,
+                        Batch              = value.Batch,
+                        MfgDate            = value.MfgDate,
+                        ExpDate            = value.ExpDate,
+                        Size               = value.Size,
+                        Colour             = value.Colour,
+                        IMEI1              = value.IMEI1,
+                        IMEI2              = value.IMEI2,
                     };
 
-                    // Set Category first — its setter filters SubCategories automatically
-                    SelectedCategory = Categories.FirstOrDefault(c => c.Id == value.CategoryId);
-                    // Now FilteredSubCategories is populated, safe to set SubCategory
+                    SelectedCategory    = Categories.FirstOrDefault(c => c.Id == value.CategoryId);
                     SelectedSubCategory = FilteredSubCategories.FirstOrDefault(s => s.Id == value.SubCategoryId);
-                    SelectedUnit = Units.FirstOrDefault(u => u.Id == value.UnitId);
+                    SelectedUnit        = Units.FirstOrDefault(u => u.Id == value.UnitId);
                 }
             }
         }
@@ -124,7 +190,6 @@ namespace MyWPFCRUDApp.ViewModels
                     if (value != null)
                     {
                         MProduct.CategoryId = value.Id;
-                        // Filter subcategories for selected category
                         FilteredSubCategories = new ObservableCollection<MSubCategory>(
                             _allSubCategories.Where(s => s.CategoryId == value.Id));
                     }
@@ -137,7 +202,7 @@ namespace MyWPFCRUDApp.ViewModels
             }
         }
 
-        // ─── SubCategory Dropdown (filtered by selected category) ──────────────
+        // ─── SubCategory Dropdown ──────────────────────────────────────────────
         private List<MSubCategory> _allSubCategories = new();
 
         private ObservableCollection<MSubCategory> _filteredSubCategories;
@@ -180,18 +245,19 @@ namespace MyWPFCRUDApp.ViewModels
         // ─── Constructor ───────────────────────────────────────────────────────
         public ProductViewModel()
         {
-            _productService = new ProductService();
-            _categoryService = new CategoryService();
-            _subCategoryService = new SubCategoryService();
-            _unitService = new UnitService();
+            _productService      = new ProductService();
+            _categoryService     = new CategoryService();
+            _subCategoryService  = new SubCategoryService();
+            _unitService         = new UnitService();
 
-            MProduct = new MProducts();
-            FilteredSubCategories = new ObservableCollection<MSubCategory>();
+            MProduct                  = new MProducts();
+            FilteredSubCategories     = new ObservableCollection<MSubCategory>();
 
-            ProductSaveCommand = new RelayCommand(_ => Save());
+            ProductSaveCommand   = new RelayCommand(_ => Save());
             ProductDeleteCommand = new RelayCommand(_ => Delete(), _ => SelectedProduct != null);
-            ProductResetCommand = new RelayCommand(_ => Reset());
+            ProductResetCommand  = new RelayCommand(_ => Reset());
 
+            InitProductColumns();
             LoadDropdownData();
             LoadData();
         }
@@ -199,9 +265,9 @@ namespace MyWPFCRUDApp.ViewModels
         // ─── LoadDropdownData ──────────────────────────────────────────────────
         private void LoadDropdownData()
         {
-            Categories = new ObservableCollection<MCategory>(_categoryService.GetCategory());
+            Categories        = new ObservableCollection<MCategory>(_categoryService.GetCategory());
             _allSubCategories = _subCategoryService.GetSubCategoryList();
-            Units = new ObservableCollection<MUnit>(_unitService.GetUnit());
+            Units             = new ObservableCollection<MUnit>(_unitService.GetUnit());
         }
 
         // ─── LoadData ──────────────────────────────────────────────────────────
@@ -214,77 +280,167 @@ namespace MyWPFCRUDApp.ViewModels
         // ─── Save ──────────────────────────────────────────────────────────────
         private void Save()
         {
-            if (string.IsNullOrWhiteSpace(MProduct.ProductName))
-            {
-                System.Windows.MessageBox.Show("Product Name is required!");
-                return;
-            }
-            if (string.IsNullOrWhiteSpace(MProduct.Barcode))
-            {
-                System.Windows.MessageBox.Show("Barcode is required!");
-                return;
-            }
-            if (MProduct.CategoryId <= 0)
-            {
-                System.Windows.MessageBox.Show("Please select a Category!");
-                return;
-            }
-            if (MProduct.SubCategoryId <= 0)
-            {
-                System.Windows.MessageBox.Show("Please select a Sub Category!");
-                return;
-            }
-            if (MProduct.UnitId <= 0)
-            {
-                System.Windows.MessageBox.Show("Please select a Unit!");
-                return;
-            }
+            if (string.IsNullOrWhiteSpace(MProduct.ProductName)) { MessageBox.Show("Product Name is required!"); return; }
+            if (string.IsNullOrWhiteSpace(MProduct.Barcode))     { MessageBox.Show("Barcode is required!"); return; }
+            if (MProduct.CategoryId <= 0)    { MessageBox.Show("Please select a Category!"); return; }
+            if (MProduct.SubCategoryId <= 0) { MessageBox.Show("Please select a Sub Category!"); return; }
+            if (MProduct.UnitId <= 0)        { MessageBox.Show("Please select a Unit!"); return; }
 
-            bool success;
-            if (MProduct.Id <= 0)
-                success = _productService.InsertProduct(MProduct);
-            else
-                success = _productService.UpdateProduct(MProduct);
+            bool success = MProduct.Id <= 0
+                ? _productService.InsertProduct(MProduct)
+                : _productService.UpdateProduct(MProduct);
 
-            if (success)
+            if (success) { LoadData(); Reset(); }
+            else MessageBox.Show("Failed to save. Barcode may already exist.");
+        }
+
+        // ─── Delete single ─────────────────────────────────────────────────────
+        private void Delete()
+        {
+            var result = MessageBox.Show(
+                "Are you sure you want to delete this product?",
+                "Confirm Delete", MessageBoxButton.YesNo);
+
+            if (result == MessageBoxResult.Yes)
             {
-                LoadData();
-                Reset();
-            }
-            else
-            {
-                System.Windows.MessageBox.Show("Failed to save. Barcode may already exist.");
+                if (_productService.DeleteProduct(SelectedProduct.Id))
+                { LoadData(); Reset(); }
             }
         }
 
-        // ─── Delete ────────────────────────────────────────────────────────────
-        private void Delete()
+        // ─── Delete Selected (multi) ───────────────────────────────────────────
+        private void DeleteSelected()
         {
-            var result = System.Windows.MessageBox.Show(
-                "Are you sure you want to delete this product?",
-                "Confirm Delete",
-                System.Windows.MessageBoxButton.YesNo);
+            if (!_checkedProducts.Any()) return;
 
-            if (result == System.Windows.MessageBoxResult.Yes)
+            var result = MessageBox.Show(
+                $"Delete {_checkedProducts.Count} selected product(s)? This cannot be undone.",
+                "Confirm Bulk Delete", MessageBoxButton.YesNo, MessageBoxImage.Warning);
+
+            if (result != MessageBoxResult.Yes) return;
+
+            int deleted = 0;
+            foreach (var p in _checkedProducts.ToList())
             {
-                if (_productService.DeleteProduct(SelectedProduct.Id))
-                {
-                    LoadData();
-                    Reset();
-                }
+                if (_productService.DeleteProduct(p.Id)) deleted++;
             }
+
+            MessageBox.Show($"{deleted} product(s) deleted.");
+            _checkedProducts.Clear();
+            OnPropertyChanged(nameof(SelectedCountText));
+            OnPropertyChanged(nameof(MultiSelectBarVisibility));
+            LoadData();
+            Reset();
+        }
+
+        // ─── Clear Selection ───────────────────────────────────────────────────
+        private void ClearSelection()
+        {
+            _checkedProducts.Clear();
+            OnPropertyChanged(nameof(SelectedCountText));
+            OnPropertyChanged(nameof(MultiSelectBarVisibility));
         }
 
         // ─── Reset ─────────────────────────────────────────────────────────────
         private void Reset()
         {
-            MProduct = new MProducts();
-            SelectedProduct = null;
-            SelectedCategory = null;
+            MProduct            = new MProducts();
+            SelectedProduct     = null;
+            SelectedCategory    = null;
             SelectedSubCategory = null;
-            SelectedUnit = null;
+            SelectedUnit        = null;
             FilteredSubCategories = new ObservableCollection<MSubCategory>();
         }
+
+        // ─── Export to Excel ───────────────────────────────────────────────────
+        private void ExportToExcel()
+        {
+            if (Products == null || !Products.Any())
+            {
+                MessageBox.Show("No products to export.");
+                return;
+            }
+
+            var sfd = new SaveFileDialog
+            {
+                Filter   = "Excel Files|*.xlsx",
+                FileName = $"Products_{DateTime.Now:yyyyMMdd_HHmmss}.xlsx"
+            };
+            if (sfd.ShowDialog() != true) return;
+
+            try
+            {
+                using var wb = new XLWorkbook();
+                var ws = wb.Worksheets.Add("Products");
+
+                // Only export visible columns (respect the column toggle)
+                var visibleKeys = ProductColumns
+                    .Where(c => c.IsVisible)
+                    .Select(c => c.Key)
+                    .ToList();
+
+                // Header row
+                int col = 1;
+                foreach (var key in visibleKeys)
+                {
+                    var colOpt = ProductColumns.First(c => c.Key == key);
+                    ws.Cell(1, col).Value = colOpt.Header;
+                    ws.Cell(1, col).Style.Font.Bold = true;
+                    ws.Cell(1, col).Style.Fill.BackgroundColor = XLColor.FromHtml("#1F3A5F");
+                    ws.Cell(1, col).Style.Font.FontColor = XLColor.White;
+                    col++;
+                }
+
+                // Data rows
+                int row = 2;
+                foreach (var p in Products)
+                {
+                    col = 1;
+                    foreach (var key in visibleKeys)
+                    {
+                        object? val = key switch
+                        {
+                            "Barcode"         => p.Barcode,
+                            "ProductCode"     => p.ProductCode,
+                            "ProductName"     => p.ProductName,
+                            "CategoryName"    => p.CategoryName,
+                            "SubCategoryName" => p.SubCategoryName,
+                            "PurchasePrice"   => p.PurchasePrice,
+                            "RetailSalePrice" => p.RetailSalePrice,
+                            "MRP"             => p.MRP,
+                            "CGST"            => p.CGST,
+                            "SGST"            => p.SGST,
+                            "IGST"            => p.IGST,
+                            "UnitName"        => p.UnitName,
+                            "Size"            => p.Size,
+                            "Colour"          => p.Colour,
+                            "Rack"            => p.Rack,
+                            "HSNCode"         => p.HSNCode,
+                            _                 => null
+                        };
+                        if (val != null) ws.Cell(row, col).Value = val.ToString();
+                        col++;
+                    }
+                    row++;
+                }
+
+                // Auto-fit columns
+                ws.Columns().AdjustToContents();
+
+                // Freeze header row
+                ws.SheetView.FreezeRows(1);
+
+                wb.SaveAs(sfd.FileName);
+                MessageBox.Show($"Exported {Products.Count} products successfully.", "Export Complete",
+                                MessageBoxButton.OK, MessageBoxImage.Information);
+            }
+            catch (Exception ex)
+            {
+                MessageBox.Show("Export failed: " + ex.Message);
+            }
+        }
+
+        // ─── Import from Excel (unchanged logic) ───────────────────────────────
         private void ExecuteImportWizard()
         {
             var openFileDialog = new OpenFileDialog { Filter = "Excel Files|*.xls;*.xlsx;*.xlsm" };
@@ -298,7 +454,6 @@ namespace MyWPFCRUDApp.ViewModels
                 var result = reader.AsDataSet();
                 DataTable dt = result.Tables[0];
 
-                // 1. Setup Excel Headers with the "None" option
                 var headers = new List<string> { "[ None ]" };
                 foreach (DataColumn col in dt.Columns)
                 {
@@ -307,13 +462,11 @@ namespace MyWPFCRUDApp.ViewModels
                 }
                 ExcelHeaders = new ObservableCollection<string>(headers);
 
-                // 2. DYNAMIC MAPPING: Scan MProducts for all properties
                 Mappings.Clear();
                 var properties = typeof(MProducts).GetProperties();
 
                 foreach (var prop in properties)
                 {
-                    // Skip complex objects (like MCategory, MSubCategory) and only map basic types
                     if (prop.PropertyType.IsPrimitive ||
                         prop.PropertyType == typeof(string) ||
                         prop.PropertyType == typeof(decimal) ||
@@ -322,17 +475,15 @@ namespace MyWPFCRUDApp.ViewModels
                         prop.PropertyType == typeof(DateTime?) ||
                         prop.PropertyType == typeof(long))
                     {
-                        // Ignore BaseEntity fields like CreatedBy, ModifiedBy
                         if (prop.Name == "Id" || prop.Name.Contains("Date") || prop.Name.Contains("By")) continue;
 
                         var map = new ColumnMapping
                         {
-                            DbPropertyName = prop.Name,
-                            DisplayName = prop.Name, // This will be the nomenclature used in your C# class
+                            DbPropertyName      = prop.Name,
+                            DisplayName         = prop.Name,
                             SelectedExcelColumn = "[ None ]"
                         };
 
-                        // Smart Auto-Mapping: Match nomenclature even if casing/spacing differs
                         map.SelectedExcelColumn = ExcelHeaders.FirstOrDefault(h =>
                             h.Replace(" ", "").Replace("_", "").ToLower() ==
                             prop.Name.ToLower()) ?? "[ None ]";
@@ -341,12 +492,9 @@ namespace MyWPFCRUDApp.ViewModels
                     }
                 }
 
-                // 3. Open Mapping Window
                 var mappingWin = new MyWPFCRUDApp.Views.ExcelMappingWindow(this);
                 if (mappingWin.ShowDialog() == true)
-                {
                     ProcessExcelData(dt);
-                }
             }
             catch (Exception ex) { MessageBox.Show("Selection Error: " + ex.Message); }
         }
@@ -356,11 +504,10 @@ namespace MyWPFCRUDApp.ViewModels
             int successCount = 0;
             var productType = typeof(MProducts);
 
-            // Skip row 0 (headers)
             for (int i = 1; i < dt.Rows.Count; i++)
             {
                 var dr = dt.Rows[i];
-                var p = new MProducts();
+                var p  = new MProducts();
 
                 foreach (var map in Mappings)
                 {
@@ -368,43 +515,34 @@ namespace MyWPFCRUDApp.ViewModels
                         continue;
 
                     int colIdx = ExcelHeaders.IndexOf(map.SelectedExcelColumn) - 1;
-                    var val = dr[colIdx]?.ToString();
-
+                    var val    = dr[colIdx]?.ToString();
                     if (string.IsNullOrWhiteSpace(val)) continue;
 
-                    // Find the property by the nomenclature defined in the mapping
                     var prop = productType.GetProperty(map.DbPropertyName);
                     if (prop != null && prop.CanWrite)
                     {
                         try
                         {
-                            // Handle type conversions dynamically based on the Property Type
-                            object convertedVal = null;
                             var targetType = Nullable.GetUnderlyingType(prop.PropertyType) ?? prop.PropertyType;
-
-                            if (targetType == typeof(decimal)) convertedVal = decimal.Parse(val);
-                            else if (targetType == typeof(double)) convertedVal = double.Parse(val);
-                            else if (targetType == typeof(long)) convertedVal = long.Parse(val);
-                            else if (targetType == typeof(int)) convertedVal = int.Parse(val);
-                            else if (targetType == typeof(DateTime)) convertedVal = DateTime.Parse(val);
-                            else convertedVal = val;
-
+                            object convertedVal =
+                                targetType == typeof(decimal)  ? decimal.Parse(val)  :
+                                targetType == typeof(double)   ? double.Parse(val)   :
+                                targetType == typeof(long)     ? long.Parse(val)     :
+                                targetType == typeof(int)      ? int.Parse(val)      :
+                                targetType == typeof(DateTime) ? DateTime.Parse(val) :
+                                (object)val;
                             prop.SetValue(p, convertedVal);
                         }
-                        catch { /* Log conversion error for specific cell */ }
+                        catch { }
                     }
                 }
 
-                // Final Safety: Ensure required IDs are set
-                if (p.CategoryId == 0) p.CategoryId = Categories.FirstOrDefault()?.Id ?? 0;
+                if (p.CategoryId   == 0) p.CategoryId    = Categories.FirstOrDefault()?.Id ?? 0;
                 if (p.SubCategoryId == 0) p.SubCategoryId = _allSubCategories.FirstOrDefault()?.Id ?? 0;
-                if (p.UnitId == 0) p.UnitId = Units.FirstOrDefault()?.Id ?? 0;
+                if (p.UnitId        == 0) p.UnitId         = Units.FirstOrDefault()?.Id ?? 0;
 
-                // Save
                 if (!string.IsNullOrEmpty(p.ProductName) && !string.IsNullOrEmpty(p.Barcode))
-                {
                     if (_productService.InsertProduct(p)) successCount++;
-                }
             }
 
             MessageBox.Show($"{successCount} products imported successfully.");

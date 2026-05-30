@@ -1,4 +1,4 @@
-﻿<Project Sdk="Microsoft.NET.Sdk">
+<Project Sdk="Microsoft.NET.Sdk">
 	<PropertyGroup>
 		<OutputType>WinExe</OutputType>
 		<TargetFramework>net8.0-windows</TargetFramework>
@@ -7,9 +7,9 @@
 		<UseWPF>true</UseWPF>
 
 		<!-- Auto-updater reads this to compare against GitHub release tag -->
-		<Version>1.2.19</Version>
-		<AssemblyVersion>1.2.19.0</AssemblyVersion>
-		<FileVersion>1.2.19.0</FileVersion>
+		<Version>1.2.20</Version>
+		<AssemblyVersion>1.2.20.0</AssemblyVersion>
+		<FileVersion>1.2.20.0</FileVersion>
 
 		<!-- Shown in Windows Add/Remove Programs -->
 		<Product>BillX</Product>
@@ -28,9 +28,9 @@
 	</ItemGroup>
 
 	<ItemGroup>
+		<PackageReference Include="ClosedXML" Version="0.102.2" />
 		<PackageReference Include="ExcelDataReader.DataSet" Version="3.8.0" />
 		<PackageReference Include="MySql.Data" Version="8.4.0" />
-		
 	</ItemGroup>
 
 	<!-- Copy MySQL ZIP to output folder so GetBundledZip() finds it next to .exe -->

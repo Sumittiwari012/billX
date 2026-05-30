@@ -1,0 +1,32 @@
+﻿<Window x:Class="MyWPFCRUDApp.Views.CorruptDialog"
+        xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        Title="Application Error"
+        Width="420" Height="220"
+        WindowStartupLocation="CenterScreen"
+        ResizeMode="NoResize"
+        WindowStyle="ToolWindow">
+
+    <Grid Margin="20">
+        <Grid.RowDefinitions>
+            <RowDefinition Height="Auto"/>
+            <RowDefinition Height="*"/>
+            <RowDefinition Height="Auto"/>
+        </Grid.RowDefinitions>
+
+        <!-- Icon + Title -->
+        <StackPanel Grid.Row="0" Orientation="Horizontal" Margin="0,0,0,10">
+            <Image Source="/Icons/error.png" Width="32" Height="32" Margin="0,0,10,0"/>
+            <TextBlock Text="Fatal Application Error" FontSize="16" FontWeight="Bold"
+                       Foreground="DarkRed" VerticalAlignment="Center"/>
+        </StackPanel>
+
+        <!-- Message -->
+        <TextBlock Grid.Row="1" TextWrapping="Wrap" FontSize="13"
+                   Text="A critical error has occurred: Application data is corrupted or missing. The application cannot continue and will now close.&#x0a;&#x0a;Error Code: 0xc000000f – ACCESS_VIOLATION"/>
+
+        <!-- Button -->
+        <Button Grid.Row="2" Content="OK" Width="80" HorizontalAlignment="Right"
+                Click="OK_Click" Margin="0,10,0,0"/>
+    </Grid>
+</Window>

@@ -1,0 +1,93 @@
+<Window x:Class="MyWPFCRUDApp.Views.ProductLabelPrintWindow"
+        xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        Title="Print Product Label"
+        Width="420" Height="320"
+        WindowStartupLocation="CenterScreen"
+        ResizeMode="NoResize"
+        Background="#FFFDF8F0">
+
+    <Grid Margin="16">
+        <Grid.RowDefinitions>
+            <RowDefinition Height="*"/>
+            <RowDefinition Height="Auto"/>
+        </Grid.RowDefinitions>
+
+        <!-- Label Preview (this StackPanel is what gets printed) -->
+        <Border x:Name="PrintArea"
+                Grid.Row="0"
+                BorderBrush="#FFB0A090"
+                BorderThickness="1"
+                CornerRadius="8"
+                Padding="16"
+                Background="White"
+                Margin="0,0,0,12">
+            <StackPanel HorizontalAlignment="Center">
+
+                <!-- Company / Store name (placeholder – replace with your company binding) -->
+                <TextBlock x:Name="TbCompany"
+                           Text="My Store"
+                           FontSize="13"
+                           FontWeight="Bold"
+                           HorizontalAlignment="Center"
+                           Foreground="#FF1F3A5F"
+                           Margin="0,0,0,4"/>
+
+                <!-- Product Name -->
+                <TextBlock x:Name="TbProductName"
+                           FontSize="15"
+                           FontWeight="SemiBold"
+                           HorizontalAlignment="Center"
+                           TextWrapping="Wrap"
+                           TextAlignment="Center"
+                           Margin="0,0,0,6"/>
+
+                <!-- Barcode (Code 39 font or image generated in code-behind) -->
+                <Border Background="#FF222222"
+                        Padding="6,4"
+                        HorizontalAlignment="Center"
+                        Margin="0,0,0,4">
+                    <!-- Barcode rendered as a Canvas of bars in code-behind -->
+                    <Canvas x:Name="BarcodeCanvas"
+                            Width="200" Height="50"/>
+                </Border>
+
+                <!-- Barcode number -->
+                <TextBlock x:Name="TbBarcode"
+                           FontSize="11"
+                           HorizontalAlignment="Center"
+                           FontFamily="Courier New"
+                           Margin="0,0,0,6"/>
+
+                <!-- Price row -->
+                <StackPanel Orientation="Horizontal" HorizontalAlignment="Center">
+                    <TextBlock Text="MRP: ₹" FontSize="13" FontWeight="Bold"/>
+                    <TextBlock x:Name="TbMRP" FontSize="13" FontWeight="Bold" Margin="0,0,12,0"/>
+                    <TextBlock Text="Sale: ₹" FontSize="12"/>
+                    <TextBlock x:Name="TbSale" FontSize="12"/>
+                </StackPanel>
+
+                <!-- Extra info -->
+                <StackPanel Orientation="Horizontal" HorizontalAlignment="Center" Margin="0,4,0,0">
+                    <TextBlock x:Name="TbCategory"   FontSize="10" Foreground="Gray" Margin="0,0,10,0"/>
+                    <TextBlock x:Name="TbSize"        FontSize="10" Foreground="Gray" Margin="0,0,10,0"/>
+                    <TextBlock x:Name="TbColour"      FontSize="10" Foreground="Gray"/>
+                </StackPanel>
+            </StackPanel>
+        </Border>
+
+        <!-- Buttons -->
+        <StackPanel Grid.Row="1" Orientation="Horizontal" HorizontalAlignment="Right">
+            <Button Content="🖨 Print"
+                    Click="PrintButton_Click"
+                    Width="110" Height="34" Margin="0,0,8,0"
+                    Background="#FF1F3A5F"
+                    Foreground="White"
+                    FontWeight="Bold"/>
+            <Button Content="Close"
+                    Click="CloseButton_Click"
+                    Width="80" Height="34"
+                    Background="#FFEEEEEE"/>
+        </StackPanel>
+    </Grid>
+</Window>

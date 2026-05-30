@@ -16,6 +16,9 @@
     <Compile Update="Views\CompanyInfoViews.xaml.cs">
       <SubType>Code</SubType>
     </Compile>
+    <Compile Update="Views\CorruptDialog.xaml.cs">
+      <SubType>Code</SubType>
+    </Compile>
     <Compile Update="Views\CustomerViews.xaml.cs">
       <SubType>Code</SubType>
     </Compile>
