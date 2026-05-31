@@ -132,7 +132,7 @@ namespace MyWPFCRUDApp.Views {
                 return;
             }
             _contentLoaded = true;
-            System.Uri resourceLocater = new System.Uri("/MyWPFCRUDApp;V1.2.19.0;component/views/productlabelprintwindow.xaml", System.UriKind.Relative);
+            System.Uri resourceLocater = new System.Uri("/MyWPFCRUDApp;V1.2.23.0;component/views/productlabelprintwindow.xaml", System.UriKind.Relative);
             
             #line 1 "..\..\..\..\Views\ProductLabelPrintWindow.xaml"
             System.Windows.Application.LoadComponent(this, resourceLocater);

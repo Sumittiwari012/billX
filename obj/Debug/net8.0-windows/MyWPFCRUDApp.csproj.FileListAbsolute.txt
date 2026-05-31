@@ -75,3 +75,7 @@ E:\Mohua's_fashion\MyWPFCRUDApp\obj\Debug\net8.0-windows\refint\MyWPFCRUDApp.dll
 E:\Mohua's_fashion\MyWPFCRUDApp\obj\Debug\net8.0-windows\MyWPFCRUDApp.pdb
 E:\Mohua's_fashion\MyWPFCRUDApp\obj\Debug\net8.0-windows\MyWPFCRUDApp.genruntimeconfig.cache
 E:\Mohua's_fashion\MyWPFCRUDApp\obj\Debug\net8.0-windows\ref\MyWPFCRUDApp.dll
+E:\Mohua's_fashion\MyWPFCRUDApp\obj\Debug\net8.0-windows\Views\BillScanReviewWindow.baml
+E:\Mohua's_fashion\MyWPFCRUDApp\obj\Debug\net8.0-windows\Views\BillScanReviewWindow.g.cs
+E:\Mohua's_fashion\MyWPFCRUDApp\obj\Debug\net8.0-windows\Views\ApiKeySetupWindow.baml
+E:\Mohua's_fashion\MyWPFCRUDApp\obj\Debug\net8.0-windows\Views\ApiKeySetupWindow.g.cs

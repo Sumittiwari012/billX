@@ -61,6 +61,9 @@ namespace MyWPFCRUDApp.Services
 
         public static async Task<bool> CheckAndUpdateAsync(Window owner = null)
         {
+            #if DEBUG
+            return false;
+            #endif
             try
             {
                 // If we just applied an update, skip the check this one launch
