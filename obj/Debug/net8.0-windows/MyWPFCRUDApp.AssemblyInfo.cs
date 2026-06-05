@@ -15,7 +15,7 @@ using System.Reflection;
 [assembly: System.Reflection.AssemblyConfigurationAttribute("Debug")]
 [assembly: System.Reflection.AssemblyCopyrightAttribute("Copyright © 2026")]
 [assembly: System.Reflection.AssemblyFileVersionAttribute("1.2.23.0")]
-[assembly: System.Reflection.AssemblyInformationalVersionAttribute("1.2.23+9c7257c9ddcaf6106bba514f43db4d329a7cf813")]
+[assembly: System.Reflection.AssemblyInformationalVersionAttribute("1.2.23+849beabbd2103090d0fb7d0e53bd235afa6a8ea6")]
 [assembly: System.Reflection.AssemblyProductAttribute("BillX")]
 [assembly: System.Reflection.AssemblyTitleAttribute("MyWPFCRUDApp")]
 [assembly: System.Reflection.AssemblyVersionAttribute("1.2.23.0")]

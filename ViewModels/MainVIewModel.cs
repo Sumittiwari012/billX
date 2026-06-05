@@ -1,4 +1,4 @@
-﻿using MyWPFCRUDApp.Helpers;
+using MyWPFCRUDApp.Helpers;
 using MyWPFCRUDApp.Views;
 
 using System;
@@ -12,6 +12,7 @@ namespace MyWPFCRUDApp.ViewModels
 {
     public class SubOption
     {
+        
         public string Name { get; set; }
         public string Section { get; set; }
         public string Icon { get; set; }
@@ -170,44 +171,67 @@ namespace MyWPFCRUDApp.ViewModels
         private void SelectOption(SubOption option)
         {
             if (option == null) return;
-            switch (option.Name)
-            {
-                case "Company Info":
-                    // Set CurrentView to a new instance of your Company page
-                    CurrentView = new CompanyInfoViews();
-                    break;
-                case "Category":
-                    // Set CurrentView to a new instance of your Company page
-                    CurrentView = new CategoryViews();
-                    break;
-                case "Sub Category":
-                    // Set CurrentView to a new instance of your Company page
-                    CurrentView = new SubCategoryViews();
-                    break;
-                case "Unit Master":
-                    // Set CurrentView to a new instance of your Company page
-                    CurrentView = new UnitViews();
-                    break;
-                case "Products":
-                    CurrentView = new ProductViews();
-                    break;
-                case "Customer":
-                    CurrentView = new CustomerViews();
-                    break;
-                case "Supplier":
-                    CurrentView = new SupplierViews();
-                    break;
-                case "Tax Category":
-                    CurrentView = new TaxCategoryViews();
-                    break;
-                case "Purchase Entry":
-                    CurrentView = new PurchaseViews();
-                    break;
-                default:
-                    CurrentView = new MainWindow(); // Or a "Work In Progress" view
-                    break;
-            }
 
+            try
+            {
+                Type viewType = null;
+
+                switch (option.Name)
+                {
+                    case "Company Info":
+                        viewType = typeof(CompanyInfoViews);
+                        break;
+
+                    case "Category":
+                        viewType = typeof(CategoryViews);
+                        break;
+
+                    case "Sub Category":
+                        viewType = typeof(SubCategoryViews);
+                        break;
+
+                    case "Unit Master":
+                        viewType = typeof(UnitViews);
+                        break;
+
+                    case "Products":
+                        viewType = typeof(ProductViews);
+                        break;
+
+                    case "Customer":
+                        viewType = typeof(CustomerViews);
+                        break;
+
+                    case "Supplier":
+                        viewType = typeof(SupplierViews);
+                        break;
+
+                    case "Tax Category":
+                        viewType = typeof(TaxCategoryViews);
+                        break;
+
+                    case "Purchase Entry":
+                        viewType = typeof(PurchaseViews);
+                        break;
+
+                    default:
+                        CurrentView = new WorkInProgressView();
+                        return;
+                }
+
+                // Toggle close if already open
+                if (CurrentView != null && CurrentView.GetType() == viewType)
+                {
+                    CurrentView = null;
+                    return;
+                }
+
+                CurrentView = Activator.CreateInstance(viewType);
+            }
+            catch (Exception)
+            {
+                CurrentView = new WorkInProgressView();
+            }
         }
     }
 }

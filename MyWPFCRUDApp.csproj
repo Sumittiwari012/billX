@@ -40,6 +40,7 @@
 		</None>
 	</ItemGroup>
 	<ItemGroup>
+	  <Folder Include="assets\" />
 	  <Folder Include="ViewModels\BaseViewModel\" />
 	</ItemGroup>
 </Project>

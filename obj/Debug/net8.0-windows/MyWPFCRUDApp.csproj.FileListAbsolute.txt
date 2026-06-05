@@ -79,3 +79,5 @@ E:\Mohua's_fashion\MyWPFCRUDApp\obj\Debug\net8.0-windows\Views\BillScanReviewWin
 E:\Mohua's_fashion\MyWPFCRUDApp\obj\Debug\net8.0-windows\Views\BillScanReviewWindow.g.cs
 E:\Mohua's_fashion\MyWPFCRUDApp\obj\Debug\net8.0-windows\Views\ApiKeySetupWindow.baml
 E:\Mohua's_fashion\MyWPFCRUDApp\obj\Debug\net8.0-windows\Views\ApiKeySetupWindow.g.cs
+E:\Mohua's_fashion\MyWPFCRUDApp\obj\Debug\net8.0-windows\Views\WorkInProgressView.baml
+E:\Mohua's_fashion\MyWPFCRUDApp\obj\Debug\net8.0-windows\Views\WorkInProgressView.g.cs
