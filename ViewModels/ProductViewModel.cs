@@ -22,8 +22,8 @@ namespace MyWPFCRUDApp.ViewModels
         public ICommand ProductSaveCommand { get; }
         public ICommand ProductDeleteCommand { get; }
         public ICommand ProductResetCommand { get; }
-        public ICommand ImportExcelCommand   => new RelayCommand(_ => ExecuteImportWizard());
-        public ICommand ExportExcelCommand   => new RelayCommand(_ => ExportToExcel());
+        public ICommand ImportExcelCommand => new RelayCommand(_ => ExecuteImportWizard());
+        public ICommand ExportExcelCommand => new RelayCommand(_ => ExportToExcel());
         public ICommand DeleteSelectedCommand => new RelayCommand(_ => DeleteSelected(), _ => CheckedProducts.Any());
         public ICommand ClearSelectionCommand => new RelayCommand(_ => ClearSelection());
 
@@ -126,39 +126,39 @@ namespace MyWPFCRUDApp.ViewModels
                 {
                     MProduct = new MProducts
                     {
-                        Id                 = value.Id,
-                        ProductCode        = value.ProductCode,
-                        ProductName        = value.ProductName,
-                        Barcode            = value.Barcode,
-                        CategoryId         = value.CategoryId,
-                        SubCategoryId      = value.SubCategoryId,
-                        UnitId             = value.UnitId,
-                        PurchasePrice      = value.PurchasePrice,
-                        RetailSalePrice    = value.RetailSalePrice,
-                        WholesalePrice     = value.WholesalePrice,
-                        MRP                = value.MRP,
+                        Id = value.Id,
+                        ProductCode = value.ProductCode,
+                        ProductName = value.ProductName,
+                        Barcode = value.Barcode,
+                        CategoryId = value.CategoryId,
+                        SubCategoryId = value.SubCategoryId,
+                        UnitId = value.UnitId,
+                        PurchasePrice = value.PurchasePrice,
+                        RetailSalePrice = value.RetailSalePrice,
+                        WholesalePrice = value.WholesalePrice,
+                        MRP = value.MRP,
                         DiscountPercentage = value.DiscountPercentage,
-                        CGST               = value.CGST,
-                        SGST               = value.SGST,
-                        IGST               = value.IGST,
-                        CESS               = value.CESS,
-                        HSNCode            = value.HSNCode,
-                        PartGroup          = value.PartGroup,
-                        Description        = value.Description,
-                        Godown             = value.Godown,
-                        Rack               = value.Rack,
-                        Batch              = value.Batch,
-                        MfgDate            = value.MfgDate,
-                        ExpDate            = value.ExpDate,
-                        Size               = value.Size,
-                        Colour             = value.Colour,
-                        IMEI1              = value.IMEI1,
-                        IMEI2              = value.IMEI2,
+                        CGST = value.CGST,
+                        SGST = value.SGST,
+                        IGST = value.IGST,
+                        CESS = value.CESS,
+                        HSNCode = value.HSNCode,
+                        PartGroup = value.PartGroup,
+                        Description = value.Description,
+                        Godown = value.Godown,
+                        Rack = value.Rack,
+                        Batch = value.Batch,
+                        MfgDate = value.MfgDate,
+                        ExpDate = value.ExpDate,
+                        Size = value.Size,
+                        Colour = value.Colour,
+                        IMEI1 = value.IMEI1,
+                        IMEI2 = value.IMEI2,
                     };
 
-                    SelectedCategory    = Categories.FirstOrDefault(c => c.Id == value.CategoryId);
+                    SelectedCategory = Categories.FirstOrDefault(c => c.Id == value.CategoryId);
                     SelectedSubCategory = FilteredSubCategories.FirstOrDefault(s => s.Id == value.SubCategoryId);
-                    SelectedUnit        = Units.FirstOrDefault(u => u.Id == value.UnitId);
+                    SelectedUnit = Units.FirstOrDefault(u => u.Id == value.UnitId);
                 }
             }
         }
@@ -168,7 +168,58 @@ namespace MyWPFCRUDApp.ViewModels
         public MProducts MProduct
         {
             get => _mProduct;
-            set => SetProperty(ref _mProduct, value);
+            set
+            {
+                if (SetProperty(ref _mProduct, value))
+                {
+                    // Reset percentages when product changes
+                    WholesalePricePercentage = 0;
+                    MRPPercentage = 0;
+                }
+            }
+        }
+
+        // ─── Price Percentage Auto-Calculation ──────────────────────────────
+        private double _wholesalePricePercentage = 0;
+        public double WholesalePricePercentage
+        {
+            get => _wholesalePricePercentage;
+            set
+            {
+                if (SetProperty(ref _wholesalePricePercentage, value))
+                    RecalculateWholesalePrice();
+            }
+        }
+
+        private double _mrpPercentage = 0;
+        public double MRPPercentage
+        {
+            get => _mrpPercentage;
+            set
+            {
+                if (SetProperty(ref _mrpPercentage, value))
+                    RecalculateMRP();
+            }
+        }
+
+        // Auto-calculate wholesale price from purchase price and percentage
+        private void RecalculateWholesalePrice()
+        {
+            if (MProduct != null && MProduct.PurchasePrice > 0 && WholesalePricePercentage > 0)
+            {
+                MProduct.WholesalePrice = MProduct.PurchasePrice * ((decimal)WholesalePricePercentage / 100);
+                OnPropertyChanged(nameof(MProduct));
+            }
+        }
+
+        // Auto-calculate MRP from purchase price and percentage
+        private void RecalculateMRP()
+        {
+            if (MProduct != null && MProduct.PurchasePrice > 0 && MRPPercentage > 0)
+            {
+                MProduct.MRP = MProduct.PurchasePrice * ((decimal)MRPPercentage / 100);
+                OnPropertyChanged(nameof(MProduct));
+            }
         }
 
         // ─── Category Dropdown ─────────────────────────────────────────────────
@@ -245,29 +296,30 @@ namespace MyWPFCRUDApp.ViewModels
         // ─── Constructor ───────────────────────────────────────────────────────
         public ProductViewModel()
         {
-            _productService      = new ProductService();
-            _categoryService     = new CategoryService();
-            _subCategoryService  = new SubCategoryService();
-            _unitService         = new UnitService();
+            _productService = new ProductService();
+            _categoryService = new CategoryService();
+            _subCategoryService = new SubCategoryService();
+            _unitService = new UnitService();
 
-            MProduct                  = new MProducts();
-            FilteredSubCategories     = new ObservableCollection<MSubCategory>();
+            MProduct = new MProducts();
+            FilteredSubCategories = new ObservableCollection<MSubCategory>();
 
-            ProductSaveCommand   = new RelayCommand(_ => Save());
+            ProductSaveCommand = new RelayCommand(_ => Save());
             ProductDeleteCommand = new RelayCommand(_ => Delete(), _ => SelectedProduct != null);
-            ProductResetCommand  = new RelayCommand(_ => Reset());
+            ProductResetCommand = new RelayCommand(_ => Reset());
 
             InitProductColumns();
             LoadDropdownData();
             LoadData();
+            GenerateNextBarcode();   // pre-fill barcode for the first new product
         }
 
         // ─── LoadDropdownData ──────────────────────────────────────────────────
         private void LoadDropdownData()
         {
-            Categories        = new ObservableCollection<MCategory>(_categoryService.GetCategory());
+            Categories = new ObservableCollection<MCategory>(_categoryService.GetCategory());
             _allSubCategories = _subCategoryService.GetSubCategoryList();
-            Units             = new ObservableCollection<MUnit>(_unitService.GetUnit());
+            Units = new ObservableCollection<MUnit>(_unitService.GetUnit());
         }
 
         // ─── LoadData ──────────────────────────────────────────────────────────
@@ -277,14 +329,40 @@ namespace MyWPFCRUDApp.ViewModels
             Products = new ObservableCollection<ProductDisplayModel>(data);
         }
 
+        // ─── GenerateNextBarcode ────────────────────────────────────────────────
+        /// <summary>
+        /// Sets MProduct.Barcode to M{productCount + 1}.
+        /// Called on first load and after every save/reset so the field
+        /// is never empty when the user wants to add a new product.
+        /// </summary>
+        private void GenerateNextBarcode()
+        {
+            try
+            {
+                long next = _productService.GetProductCount() + 1;
+                MProduct.Barcode = $"M{next}";
+                // Notify the UI that MProduct changed so the TextBox refreshes
+                OnPropertyChanged(nameof(MProduct));
+            }
+            catch { /* DB unavailable – leave blank */ }
+        }
+
         // ─── Save ──────────────────────────────────────────────────────────────
         private void Save()
         {
             if (string.IsNullOrWhiteSpace(MProduct.ProductName)) { MessageBox.Show("Product Name is required!"); return; }
-            if (string.IsNullOrWhiteSpace(MProduct.Barcode))     { MessageBox.Show("Barcode is required!"); return; }
-            if (MProduct.CategoryId <= 0)    { MessageBox.Show("Please select a Category!"); return; }
-            if (MProduct.SubCategoryId <= 0) { MessageBox.Show("Please select a Sub Category!"); return; }
-            if (MProduct.UnitId <= 0)        { MessageBox.Show("Please select a Unit!"); return; }
+
+            // Auto-generate barcode if blank
+            if (string.IsNullOrWhiteSpace(MProduct.Barcode))
+                MProduct.Barcode = $"M{_productService.GetProductCount() + 1}";
+
+            // Default Category/SubCategory/Unit to first available if not selected
+            if (MProduct.CategoryId <= 0)
+                MProduct.CategoryId = Categories.FirstOrDefault()?.Id ?? 1;
+            if (MProduct.SubCategoryId <= 0)
+                MProduct.SubCategoryId = _allSubCategories.FirstOrDefault()?.Id ?? 1;
+            if (MProduct.UnitId <= 0)
+                MProduct.UnitId = Units.FirstOrDefault()?.Id ?? 1;
 
             bool success = MProduct.Id <= 0
                 ? _productService.InsertProduct(MProduct)
@@ -344,12 +422,13 @@ namespace MyWPFCRUDApp.ViewModels
         // ─── Reset ─────────────────────────────────────────────────────────────
         private void Reset()
         {
-            MProduct            = new MProducts();
-            SelectedProduct     = null;
-            SelectedCategory    = null;
+            MProduct = new MProducts();
+            SelectedProduct = null;
+            SelectedCategory = null;
             SelectedSubCategory = null;
-            SelectedUnit        = null;
+            SelectedUnit = null;
             FilteredSubCategories = new ObservableCollection<MSubCategory>();
+            GenerateNextBarcode();   // always show the next available barcode
         }
 
         // ─── Export to Excel ───────────────────────────────────────────────────
@@ -363,7 +442,7 @@ namespace MyWPFCRUDApp.ViewModels
 
             var sfd = new SaveFileDialog
             {
-                Filter   = "Excel Files|*.xlsx",
+                Filter = "Excel Files|*.xlsx",
                 FileName = $"Products_{DateTime.Now:yyyyMMdd_HHmmss}.xlsx"
             };
             if (sfd.ShowDialog() != true) return;
@@ -400,23 +479,23 @@ namespace MyWPFCRUDApp.ViewModels
                     {
                         object? val = key switch
                         {
-                            "Barcode"         => p.Barcode,
-                            "ProductCode"     => p.ProductCode,
-                            "ProductName"     => p.ProductName,
-                            "CategoryName"    => p.CategoryName,
+                            "Barcode" => p.Barcode,
+                            "ProductCode" => p.ProductCode,
+                            "ProductName" => p.ProductName,
+                            "CategoryName" => p.CategoryName,
                             "SubCategoryName" => p.SubCategoryName,
-                            "PurchasePrice"   => p.PurchasePrice,
+                            "PurchasePrice" => p.PurchasePrice,
                             "RetailSalePrice" => p.RetailSalePrice,
-                            "MRP"             => p.MRP,
-                            "CGST"            => p.CGST,
-                            "SGST"            => p.SGST,
-                            "IGST"            => p.IGST,
-                            "UnitName"        => p.UnitName,
-                            "Size"            => p.Size,
-                            "Colour"          => p.Colour,
-                            "Rack"            => p.Rack,
-                            "HSNCode"         => p.HSNCode,
-                            _                 => null
+                            "MRP" => p.MRP,
+                            "CGST" => p.CGST,
+                            "SGST" => p.SGST,
+                            "IGST" => p.IGST,
+                            "UnitName" => p.UnitName,
+                            "Size" => p.Size,
+                            "Colour" => p.Colour,
+                            "Rack" => p.Rack,
+                            "HSNCode" => p.HSNCode,
+                            _ => null
                         };
                         if (val != null) ws.Cell(row, col).Value = val.ToString();
                         col++;
@@ -479,8 +558,8 @@ namespace MyWPFCRUDApp.ViewModels
 
                         var map = new ColumnMapping
                         {
-                            DbPropertyName      = prop.Name,
-                            DisplayName         = prop.Name,
+                            DbPropertyName = prop.Name,
+                            DisplayName = prop.Name,
                             SelectedExcelColumn = "[ None ]"
                         };
 
@@ -507,7 +586,7 @@ namespace MyWPFCRUDApp.ViewModels
             for (int i = 1; i < dt.Rows.Count; i++)
             {
                 var dr = dt.Rows[i];
-                var p  = new MProducts();
+                var p = new MProducts();
 
                 foreach (var map in Mappings)
                 {
@@ -515,7 +594,7 @@ namespace MyWPFCRUDApp.ViewModels
                         continue;
 
                     int colIdx = ExcelHeaders.IndexOf(map.SelectedExcelColumn) - 1;
-                    var val    = dr[colIdx]?.ToString();
+                    var val = dr[colIdx]?.ToString();
                     if (string.IsNullOrWhiteSpace(val)) continue;
 
                     var prop = productType.GetProperty(map.DbPropertyName);
@@ -525,10 +604,10 @@ namespace MyWPFCRUDApp.ViewModels
                         {
                             var targetType = Nullable.GetUnderlyingType(prop.PropertyType) ?? prop.PropertyType;
                             object convertedVal =
-                                targetType == typeof(decimal)  ? decimal.Parse(val)  :
-                                targetType == typeof(double)   ? double.Parse(val)   :
-                                targetType == typeof(long)     ? long.Parse(val)     :
-                                targetType == typeof(int)      ? int.Parse(val)      :
+                                targetType == typeof(decimal) ? decimal.Parse(val) :
+                                targetType == typeof(double) ? double.Parse(val) :
+                                targetType == typeof(long) ? long.Parse(val) :
+                                targetType == typeof(int) ? int.Parse(val) :
                                 targetType == typeof(DateTime) ? DateTime.Parse(val) :
                                 (object)val;
                             prop.SetValue(p, convertedVal);
@@ -537,9 +616,9 @@ namespace MyWPFCRUDApp.ViewModels
                     }
                 }
 
-                if (p.CategoryId   == 0) p.CategoryId    = Categories.FirstOrDefault()?.Id ?? 0;
+                if (p.CategoryId == 0) p.CategoryId = Categories.FirstOrDefault()?.Id ?? 0;
                 if (p.SubCategoryId == 0) p.SubCategoryId = _allSubCategories.FirstOrDefault()?.Id ?? 0;
-                if (p.UnitId        == 0) p.UnitId         = Units.FirstOrDefault()?.Id ?? 0;
+                if (p.UnitId == 0) p.UnitId = Units.FirstOrDefault()?.Id ?? 0;
 
                 if (!string.IsNullOrEmpty(p.ProductName) && !string.IsNullOrEmpty(p.Barcode))
                     if (_productService.InsertProduct(p)) successCount++;

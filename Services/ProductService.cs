@@ -59,6 +59,20 @@ namespace MyWPFCRUDApp.Services
             public string? IMEI1 { get; set; }
             public string? IMEI2 { get; set; }
         }
+
+        // ─── GET PRODUCT COUNT ─────────────────────────────────────────────────
+        /// <summary>
+        /// Returns the total number of products in the database.
+        /// Used to generate the next barcode in the format M{count+1}.
+        /// </summary>
+        public long GetProductCount()
+        {
+            using var conn = new MySqlConnection(Con);
+            conn.Open();
+            using var cmd = new MySqlCommand("SELECT COUNT(*) FROM MProducts", conn);
+            return Convert.ToInt64(cmd.ExecuteScalar());
+        }
+
         // ─── INSERT ────────────────────────────────────────────────────────────
 
         // Returns display list with joined CategoryName, SubCategoryName, UnitName

@@ -45,8 +45,8 @@ Return ONLY valid JSON, no markdown, no backticks, no explanation:
   ""invoice_date"":   ""DD-MM-YYYY or empty"",
   ""supplier_name"":  ""string or empty"",
   ""items"": [
-    { ""description"": ""string"", ""quantity"": 48, ""rate"": 600, ""amount"": 28800 },
-    { ""description"": ""string"", ""quantity"": 44, ""rate"": 380, ""amount"": 16720 }
+    { ""description"": ""string"", ""quantity"": 48, ""purchase_price"": 600, ""amount"": 28800 },
+    { ""description"": ""string"", ""quantity"": 44, ""purchase_price"": 380, ""amount"": 16720 }
   ],
   ""grand_total"": 45520
 }";
@@ -147,12 +147,17 @@ Return ONLY valid JSON, no markdown, no backticks, no explanation:
                 foreach (var item in items)
                 {
                     if (item == null) continue;
+                    // Try "purchase_price" first (our key), then "rate" as fallback
+                    // in case the model uses the old key name
+                    decimal pp = SafeDecimal(item["purchase_price"]);
+                    if (pp == 0) pp = SafeDecimal(item["rate"]);
+
                     result.Items.Add(new ScannedBillItem
                     {
-                        Description = item["description"]?.GetValue<string>() ?? "",
-                        Quantity    = SafeDouble(item["quantity"]),
-                        Rate        = SafeDecimal(item["rate"]),
-                        Amount      = SafeDecimal(item["amount"])
+                        Description   = item["description"]?.GetValue<string>() ?? "",
+                        Quantity      = SafeDouble(item["quantity"]),
+                        PurchasePrice = pp,
+                        Amount        = SafeDecimal(item["amount"])
                     });
                 }
             }

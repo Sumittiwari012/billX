@@ -14,22 +14,19 @@ using System.Windows.Media;
 
 namespace MyWPFCRUDApp.Views
 {
-    // ── Value converter: matched product → text colour ────────────────────────
     public class ProductMatchColorConverter : IValueConverter
     {
         public object Convert(object value, Type t, object p, CultureInfo c)
             => value is long id && id > 0
-                ? new SolidColorBrush(Color.FromRgb(25, 113, 194))   // blue = matched
-                : new SolidColorBrush(Color.FromRgb(224, 49, 49));   // red  = unmatched
+                ? new SolidColorBrush(Color.FromRgb(25, 113, 194))
+                : new SolidColorBrush(Color.FromRgb(224, 49, 49));
 
         public object ConvertBack(object v, Type t, object p, CultureInfo c)
             => throw new NotImplementedException();
     }
 
-    // ── Window ────────────────────────────────────────────────────────────────
     public partial class BillScanReviewWindow : Window, INotifyPropertyChanged
     {
-        // ── Public result: set when user clicks Approve ───────────────────────
         public ScannedBillResult ApprovedBill { get; private set; }
 
         // ── Bound properties ──────────────────────────────────────────────────
@@ -41,6 +38,29 @@ namespace MyWPFCRUDApp.Views
         }
 
         public ObservableCollection<MProducts> Products { get; }
+
+        // Default 20% wholesale, 40% MRP — user can change live
+        private decimal _wholesalePercentage = 20;
+        public decimal WholesalePercentage
+        {
+            get => _wholesalePercentage;
+            set
+            {
+                if (SetField(ref _wholesalePercentage, value))
+                    RecalculatePrices();
+            }
+        }
+
+        private decimal _mrpPercentage = 40;
+        public decimal MRPPercentage
+        {
+            get => _mrpPercentage;
+            set
+            {
+                if (SetField(ref _mrpPercentage, value))
+                    RecalculatePrices();
+            }
+        }
 
         public int MatchedCount =>
             ScannedBill?.Items.Count(i => i.MatchedProductId > 0) ?? 0;
@@ -58,7 +78,7 @@ namespace MyWPFCRUDApp.Views
             {
                 int n = ScannedBill?.Items.Count(i => i.MatchedProductId <= 0) ?? 0;
                 return n > 0
-                    ? $"⚠  {n} item(s) not matched. Use the dropdown to link them, or they will be offered as new products after Approve."
+                    ? $"⚠  {n} item(s) not matched — they will be offered as new products after Approve."
                     : string.Empty;
             }
         }
@@ -67,7 +87,6 @@ namespace MyWPFCRUDApp.Views
         public BillScanReviewWindow(ScannedBillResult bill, List<MProducts> products)
         {
             Resources.Add("ProductMatchColorConverter", new ProductMatchColorConverter());
-
             InitializeComponent();
             DataContext = this;
 
@@ -75,9 +94,12 @@ namespace MyWPFCRUDApp.Views
             Products    = new ObservableCollection<MProducts>(products);
 
             TryAutoMatch();
+
+            // Calculate Wholesale and MRP once items are loaded
+            RecalculatePrices();
         }
 
-        // ── Auto-match: try to link scanned descriptions to existing products ─
+        // ── Auto-match descriptions to existing products ───────────────────────
         private void TryAutoMatch()
         {
             foreach (var item in ScannedBill.Items)
@@ -86,37 +108,45 @@ namespace MyWPFCRUDApp.Views
                 string desc = item.Description.ToLower();
 
                 var match = Products.FirstOrDefault(p =>
-                    (!string.IsNullOrEmpty(p.ProductName) &&
-                     desc.Contains(p.ProductName.ToLower())) ||
-                    (!string.IsNullOrEmpty(p.Barcode) &&
-                     desc.Contains(p.Barcode.ToLower())) ||
-                    (!string.IsNullOrEmpty(p.ProductCode) &&
-                     desc.Contains(p.ProductCode.ToLower())));
+                    (!string.IsNullOrEmpty(p.ProductName) && desc.Contains(p.ProductName.ToLower())) ||
+                    (!string.IsNullOrEmpty(p.Barcode)     && desc.Contains(p.Barcode.ToLower()))     ||
+                    (!string.IsNullOrEmpty(p.ProductCode) && desc.Contains(p.ProductCode.ToLower())));
 
                 if (match != null)
                 {
                     item.MatchedProductId   = match.Id;
                     item.MatchedProductName = match.ProductName;
-                    // Auto-fill rate from product's purchase price if rate is 0
-                    if (item.Rate == 0 && match.PurchasePrice > 0)
-                        item.Rate = match.PurchasePrice;
+                    if (item.PurchasePrice == 0 && match.PurchasePrice > 0)
+                        item.PurchasePrice = match.PurchasePrice;
                 }
             }
             RefreshWarnings();
         }
 
-        // ── ComboBox selection in editing template ────────────────────────────
-        private void ProductComboBox_SelectionChanged(object sender, SelectionChangedEventArgs e)
+        // ── Recalculate Wholesale and MRP for all rows ─────────────────────────
+        // Called: on load, when % inputs change, after grid cell edit
+        private void RecalculatePrices()
         {
-            if (sender is ComboBox cb && cb.SelectedItem is MProducts p &&
-                cb.DataContext is ScannedBillItem item)
+            if (ScannedBill?.Items == null) return;
+
+            foreach (var item in ScannedBill.Items)
             {
-                item.MatchedProductId   = p.Id;
-                item.MatchedProductName = p.ProductName;
-                if (item.Rate == 0 && p.PurchasePrice > 0)
-                    item.Rate = p.PurchasePrice;
+                if (item.PurchasePrice <= 0) continue;
+
+                item.WholesalePrice = item.PurchasePrice
+                    + (item.PurchasePrice * _wholesalePercentage / 100m);
+
+                item.MRP = item.PurchasePrice
+                    + (item.PurchasePrice * _mrpPercentage / 100m);
             }
-            RefreshWarnings();
+        }
+
+        // ── Grid cell edit ended — recalc if Purchase Price was edited ─────────
+        private void ItemsGrid_CellEditEnding(object sender, DataGridCellEditEndingEventArgs e)
+        {
+            // Delay slightly so the binding has time to push the value to the model
+            Dispatcher.BeginInvoke(new Action(RecalculatePrices),
+                System.Windows.Threading.DispatcherPriority.Background);
         }
 
         // ── Delete a row ──────────────────────────────────────────────────────
@@ -129,15 +159,13 @@ namespace MyWPFCRUDApp.Views
             }
         }
 
-        // ── Approve: pass ALL items (including unmatched) back to ViewModel ───
-        // The ViewModel will then offer "Add New Product" for unmatched ones.
+        // ── Approve ───────────────────────────────────────────────────────────
         private void ApproveButton_Click(object sender, RoutedEventArgs e)
         {
             if (!ScannedBill.Items.Any())
             {
-                MessageBox.Show(
-                    "No items to transfer. Please add items or cancel.",
-                    "Nothing to Transfer", MessageBoxButton.OK, MessageBoxImage.Warning);
+                MessageBox.Show("No items to transfer.", "Nothing to Transfer",
+                    MessageBoxButton.OK, MessageBoxImage.Warning);
                 return;
             }
 
@@ -145,13 +173,9 @@ namespace MyWPFCRUDApp.Views
             if (matched == 0)
             {
                 var cont = MessageBox.Show(
-                    "None of the items are matched to products yet.\n\n" +
-                    "You can still proceed — you will be offered the option to add " +
-                    "unmatched items as new products on the next screen.\n\n" +
-                    "Continue?",
-                    "No Matches Yet",
-                    MessageBoxButton.YesNo,
-                    MessageBoxImage.Question);
+                    "None of the items are matched to existing products yet.\n\n" +
+                    "You will be offered the option to add them as new products.\n\nContinue?",
+                    "No Matches Yet", MessageBoxButton.YesNo, MessageBoxImage.Question);
                 if (cont != MessageBoxResult.Yes) return;
             }
 
@@ -173,6 +197,14 @@ namespace MyWPFCRUDApp.Views
             OnPropertyChanged(nameof(UnmatchedCount));
             OnPropertyChanged(nameof(UnmatchedWarningVisibility));
             OnPropertyChanged(nameof(UnmatchedWarningText));
+        }
+
+        private bool SetField<T>(ref T field, T value, [CallerMemberName] string name = null)
+        {
+            if (EqualityComparer<T>.Default.Equals(field, value)) return false;
+            field = value;
+            OnPropertyChanged(name);
+            return true;
         }
 
         public event PropertyChangedEventHandler PropertyChanged;

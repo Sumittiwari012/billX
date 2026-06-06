@@ -1,6 +1,5 @@
-using MyWPFCRUDApp.Models;
+﻿using MyWPFCRUDApp.Models;
 using MyWPFCRUDApp.Services;
-using System;
 using System.Linq;
 using System.Windows;
 using System.Windows.Controls;
@@ -9,96 +8,170 @@ namespace MyWPFCRUDApp.Views
 {
     public partial class AddProductWindow : Window
     {
-        private readonly ProductService     _productService     = new ProductService();
-        private readonly CategoryService    _categoryService    = new CategoryService();
+        private readonly ProductService _productService = new ProductService();
+        private readonly CategoryService _categoryService = new CategoryService();
         private readonly SubCategoryService _subCategoryService = new SubCategoryService();
-        private readonly UnitService        _unitService        = new UnitService();
+        private readonly UnitService _unitService = new UnitService();
 
-        // Constructor used by barcode search (barcode is a real barcode)
+        private string _autoBarcode = string.Empty;
+
+        // Default IDs — first record from each table, used when user leaves combo blank
+        private long _defaultCategoryId = 1;
+        private long _defaultSubCategoryId = 1;
+        private long _defaultUnitId = 1;
+
+        // ── Constructor: default (from Products page) ─────────────────────────
+        public AddProductWindow()
+        {
+            InitializeComponent();
+            LoadInitialData();
+            GenerateBarcode();
+        }
+
+        // ── Constructor: from barcode scan flow ───────────────────────────────
         public AddProductWindow(string barcodeOrName)
         {
             InitializeComponent();
+            LoadInitialData();
 
-            // If the string looks like a barcode (numeric / short), put it in barcode field
-            // Otherwise treat it as a product name suggestion
             if (!string.IsNullOrWhiteSpace(barcodeOrName))
             {
-                bool looksLikeBarcode = barcodeOrName.All(c => char.IsDigit(c)) &&
-                                        barcodeOrName.Length >= 4;
+                bool looksLikeBarcode = barcodeOrName.All(c => char.IsDigit(c))
+                                        && barcodeOrName.Length >= 4;
                 if (looksLikeBarcode)
+                {
+                    _autoBarcode = barcodeOrName;
                     TxtBarcode.Text = barcodeOrName;
+                }
                 else
-                    TxtName.Text = barcodeOrName;   // pre-fill name from scanned description
+                {
+                    TxtName.Text = barcodeOrName;
+                    GenerateBarcode();
+                }
             }
-
-            LoadInitialData();
+            else
+            {
+                GenerateBarcode();
+            }
         }
 
-        /// <summary>Pre-fill the purchase price field (called from scan flow).</summary>
-        public void PreFillPurchasePrice(decimal price)
+        public void PreFillPurchasePrice(decimal price) { /* kept for scan-flow compatibility */ }
+
+        // ── Barcode generation ────────────────────────────────────────────────
+        private void GenerateBarcode()
         {
-            if (price > 0)
-                TxtPurchasePrice.Text = price.ToString("N2");
+            try
+            {
+                long nextNumber = _productService.GetProductCount() + 1;
+                _autoBarcode = $"M{nextNumber}";
+                TxtBarcode.Text = _autoBarcode;
+            }
+            catch
+            {
+                TxtBarcode.Text = string.Empty;
+            }
         }
 
+        private void BtnRegenerate_Click(object sender, RoutedEventArgs e)
+        {
+            GenerateBarcode();
+            TxtBarcode.Focus();
+            TxtBarcode.SelectAll();
+        }
+
+        // ── Load dropdowns + capture default IDs ──────────────────────────────
         private void LoadInitialData()
         {
-            ComboCategory.ItemsSource = _categoryService.GetCategory();
-            ComboUnit.ItemsSource     = _unitService.GetUnit();
-        }
+            var categories = _categoryService.GetCategory();
+            ComboCategory.ItemsSource = categories;
+            if (categories.Any())
+            {
+                ComboCategory.SelectedIndex = 0;          // ← this line
+                _defaultCategoryId = categories.First().Id;
+            }
 
-        // Filter Subcategories when Category is selected
+            var subs = _subCategoryService.GetSubCategoryList();
+            if (subs.Any())
+                _defaultSubCategoryId = subs.First().Id;
+
+            var units = _unitService.GetUnit();
+            ComboUnit.ItemsSource = units;
+            if (units.Any())
+            {
+                ComboUnit.SelectedIndex = 0;              // ← this line
+                _defaultUnitId = units.First().Id;
+            }
+        }
         private void ComboCategory_SelectionChanged(object sender, SelectionChangedEventArgs e)
         {
-            if (e.AddedItems.Count > 0 && e.AddedItems[0] is MCategory selectedCategory)
-            {
-                long categoryId  = selectedCategory.Id;
-                var  allSubs     = _subCategoryService.GetSubCategoryList();
-                var  filteredList = allSubs.Where(s => s.CategoryId == categoryId).ToList();
-
-                ComboSubCategory.ItemsSource = filteredList;
-                ComboSubCategory.SelectedIndex = filteredList.Count > 0 ? 0 : -1;
-            }
+            // No sub-category picker in this form — kept so XAML wiring compiles
         }
 
+        // ── Save ──────────────────────────────────────────────────────────────
         private void Save_Click(object sender, RoutedEventArgs e)
         {
-            if (ComboSubCategory.SelectedValue == null)
-            {
-                MessageBox.Show("Please select a Sub-Category");
-                return;
-            }
-
+            // ── Only Product Name is mandatory ────────────────────────────────
             if (string.IsNullOrWhiteSpace(TxtName.Text))
             {
-                MessageBox.Show("Product Name is required.");
+                MessageBox.Show("Product Name is required.",
+                    "Required", MessageBoxButton.OK, MessageBoxImage.Warning);
+                TxtName.Focus();
                 return;
             }
 
-            var p = new MProducts
+            // ── Auto-generate barcode if user left it blank ───────────────────
+            string barcode = string.IsNullOrWhiteSpace(TxtBarcode.Text)
+                ? $"M{_productService.GetProductCount() + 1}"
+                : TxtBarcode.Text.Trim();
+
+            // ── Duplicate barcode check ───────────────────────────────────────
+            if (_productService.GetByBarcode(barcode) != null)
             {
-                Barcode          = TxtBarcode.Text,
-                ProductName      = TxtName.Text,
-                CategoryId       = (long)ComboCategory.SelectedValue,
-                SubCategoryId    = (long)ComboSubCategory.SelectedValue,
-                UnitId           = (long)(ComboUnit.SelectedValue ?? 1),
-                PurchasePrice    = decimal.TryParse(TxtPurchasePrice.Text, out decimal pr)  ? pr  : 0,
-                MRP              = decimal.TryParse(TxtMRP.Text,           out decimal mrp) ? mrp : 0,
-                RetailSalePrice  = decimal.TryParse(TxtSalePrice.Text,     out decimal sp)  ? sp  : 0,
-                CGST             = double.TryParse(TxtCGST.Text,           out double c)    ? c   : 0,
-                SGST             = double.TryParse(TxtSGST.Text,           out double s)    ? s   : 0,
-                CESS             = double.TryParse(TxtCESS.Text,           out double ces)  ? ces : 0,
-                HSNCode          = TxtHSN.Text,
-                Godown           = TxtGodown.Text,
-                Rack             = TxtRack.Text,
-                Size             = TxtSize.Text,
-                Colour           = TxtColour.Text
+                MessageBox.Show(
+                    $"Barcode '{barcode}' already exists.\n" +
+                    "Please edit the barcode or click ↺ to regenerate.",
+                    "Duplicate Barcode", MessageBoxButton.OK, MessageBoxImage.Warning);
+                TxtBarcode.Focus();
+                TxtBarcode.SelectAll();
+                return;
+            }
+
+            // ── Build product — every optional field has a safe default ───────
+            var product = new MProducts
+            {
+                ProductName = TxtName.Text.Trim(),
+                Barcode = barcode,
+
+                // Category: use selection if made, else first from DB
+                CategoryId = ComboCategory.SelectedValue is long catId
+                                    ? catId : _defaultCategoryId,
+
+                // SubCategory: always default (no picker in this form)
+                SubCategoryId = _defaultSubCategoryId,
+
+                // Unit: use selection if made, else first from DB
+                UnitId = ComboUnit.SelectedValue is long unitId
+                                    ? unitId : _defaultUnitId,
+
+                // All amounts default to 0 — updated later from Products grid
+                PurchasePrice = 0,
+                RetailSalePrice = 0,
+                MRP = 0,
+                CGST = 0,
+                SGST = 0,
+                IGST = 0,
+                CESS = 0,
             };
 
-            if (_productService.InsertProduct(p))
+            if (_productService.InsertProduct(product))
             {
-                this.DialogResult = true;
-                this.Close();
+                DialogResult = true;
+                Close();
+            }
+            else
+            {
+                MessageBox.Show("Failed to save product. Please try again.",
+                    "Error", MessageBoxButton.OK, MessageBoxImage.Error);
             }
         }
     }

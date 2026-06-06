@@ -210,7 +210,7 @@ namespace MyWPFCRUDApp.ViewModels
                 if (product == null) continue;
 
                 // Use scanned rate if available, else fall back to stored purchase price
-                decimal price = item.Rate > 0 ? item.Rate : product.PurchasePrice;
+                decimal price = item.PurchasePrice > 0 ? item.PurchasePrice : product.PurchasePrice;
                 double  qty   = item.Quantity > 0 ? item.Quantity : 1;
 
                 // Tax calculation

@@ -63,7 +63,7 @@
                         <TextBlock Text="Product Name" Width="180" Margin="5" FontWeight="Bold"/>
                         <TextBlock Text="Category"     Width="150" Margin="5" FontWeight="Bold"/>
                         <TextBlock Text="SubCategory"  Width="150" Margin="5" FontWeight="Bold"/>
-                        <TextBlock Text="Purchase"     Width="100" Margin="5" FontWeight="Bold"/>
+                        <TextBlock Text="Purchase Price" Width="120" Margin="5" FontWeight="Bold"/>
                         <TextBlock Text="Sale"         Width="100" Margin="5" FontWeight="Bold"/>
                         <TextBlock Text="MRP"          Width="100" Margin="5" FontWeight="Bold"/>
                         <TextBlock Text="CGST"         Width="80"  Margin="5" FontWeight="Bold"/>
@@ -82,9 +82,9 @@
                         <TextBox Width="180" Margin="5" Text="{Binding MProduct.ProductName, UpdateSourceTrigger=PropertyChanged}"/>
                         <ComboBox Width="150" Margin="5" ItemsSource="{Binding Categories}"          SelectedItem="{Binding SelectedCategory}"    DisplayMemberPath="CategoryName"/>
                         <ComboBox Width="150" Margin="5" ItemsSource="{Binding FilteredSubCategories}" SelectedItem="{Binding SelectedSubCategory}" DisplayMemberPath="SubCategoryName"/>
-                        <TextBox Width="100" Margin="5" Text="{Binding MProduct.PurchasePrice}"/>
-                        <TextBox Width="100" Margin="5" Text="{Binding MProduct.RetailSalePrice}"/>
-                        <TextBox Width="100" Margin="5" Text="{Binding MProduct.MRP}"/>
+                        <TextBox Width="120" Margin="5" Text="{Binding MProduct.PurchasePrice, StringFormat=0.00, UpdateSourceTrigger=PropertyChanged}"/>
+                        <TextBox Width="100" Margin="5" Text="{Binding MProduct.RetailSalePrice, StringFormat=0.00, UpdateSourceTrigger=PropertyChanged}"/>
+                        <TextBox Width="100" Margin="5" Text="{Binding MProduct.MRP, StringFormat=0.00, UpdateSourceTrigger=PropertyChanged}"/>
                         <TextBox Width="80"  Margin="5" Text="{Binding MProduct.CGST}"/>
                         <TextBox Width="80"  Margin="5" Text="{Binding MProduct.SGST}"/>
                         <TextBox Width="80"  Margin="5" Text="{Binding MProduct.IGST}"/>
@@ -99,9 +99,60 @@
         </Border>
 
         <!-- ═══════════════════════════════════════════════
-             ROW 2 · Multi-select delete notice bar
+             ROW 1B · Price Auto-Calculation Section
         ═══════════════════════════════════════════════ -->
         <Border Grid.Row="2"
+                Background="#FFF0E8DC"
+                BorderBrush="#FFDFCFB8"
+                BorderThickness="1"
+                CornerRadius="8"
+                Padding="12"
+                Margin="0,0,0,8">
+            <Grid>
+                <Grid.ColumnDefinitions>
+                    <ColumnDefinition Width="Auto"/>
+                    <ColumnDefinition Width="200"/>
+                    <ColumnDefinition Width="30"/>
+                    <ColumnDefinition Width="Auto"/>
+                    <ColumnDefinition Width="200"/>
+                    <ColumnDefinition Width="30"/>
+                    <ColumnDefinition Width="*"/>
+                </Grid.ColumnDefinitions>
+
+                <!-- Wholesale Price Percentage -->
+                <StackPanel Grid.Column="0" Orientation="Horizontal" VerticalAlignment="Center">
+                    <TextBlock Text="Wholesale Price:" FontWeight="Bold" Margin="0,0,8,0" VerticalAlignment="Center"/>
+                </StackPanel>
+                <TextBox Grid.Column="1" 
+                         Text="{Binding WholesalePricePercentage, StringFormat=0, UpdateSourceTrigger=PropertyChanged}"
+                         Padding="8,6"
+                         VerticalAlignment="Center"/>
+                <TextBlock Grid.Column="2" Text="%" FontWeight="Bold" VerticalAlignment="Center" HorizontalAlignment="Center"/>
+
+                <!-- MRP Percentage -->
+                <StackPanel Grid.Column="3" Orientation="Horizontal" VerticalAlignment="Center">
+                    <TextBlock Text="MRP:" FontWeight="Bold" Margin="12,0,8,0" VerticalAlignment="Center"/>
+                </StackPanel>
+                <TextBox Grid.Column="4" 
+                         Text="{Binding MRPPercentage, StringFormat=0, UpdateSourceTrigger=PropertyChanged}"
+                         Padding="8,6"
+                         VerticalAlignment="Center"/>
+                <TextBlock Grid.Column="5" Text="%" FontWeight="Bold" VerticalAlignment="Center" HorizontalAlignment="Center"/>
+
+                <!-- Info -->
+                <TextBlock Grid.Column="6" 
+                           Text="Enter percentages of Purchase Price to auto-calculate Wholesale Price &amp; MRP"
+                           Foreground="#666"
+                           FontSize="12"
+                           VerticalAlignment="Center"
+                           Margin="12,0,0,0"/>
+            </Grid>
+        </Border>
+
+        <!-- ═══════════════════════════════════════════════
+             ROW 2 · Multi-select delete notice bar
+        ═══════════════════════════════════════════════ -->
+        <Border Grid.Row="5"
                 Background="#FFFFEEBA"
                 BorderBrush="#FFC8A400"
                 BorderThickness="1"

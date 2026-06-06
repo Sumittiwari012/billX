@@ -32,15 +32,29 @@ namespace MyWPFCRUDApp.Models
             }
         }
 
-        private decimal _rate;
-        public decimal Rate
+        private decimal _purchasePrice;
+        public decimal PurchasePrice
         {
-            get => _rate;
+            get => _purchasePrice;
             set
             {
-                if (SetProperty(ref _rate, value))
+                if (SetProperty(ref _purchasePrice, value))
                     RecalcAmount();
             }
+        }
+
+        private decimal _wholesalePrice;
+        public decimal WholesalePrice
+        {
+            get => _wholesalePrice;
+            set => SetProperty(ref _wholesalePrice, value);
+        }
+
+        private decimal _mrp;
+        public decimal MRP
+        {
+            get => _mrp;
+            set => SetProperty(ref _mrp, value);
         }
 
         private decimal _amount;
@@ -66,8 +80,8 @@ namespace MyWPFCRUDApp.Models
 
         private void RecalcAmount()
         {
-            if (_quantity > 0 && _rate > 0)
-                Amount = (decimal)_quantity * _rate;
+            if (_quantity > 0 && _purchasePrice > 0)
+                Amount = (decimal)_quantity * _purchasePrice;
         }
     }
 }
