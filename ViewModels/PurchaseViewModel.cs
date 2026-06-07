@@ -61,7 +61,6 @@ namespace MyWPFCRUDApp.ViewModels
                 if (SetProperty(ref _selectedSupplier, value) && value != null)
                     PurchaseMaster.SupplierId = value.Id;
 
-                // Update scan button hint
                 OnPropertyChanged(nameof(ScanHintText));
                 OnPropertyChanged(nameof(ScanHintVisibility));
             }
@@ -122,7 +121,6 @@ namespace MyWPFCRUDApp.ViewModels
                     Owner = Application.Current.MainWindow
                 };
                 if (keyWin.ShowDialog() != true) return;
-                // Key is now saved — continue
             }
 
             // ── STEP 2: Enforce supplier selection ────────────────────────────
@@ -148,7 +146,7 @@ namespace MyWPFCRUDApp.ViewModels
             };
             if (ofd.ShowDialog() != true) return;
 
-            // ── STEP 4: Send to Groq AI ────────────────────────────────────────
+            // ── STEP 4: Send to AI ─────────────────────────────────────────────
             ScannedBillResult scanned;
             try
             {
@@ -172,23 +170,19 @@ namespace MyWPFCRUDApp.ViewModels
                 return;
             }
 
-            // ── STEP 5: Open review window ─────────────────────────────────────
-            var reviewWin = new BillScanReviewWindow(scanned, Products.ToList())
+            // ── STEP 5: Open review window (no products needed — no matching) ──
+            var reviewWin = new BillScanReviewWindow(scanned)
             {
                 Owner = Application.Current.MainWindow
             };
 
             if (reviewWin.ShowDialog() != true) return;
 
-            // ── STEP 6: Handle new products ────────────────────────────────────
-            // Reload products in case user added new ones inside the review window
-            Products = new ObservableCollection<MProducts>(_productService.GetProducts());
-
-            // ── STEP 7: Transfer approved items ───────────────────────────────
+            // ── STEP 6: Transfer ALL approved items directly ───────────────────
             TransferScannedItems(reviewWin.ApprovedBill);
         }
 
-        // ── Transfer all scanned items with correct qty, price, tax ──────────
+        // ── Transfer ALL scanned items directly — no matching required ────────
         private void TransferScannedItems(ScannedBillResult approved)
         {
             // Fill invoice header fields if blank
@@ -201,45 +195,32 @@ namespace MyWPFCRUDApp.ViewModels
                     null, System.Globalization.DateTimeStyles.None, out DateTime d))
                 PurchaseMaster.PurchaseDate = d;
 
+            // Get current product count from DB to seed barcode generation.
+            // Barcodes: M{(existingCount + 1)}, M{(existingCount + 2)}, ...
+            long existingCount = _productService.GetProductCount();
             int added = 0;
 
-            foreach (var item in approved.Items.Where(i => i.MatchedProductId > 0))
+            foreach (var item in approved.Items)
             {
-                // Always look up from the refreshed Products list
-                var product = Products.FirstOrDefault(p => p.Id == item.MatchedProductId);
-                if (product == null) continue;
-
-                // Use scanned rate if available, else fall back to stored purchase price
-                decimal price = item.PurchasePrice > 0 ? item.PurchasePrice : product.PurchasePrice;
                 double  qty   = item.Quantity > 0 ? item.Quantity : 1;
+                decimal price = item.PurchasePrice;
+                decimal netAmt = (decimal)qty * price;
 
-                // Tax calculation
-                decimal taxRate  = (decimal)(product.CGST + product.SGST + product.CESS);
-                decimal subtotal = (decimal)qty * price;
-                decimal netAmt   = subtotal + subtotal * taxRate / 100m;
+                // Generate sequential barcode for this entry
+                string barcode = $"M{existingCount + added + 1}";
 
-                var existing = PurchaseItems.FirstOrDefault(pi => pi.ProductId == product.Id);
-                if (existing != null)
+                PurchaseItems.Add(new MPurchaseDetail
                 {
-                    // Update existing row — remove/re-insert to force UI refresh
-                    int idx = PurchaseItems.IndexOf(existing);
-                    existing.Quantity      = qty;
-                    existing.PurchasePrice = price;
-                    existing.AfterTaxation = netAmt;
-                    PurchaseItems.RemoveAt(idx);
-                    PurchaseItems.Insert(idx, existing);
-                }
-                else
-                {
-                    PurchaseItems.Add(new MPurchaseDetail
-                    {
-                        ProductId      = product.Id,
-                        Product        = product,
-                        Quantity       = qty,
-                        PurchasePrice  = price,
-                        AfterTaxation  = netAmt
-                    });
-                }
+                    ProductId      = 0,                      // 0 = not yet linked to a product
+                    ProductName    = item.Description,       // scanned description as name
+                    Barcode        = barcode,
+                    Quantity       = qty,
+                    PurchasePrice  = price,
+                    WholesalePrice = item.WholesalePrice,
+                    MRP            = item.MRP,
+                    AfterTaxation  = netAmt
+                });
+
                 added++;
             }
 
@@ -248,7 +229,7 @@ namespace MyWPFCRUDApp.ViewModels
 
             MessageBox.Show(
                 $"✔  {added} item(s) transferred from scanned bill.\n" +
-                "You can edit quantities and prices directly in the grid.\n" +
+                "Barcodes have been pre-assigned. Edit quantities and prices directly in the grid.\n" +
                 "Click SAVE INVOICE when ready.",
                 "Transfer Complete", MessageBoxButton.OK, MessageBoxImage.Information);
         }
@@ -305,22 +286,24 @@ namespace MyWPFCRUDApp.ViewModels
             {
                 int index = PurchaseItems.IndexOf(existing);
                 existing.Quantity++;
-                decimal taxRate  = (decimal)(product.CGST + product.SGST + product.CESS);
                 decimal subtotal = (decimal)existing.Quantity * existing.PurchasePrice;
-                existing.AfterTaxation = subtotal + subtotal * taxRate / 100m;
+                existing.AfterTaxation = subtotal;
                 PurchaseItems.RemoveAt(index);
                 PurchaseItems.Insert(index, existing);
             }
             else
             {
-                decimal taxRate = (decimal)(product.CGST + product.SGST + product.CESS);
                 PurchaseItems.Add(new MPurchaseDetail
                 {
                     ProductId      = product.Id,
+                    ProductName    = product.ProductName,
+                    Barcode        = product.Barcode,
                     Product        = product,
                     Quantity       = 1,
                     PurchasePrice  = product.PurchasePrice,
-                    AfterTaxation  = product.PurchasePrice + product.PurchasePrice * taxRate / 100m
+                    WholesalePrice = product.WholesalePrice,
+                    MRP            = product.MRP,
+                    AfterTaxation  = product.PurchasePrice
                 });
             }
             RecalculateTotal();

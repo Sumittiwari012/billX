@@ -73,7 +73,7 @@
                     </StackPanel>
                 </Border>
 
-                <!-- ★ Scan Bill Button — requires supplier selected ★ -->
+                <!-- ★ Scan Bill Button ★ -->
                 <Border Grid.Column="4" Background="#EBF8EE" CornerRadius="8" Padding="10,8">
                     <StackPanel HorizontalAlignment="Center">
                         <StackPanel Orientation="Horizontal" HorizontalAlignment="Center">
@@ -131,24 +131,26 @@
                         Binding="{Binding RelativeSource={RelativeSource AncestorType=DataGridRow}, Path=Header}"
                         Width="40" IsReadOnly="True"/>
 
-                    <!-- Product Name (read-only display) -->
-                    <DataGridTextColumn Header="Product Name"
-                        Binding="{Binding Product.ProductName}"
-                        Width="*" IsReadOnly="True">
+                    <!-- Barcode (pre-assigned, read-only) -->
+                    <DataGridTextColumn Header="Barcode"
+                        Binding="{Binding Barcode}"
+                        Width="120" IsReadOnly="True">
                         <DataGridTextColumn.ElementStyle>
                             <Style TargetType="TextBlock">
+                                <Setter Property="FontFamily" Value="Consolas"/>
+                                <Setter Property="Foreground" Value="#1971C2"/>
                                 <Setter Property="FontWeight" Value="SemiBold"/>
                             </Style>
                         </DataGridTextColumn.ElementStyle>
                     </DataGridTextColumn>
 
-                    <!-- Barcode (read-only) -->
-                    <DataGridTextColumn Header="Barcode"
-                        Binding="{Binding Product.Barcode}"
-                        Width="120" IsReadOnly="True">
+                    <!-- Product Name (editable — type name for new scanned items) -->
+                    <DataGridTextColumn Header="Product Name"
+                        Binding="{Binding ProductName, UpdateSourceTrigger=PropertyChanged}"
+                        Width="*">
                         <DataGridTextColumn.ElementStyle>
                             <Style TargetType="TextBlock">
-                                <Setter Property="FontFamily" Value="Consolas"/>
+                                <Setter Property="FontWeight" Value="SemiBold"/>
                             </Style>
                         </DataGridTextColumn.ElementStyle>
                     </DataGridTextColumn>
@@ -164,6 +166,31 @@
                         </DataGridTextColumn.ElementStyle>
                     </DataGridTextColumn>
 
+                    <!-- Wholesale Price — EDITABLE -->
+                    <DataGridTextColumn Header="Wholesale (₹)"
+                        Binding="{Binding WholesalePrice, UpdateSourceTrigger=PropertyChanged, StringFormat={}{0:N2}}"
+                        Width="115">
+                        <DataGridTextColumn.ElementStyle>
+                            <Style TargetType="TextBlock">
+                                <Setter Property="TextAlignment" Value="Right"/>
+                                <Setter Property="Foreground" Value="#2B8A3E"/>
+                            </Style>
+                        </DataGridTextColumn.ElementStyle>
+                    </DataGridTextColumn>
+
+                    <!-- MRP — EDITABLE -->
+                    <DataGridTextColumn Header="MRP (₹)"
+                        Binding="{Binding MRP, UpdateSourceTrigger=PropertyChanged, StringFormat={}{0:N2}}"
+                        Width="100">
+                        <DataGridTextColumn.ElementStyle>
+                            <Style TargetType="TextBlock">
+                                <Setter Property="TextAlignment" Value="Right"/>
+                                <Setter Property="Foreground" Value="#1971C2"/>
+                                <Setter Property="FontWeight" Value="Bold"/>
+                            </Style>
+                        </DataGridTextColumn.ElementStyle>
+                    </DataGridTextColumn>
+
                     <!-- Quantity — EDITABLE -->
                     <DataGridTextColumn Header="Qty"
                         Binding="{Binding Quantity, UpdateSourceTrigger=PropertyChanged}"
@@ -175,18 +202,7 @@
                         </DataGridTextColumn.ElementStyle>
                     </DataGridTextColumn>
 
-                    <!-- Tax columns (read-only from product) -->
-                    <DataGridTextColumn Header="CGST %"
-                        Binding="{Binding Product.CGST, StringFormat={}{0}%}"
-                        Width="65" IsReadOnly="True"/>
-                    <DataGridTextColumn Header="SGST %"
-                        Binding="{Binding Product.SGST, StringFormat={}{0}%}"
-                        Width="65" IsReadOnly="True"/>
-                    <DataGridTextColumn Header="IGST %"
-                        Binding="{Binding Product.IGST, StringFormat={}{0}%}"
-                        Width="65" IsReadOnly="True"/>
-
-                    <!-- Net Amount — auto-calculated, also editable for override -->
+                    <!-- Net Amount — auto-calculated -->
                     <DataGridTextColumn Header="Net Amount (₹)"
                         Binding="{Binding AfterTaxation, UpdateSourceTrigger=PropertyChanged, StringFormat={}{0:N2}}"
                         Width="130">
