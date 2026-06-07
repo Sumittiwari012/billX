@@ -1,5 +1,8 @@
+using MyWPFCRUDApp.Models;
 using MyWPFCRUDApp.ViewModels;
+using System.Windows;
 using System.Windows.Controls;
+using System.Windows.Input;
 
 namespace MyWPFCRUDApp.Views
 {
@@ -18,6 +21,24 @@ namespace MyWPFCRUDApp.Views
         {
             if (DataContext is PurchaseViewModel vm)
                 vm.RecalculateTotal();
+        }
+
+        // ── Remove row button ─────────────────────────────────────────────────
+        // FIX: Removed PreviewMouseLeftButtonDown entirely.
+        //      Setting e.Handled=true there was preventing the Click event from
+        //      firing — the button appeared pressed but RemoveButton_Click never ran.
+        //      CommitEdit is now called at the start of Click instead.
+        private void RemoveButton_Click(object sender, RoutedEventArgs e)
+        {
+            // Commit any open cell edit so the grid isn't in edit mode during removal
+            PurchaseGrid.CommitEdit(DataGridEditingUnit.Row, exitEditingMode: true);
+
+            if (sender is Button btn
+                && btn.Tag is MPurchaseDetail item
+                && DataContext is PurchaseViewModel vm)
+            {
+                vm.RemoveItem(item);
+            }
         }
     }
 }

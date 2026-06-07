@@ -7,6 +7,7 @@ using System.Collections.ObjectModel;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
+using System.Windows;
 using System.Windows.Input;
 using WPFCRUDApp.Models;
 
@@ -34,6 +35,7 @@ namespace MyWPFCRUDApp.ViewModels
                 if (SetProperty(ref _selectedTaxCategory, value) && value != null)
                 {
                     MTaxCategory = value;
+                    TaxContext.SelectedTax = value;
                 }
             }
         }
@@ -45,32 +47,53 @@ namespace MyWPFCRUDApp.ViewModels
         }
         public void LoadData()
         {
-            var categoryData = _taxService.GetTaxCategory();
-            TaxCategory = new ObservableCollection<MTaxCategory>(categoryData);
+            TaxCategory = new ObservableCollection<MTaxCategory>(
+                _taxService.GetTaxCategory());
+
+            if (TaxContext.SelectedTax != null)
+            {
+                SelectedTaxCategory = TaxCategory
+                    .FirstOrDefault(x => x.Id == TaxContext.SelectedTax.Id);
+            }
+
+            if (SelectedTaxCategory == null && TaxCategory.Any())
+            {
+                SelectedTaxCategory = TaxCategory.First();
+            }
         }
         private void Reset()
         {
             MTaxCategory = new MTaxCategory();
-            SelectedTaxCategory = null;
+
+            // Do NOT clear SelectedTaxCategory
         }
         private void Save()
         {
-            if (string.IsNullOrWhiteSpace(MTaxCategory.CategoryName))
+            if (MTaxCategory.CGST < 0 ||
+                MTaxCategory.SGST < 0 ||
+                MTaxCategory.IGST < 0)
             {
-                System.Windows.MessageBox.Show("Category Name is required!");
+                MessageBox.Show("Invalid tax values.");
                 return;
             }
 
             bool success;
+
             if (MTaxCategory.Id <= 0)
                 success = _taxService.InsertTax(MTaxCategory);
             else
-                success = _taxService.UpdateTaxCategory(MTaxCategory); // Note: Your service currently names this UpdateStudent
+                success = _taxService.UpdateTaxCategory(MTaxCategory);
 
             if (success)
             {
+                long selectedId = MTaxCategory.Id;
+
                 LoadData();
-                Reset();
+
+                SelectedTaxCategory =
+                    TaxCategory.FirstOrDefault(x => x.Id == selectedId);
+
+                MTaxCategory = SelectedTaxCategory;
             }
         }
         private void Delete()

@@ -305,7 +305,24 @@ namespace MyWPFCRUDApp.Services
             // List all your changes here in order
             var migrations = new Dictionary<string, string>
     {
-        { "Add_IGST_To_MProducts", "ALTER TABLE MProducts ADD COLUMN IGST DOUBLE DEFAULT 0.0 AFTER SGST;" },
+        {
+    "Drop_MTaxCategory",
+    "DROP TABLE IF EXISTS MTaxCategory;"
+},
+{
+    "Create_MTaxCategory_GST",
+    @"CREATE TABLE MTaxCategory (
+        Id BIGINT AUTO_INCREMENT PRIMARY KEY,
+        CreatedBy VARCHAR(100) DEFAULT 'System',
+        CreatedDate DATETIME DEFAULT CURRENT_TIMESTAMP,
+        ModifiedBy VARCHAR(100) DEFAULT 'System',
+        ModifiedDate DATETIME DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+
+        CGST DOUBLE DEFAULT 0.0,
+        SGST DOUBLE DEFAULT 0.0,
+        IGST DOUBLE DEFAULT 0.0
+    ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;"
+}
         
         // Future changes go here:
         // { "Remove_OldColumn", "ALTER TABLE MProducts DROP COLUMN OldColumn;" }

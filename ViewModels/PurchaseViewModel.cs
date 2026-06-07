@@ -19,6 +19,7 @@ namespace MyWPFCRUDApp.ViewModels
         private readonly SupplierService _supplierService;
         private readonly ProductService _productService;
         private readonly BillScanService _billScanService;
+        private readonly TaxService _taxService;
 
         // ── Commands ───────────────────────────────────────────────────────────
         public ICommand AddItemCommand { get; }
@@ -60,6 +61,7 @@ namespace MyWPFCRUDApp.ViewModels
                 if (SetProperty(ref _selectedSupplier, value) && value != null)
                     PurchaseMaster.SupplierId = value.Id;
 
+                DetermineApplicableTaxes();  // recalculate whenever supplier changes
                 OnPropertyChanged(nameof(ScanHintText));
                 OnPropertyChanged(nameof(ScanHintVisibility));
             }
@@ -87,21 +89,182 @@ namespace MyWPFCRUDApp.ViewModels
         public Visibility ScanHintVisibility => SelectedSupplier == null
             ? Visibility.Visible : Visibility.Collapsed;
 
+        // ── My company GST number (loaded once; used for GST state comparison) ─
+        private string _myGSTNumber = string.Empty;
+        public string MyGSTNumber
+        {
+            get => _myGSTNumber;
+            set
+            {
+                if (SetProperty(ref _myGSTNumber, value))
+                    DetermineApplicableTaxes();
+            }
+        }
+        
+        // ── GST type flags ─────────────────────────────────────────────────────
+        private bool _isSameState;
+        public bool IsSameState
+        {
+            get => _isSameState;
+            private set => SetProperty(ref _isSameState, value);
+        }
+
+        // ── Tax percentages (read from Tax Section via TaxService; never hardcoded) ─
+        private decimal _cgstPercent;
+        /// <summary>
+        /// CGST% loaded from the Tax Section record whose CategoryName contains "CGST".
+        /// Bound to the CGST row in the Invoice Summary panel (PurchaseViews.xaml).
+        /// </summary>
+        public decimal CGSTPercent
+        {
+            get => _cgstPercent;
+            set { if (SetProperty(ref _cgstPercent, value)) RecalculateTotal(); }
+        }
+
+        private decimal _sgstPercent;
+        /// <summary>
+        /// SGST% loaded from the Tax Section record whose CategoryName contains "SGST".
+        /// Bound to the SGST row in the Invoice Summary panel (PurchaseViews.xaml).
+        /// </summary>
+        public decimal SGSTPercent
+        {
+            get => _sgstPercent;
+            set { if (SetProperty(ref _sgstPercent, value)) RecalculateTotal(); }
+        }
+
+        private decimal _igstPercent;
+        /// <summary>
+        /// IGST% loaded from the Tax Section record whose CategoryName contains "IGST".
+        /// Bound to the IGST row in the Invoice Summary panel (PurchaseViews.xaml).
+        /// </summary>
+        public decimal IGSTPercent
+        {
+            get => _igstPercent;
+            set { if (SetProperty(ref _igstPercent, value)) RecalculateTotal(); }
+        }
+
+        // ── Computed tax amounts (read-only; updated inside RecalculateTotal) ──
+        private decimal _cgstAmount;
+        public decimal CGSTAmount
+        {
+            get => _cgstAmount;
+            private set => SetProperty(ref _cgstAmount, value);
+        }
+
+        private decimal _sgstAmount;
+        public decimal SGSTAmount
+        {
+            get => _sgstAmount;
+            private set => SetProperty(ref _sgstAmount, value);
+        }
+
+        private decimal _igstAmount;
+        public decimal IGSTAmount
+        {
+            get => _igstAmount;
+            private set => SetProperty(ref _igstAmount, value);
+        }
+
+        // ── NetAmount = sum of all line AfterTaxation values ──────────────────
+        private decimal _netAmount;
+        public decimal NetAmount
+        {
+            get => _netAmount;
+            private set => SetProperty(ref _netAmount, value);
+        }
+        private decimal _discount;
+        public decimal Discount
+        {
+            get => _discount;
+            set
+            {
+                if (SetProperty(ref _discount, value))
+                {
+                    PurchaseMaster.Discount = value;
+                    RecalculateTotal();
+                }
+            }
+        }
+        // ════════════════════════════════════════════════════════════════════════
+        // ISSUE #3 — DetermineApplicableTaxes()
+        //
+        // PURPOSE
+        //   Compares the first 2 characters of the Supplier's GSTIN against the
+        //   Company's GSTNumber.  The first 2 digits of a GSTIN identify the
+        //   Indian state, so a match means an intra-state transaction (CGST+SGST)
+        //   and a mismatch means inter-state (IGST).
+        //
+        // TAX PERCENTAGES
+        //   • CGSTPercent  — read from _cgstPercent (loaded from MTaxCategory DB row
+        //                    whose CategoryName contains "CGST").
+        //   • SGSTPercent  — read from _sgstPercent (loaded from MTaxCategory DB row
+        //                    whose CategoryName contains "SGST").
+        //   • IGSTPercent  — read from _igstPercent (loaded from MTaxCategory DB row
+        //                    whose CategoryName contains "IGST").
+        //   No percentage is ever hardcoded here.
+        //
+        // RULE
+        //   Same first-2 chars  → CGST% and SGST% apply; IGST% = 0
+        //   Different           → IGST% applies;          CGST% = SGST% = 0
+        //
+        // CALLED FROM
+        //   1. SelectedSupplier setter  — whenever the user picks a different supplier.
+        //   2. MyGSTNumber setter       — when the company GST is refreshed at startup.
+        //   3. InitializeData()         — once at form load, after loading company GST.
+        // ════════════════════════════════════════════════════════════════════════
+        private void DetermineApplicableTaxes()
+        {
+
+            string supplierGST = SelectedSupplier?.GSTIN ?? string.Empty;
+            string companyGST = MyGSTNumber ?? string.Empty;
+
+            bool sameState =
+                supplierGST.Length >= 2 &&
+                companyGST.Length >= 2 &&
+                supplierGST.Substring(0, 2) == companyGST.Substring(0, 2);
+
+            if (sameState)
+            {
+                // Same State
+                CGSTPercent = TaxContext.SelectedTax?.CGST ?? 0;
+                SGSTPercent = TaxContext.SelectedTax?.SGST ?? 0;
+                IGSTPercent = 0;
+
+                PurchaseMaster.CGST_Applicable = true;
+                PurchaseMaster.SGST_Applicable = true;
+                PurchaseMaster.IGST_Applicable = false;
+            }
+            else
+            {
+                // Different State
+                CGSTPercent = 0;
+                SGSTPercent = 0;
+                IGSTPercent = TaxContext.SelectedTax?.IGST ?? 0;
+
+                PurchaseMaster.CGST_Applicable = false;
+                PurchaseMaster.SGST_Applicable = false;
+                PurchaseMaster.IGST_Applicable = true;
+            }
+
+            RecalculateTotal();
+        }
+
         // ── Constructor ────────────────────────────────────────────────────────
         public PurchaseViewModel()
         {
             _purchaseService = new PurchaseService();
             _supplierService = new SupplierService();
-            _productService = new ProductService();
+            _productService  = new ProductService();
             _billScanService = new BillScanService();
+            _taxService      = new TaxService();
 
-            AddItemCommand = new RelayCommand(_ => AddItemToGrid());
+            AddItemCommand        = new RelayCommand(_ => AddItemToGrid());
             PurchaseDeleteCommand = new RelayCommand(p => RemoveItemFromGrid(p as MPurchaseDetail));
-            PurchaseSaveCommand = new RelayCommand(_ => SavePurchase());
-            PurchaseResetCommand = new RelayCommand(_ => ResetForm());
-            BarcodeSearchCommand = new RelayCommand(p => HandleBarcodeSearch(p?.ToString()));
+            PurchaseSaveCommand   = new RelayCommand(_ => SavePurchase());
+            PurchaseResetCommand  = new RelayCommand(_ => ResetForm());
+            BarcodeSearchCommand  = new RelayCommand(p => HandleBarcodeSearch(p?.ToString()));
             OpenAddSupplierCommand = new RelayCommand(_ => OpenSupplierWindow());
-            ScanBillCommand = new RelayCommand(async _ => await ExecuteScanBillAsync());
+            ScanBillCommand       = new RelayCommand(async _ => await ExecuteScanBillAsync());
             OpenApiKeySetupCommand = new RelayCommand(_ => OpenApiKeySetup());
 
             InitializeData();
@@ -112,40 +275,30 @@ namespace MyWPFCRUDApp.ViewModels
         // ════════════════════════════════════════════════════════════════════════
         private async System.Threading.Tasks.Task ExecuteScanBillAsync()
         {
-            // ── STEP 1: Ensure Groq API key is configured ─────────────────────
             if (!ApiKeyManager.HasKey())
             {
-                var keyWin = new ApiKeySetupWindow
-                {
-                    Owner = Application.Current.MainWindow
-                };
+                var keyWin = new ApiKeySetupWindow { Owner = Application.Current.MainWindow };
                 if (keyWin.ShowDialog() != true) return;
             }
 
-            // ── STEP 2: Enforce supplier selection ────────────────────────────
             if (SelectedSupplier == null)
             {
                 var result = MessageBox.Show(
                     "Please select a supplier before scanning a bill.\n\n" +
                     "Click Yes to open the Add Supplier window, or No to select an existing one.",
                     "Supplier Required", MessageBoxButton.YesNo, MessageBoxImage.Information);
-
-                if (result == MessageBoxResult.Yes)
-                    OpenSupplierWindow();
-
+                if (result == MessageBoxResult.Yes) OpenSupplierWindow();
                 return;
             }
 
-            // ── STEP 3: Pick bill file ─────────────────────────────────────────
             var ofd = new OpenFileDialog
             {
-                Title = "Select Purchase Bill (PDF or Image)",
+                Title  = "Select Purchase Bill (PDF or Image)",
                 Filter = "Supported files|*.pdf;*.jpg;*.jpeg;*.png;*.webp" +
                          "|PDF|*.pdf|Images|*.jpg;*.jpeg;*.png;*.webp"
             };
             if (ofd.ShowDialog() != true) return;
 
-            // ── STEP 4: Send to AI ─────────────────────────────────────────────
             ScannedBillResult scanned;
             try
             {
@@ -169,22 +322,14 @@ namespace MyWPFCRUDApp.ViewModels
                 return;
             }
 
-            // ── STEP 5: Open review window (no products needed — no matching) ──
-            var reviewWin = new BillScanReviewWindow(scanned)
-            {
-                Owner = Application.Current.MainWindow
-            };
-
+            var reviewWin = new BillScanReviewWindow(scanned) { Owner = Application.Current.MainWindow };
             if (reviewWin.ShowDialog() != true) return;
 
-            // ── STEP 6: Transfer ALL approved items directly ───────────────────
             TransferScannedItems(reviewWin.ApprovedBill);
         }
 
-        // ── Transfer ALL scanned items directly — no matching required ────────
         private void TransferScannedItems(ScannedBillResult approved)
         {
-            // Fill invoice header fields if blank
             if (string.IsNullOrWhiteSpace(PurchaseMaster.InvoiceNumber) &&
                 !string.IsNullOrWhiteSpace(approved.InvoiceNumber))
                 PurchaseMaster.InvoiceNumber = approved.InvoiceNumber;
@@ -194,32 +339,27 @@ namespace MyWPFCRUDApp.ViewModels
                     null, System.Globalization.DateTimeStyles.None, out DateTime d))
                 PurchaseMaster.PurchaseDate = d;
 
-            // Get current product count from DB to seed barcode generation.
-            // Barcodes: M{(existingCount + 1)}, M{(existingCount + 2)}, ...
             long existingCount = _productService.GetProductCount();
             int added = 0;
 
             foreach (var item in approved.Items)
             {
-                double qty = item.Quantity > 0 ? item.Quantity : 1;
-                decimal price = item.PurchasePrice;
+                double qty   = item.Quantity > 0 ? item.Quantity : 1;
+                decimal price  = item.PurchasePrice;
                 decimal netAmt = (decimal)qty * price;
-
-                // Generate sequential barcode for this entry
                 string barcode = $"M{existingCount + added + 1}";
 
                 PurchaseItems.Add(new MPurchaseDetail
                 {
-                    ProductId = 0,                      // 0 = not yet linked to a product
-                    ProductName = item.Description,       // scanned description as name
-                    Barcode = barcode,
-                    Quantity = qty,
-                    PurchasePrice = price,
+                    ProductId      = 0,
+                    ProductName    = item.Description,
+                    Barcode        = barcode,
+                    Quantity       = qty,
+                    PurchasePrice  = price,
                     WholesalePrice = item.WholesalePrice,
-                    MRP = item.MRP,
-                    AfterTaxation = netAmt
+                    MRP            = item.MRP,
+                    AfterTaxation  = netAmt
                 });
-
                 added++;
             }
 
@@ -233,16 +373,50 @@ namespace MyWPFCRUDApp.ViewModels
                 "Transfer Complete", MessageBoxButton.OK, MessageBoxImage.Information);
         }
 
-        // ── Called from code-behind after grid cell edit ──────────────────────
+        // ════════════════════════════════════════════════════════════════════════
+        // RecalculateTotal — uses the applicable percents set by
+        //                    DetermineApplicableTaxes(); never hardcodes any %.
+        // ════════════════════════════════════════════════════════════════════════
         public void RecalculateTotal()
         {
-            decimal gross = PurchaseItems.Sum(x => x.AfterTaxation);
-            PurchaseMaster.TotalAmount = gross - PurchaseMaster.Discount;
+            // Net Amount from purchase items
+            NetAmount = PurchaseItems?.Sum(x => x.AfterTaxation) ?? 0m;
+
+            decimal discount = Discount;
+
+            decimal balance = NetAmount - discount;
+
+            if (balance < 0)
+                balance = 0;
+
+            CGSTAmount = Math.Round(
+                balance * CGSTPercent / 100m, 2);
+
+            SGSTAmount = Math.Round(
+                balance * SGSTPercent / 100m, 2);
+
+            IGSTAmount = Math.Round(
+                balance * IGSTPercent / 100m, 2);
+
+            PurchaseMaster.CGSTAmount = CGSTAmount;
+            PurchaseMaster.SGSTAmount = SGSTAmount;
+            PurchaseMaster.IGSTAmount = IGSTAmount;
+
+            PurchaseMaster.TotalAmount =
+                balance +
+                CGSTAmount +
+                SGSTAmount +
+                IGSTAmount;
+
+            OnPropertyChanged(nameof(NetAmount));
+            OnPropertyChanged(nameof(CGSTAmount));
+            OnPropertyChanged(nameof(SGSTAmount));
+            OnPropertyChanged(nameof(IGSTAmount));
             OnPropertyChanged(nameof(PurchaseMaster));
         }
 
         // ════════════════════════════════════════════════════════════════════════
-        // Barcode search — with Add New Product option
+        // Barcode search
         // ════════════════════════════════════════════════════════════════════════
         private void HandleBarcodeSearch(string barcode)
         {
@@ -263,10 +437,7 @@ namespace MyWPFCRUDApp.ViewModels
 
                 if (result == MessageBoxResult.Yes)
                 {
-                    var addWin = new AddProductWindow(barcode)
-                    {
-                        Owner = Application.Current.MainWindow
-                    };
+                    var addWin = new AddProductWindow(barcode) { Owner = Application.Current.MainWindow };
                     if (addWin.ShowDialog() == true)
                     {
                         Products = new ObservableCollection<MProducts>(_productService.GetProducts());
@@ -294,15 +465,15 @@ namespace MyWPFCRUDApp.ViewModels
             {
                 PurchaseItems.Add(new MPurchaseDetail
                 {
-                    ProductId = product.Id,
-                    ProductName = product.ProductName,
-                    Barcode = product.Barcode,
-                    Product = product,
-                    Quantity = 1,
-                    PurchasePrice = product.PurchasePrice,
+                    ProductId      = product.Id,
+                    ProductName    = product.ProductName,
+                    Barcode        = product.Barcode,
+                    Product        = product,
+                    Quantity       = 1,
+                    PurchasePrice  = product.PurchasePrice,
                     WholesalePrice = product.WholesalePrice,
-                    MRP = product.MRP,
-                    AfterTaxation = product.PurchasePrice
+                    MRP            = product.MRP,
+                    AfterTaxation  = product.PurchasePrice
                 });
             }
             RecalculateTotal();
@@ -310,10 +481,7 @@ namespace MyWPFCRUDApp.ViewModels
 
         private void OpenApiKeySetup()
         {
-            var win = new ApiKeySetupWindow
-            {
-                Owner = Application.Current.MainWindow
-            };
+            var win = new ApiKeySetupWindow { Owner = Application.Current.MainWindow };
             win.ShowDialog();
         }
 
@@ -331,11 +499,76 @@ namespace MyWPFCRUDApp.ViewModels
 
         private void InitializeData()
         {
-            PurchaseMaster = new MPurchaseMaster { PurchaseDate = DateTime.Now };
-            NewItem = new MPurchaseDetail();
+            string nextInvoice = "";
+            try
+            {
+                long count = _purchaseService.GetPurchaseCount();
+                nextInvoice = (count + 1).ToString();
+            }
+            catch { }
+
+            PurchaseMaster = new MPurchaseMaster
+            {
+                PurchaseDate = DateTime.Now,
+                InvoiceNumber = nextInvoice,
+                Discount = 0
+            };
+
+            Discount = PurchaseMaster.Discount;
+            NewItem       = new MPurchaseDetail();
             PurchaseItems = new ObservableCollection<MPurchaseDetail>();
-            Suppliers = new ObservableCollection<MSupplier>(_supplierService.GetAllSuppliers());
-            Products = new ObservableCollection<MProducts>(_productService.GetProducts());
+            Suppliers     = new ObservableCollection<MSupplier>(_supplierService.GetAllSuppliers());
+            Products      = new ObservableCollection<MProducts>(_productService.GetProducts());
+
+            // ── Load company GST (the "My" side of DetermineApplicableTaxes) ──
+            try
+            {
+                var companyService = new CompanyService();
+                var company = companyService.GetCompanyInfo();
+                var companies = companyService.GetCompanyInfo();
+
+                _myGSTNumber = companies.FirstOrDefault()?.GSTNumber ?? string.Empty;
+            }
+            catch { _myGSTNumber = string.Empty; }
+
+            // ── Load tax percentages from Tax Section (MTaxCategory table) ────
+            // Convention: CategoryName contains "CGST", "SGST", or "IGST"
+            // (case-insensitive).  The first matching record for each type wins.
+            // Backing fields are set directly here to avoid three separate
+            // RecalculateTotal() calls during initialisation.
+            try
+            {
+                var tax = _taxService
+     .GetTaxCategory()
+     .FirstOrDefault();
+
+                if (TaxContext.SelectedTax != null)
+                {
+                    _cgstPercent = TaxContext.SelectedTax.CGST;
+                    _sgstPercent = TaxContext.SelectedTax.SGST;
+                    _igstPercent = TaxContext.SelectedTax.IGST;
+                }
+                else
+                {
+                    _cgstPercent = 0;
+                    _sgstPercent = 0;
+                    _igstPercent = 0;
+                }
+
+                OnPropertyChanged(nameof(CGSTPercent));
+                OnPropertyChanged(nameof(SGSTPercent));
+                OnPropertyChanged(nameof(IGSTPercent));
+            }
+            catch
+            {
+                _cgstPercent = 0m;
+                _sgstPercent = 0m;
+                _igstPercent = 0m;
+            }
+
+            // ── Run DetermineApplicableTaxes() once so flags and totals are
+            //    correct from the moment the form opens ─────────────────────────
+            DetermineApplicableTaxes();
         }
 
         private void AddItemToGrid()
@@ -350,7 +583,7 @@ namespace MyWPFCRUDApp.ViewModels
             SelectedProduct = null;
         }
 
-        private void RemoveItemFromGrid(MPurchaseDetail item)
+        public void RemoveItem(MPurchaseDetail item)
         {
             if (item != null && PurchaseItems.Contains(item))
             {
@@ -359,6 +592,8 @@ namespace MyWPFCRUDApp.ViewModels
             }
         }
 
+        private void RemoveItemFromGrid(MPurchaseDetail item) => RemoveItem(item);
+
         private void SavePurchase()
         {
             if (SelectedSupplier == null)
@@ -366,23 +601,19 @@ namespace MyWPFCRUDApp.ViewModels
             if (!PurchaseItems.Any())
             { MessageBox.Show("Please add at least one item."); return; }
 
-            // ── STEP 1: Save any new products that don't exist yet ─────────────
-            // Get defaults for category/subcategory/unit
-            var cats = new CategoryService().GetCategory();
-            var subs = new SubCategoryService().GetSubCategoryList();
-            var units = new UnitService().GetUnit();
-            long defaultCatId = cats.Any() ? cats.First().Id : 1;
-            long defaultSubId = subs.Any() ? subs.First().Id : 1;
+            var cats      = new CategoryService().GetCategory();
+            var subs      = new SubCategoryService().GetSubCategoryList();
+            var units     = new UnitService().GetUnit();
+            long defaultCatId  = cats.Any()  ? cats.First().Id  : 1;
+            long defaultSubId  = subs.Any()  ? subs.First().Id  : 1;
             long defaultUnitId = units.Any() ? units.First().Id : 1;
 
             int newProductsCreated = 0;
 
             foreach (var item in PurchaseItems)
             {
-                // If ProductId is already set, product exists — skip
                 if (item.ProductId > 0) continue;
 
-                // Try to find by barcode first (may have been created already)
                 var existing = _productService.GetByBarcode(item.Barcode);
                 if (existing != null)
                 {
@@ -390,27 +621,22 @@ namespace MyWPFCRUDApp.ViewModels
                     continue;
                 }
 
-                // Create the product using the same InsertProduct function
                 var newProduct = new MProducts
                 {
-                    ProductName = item.ProductName,
-                    Barcode = item.Barcode,
-                    CategoryId = defaultCatId,
-                    SubCategoryId = defaultSubId,
-                    UnitId = defaultUnitId,
-                    PurchasePrice = item.PurchasePrice,
+                    ProductName    = item.ProductName,
+                    Barcode        = item.Barcode,
+                    CategoryId     = defaultCatId,
+                    SubCategoryId  = defaultSubId,
+                    UnitId         = defaultUnitId,
+                    PurchasePrice  = item.PurchasePrice,
                     WholesalePrice = item.WholesalePrice,
                     RetailSalePrice = item.WholesalePrice,
-                    MRP = item.MRP,
-                    CGST = 0,
-                    SGST = 0,
-                    IGST = 0,
-                    CESS = 0,
+                    MRP            = item.MRP,
+                    CGST = 0, SGST = 0, IGST = 0, CESS = 0,
                 };
 
                 if (_productService.InsertProduct(newProduct))
                 {
-                    // Fetch the newly inserted product to get its DB-assigned Id
                     var inserted = _productService.GetByBarcode(item.Barcode);
                     if (inserted != null)
                     {
@@ -424,11 +650,10 @@ namespace MyWPFCRUDApp.ViewModels
                         $"Failed to save product '{item.ProductName}' (barcode: {item.Barcode}).\n" +
                         "Check for duplicate barcodes and try again.",
                         "Product Save Failed", MessageBoxButton.OK, MessageBoxImage.Error);
-                    return; // Stop — don't save the invoice with missing product IDs
+                    return;
                 }
             }
 
-            // ── All products saved — proceed to save the purchase invoice ──────
             PurchaseMaster.MPurchaseDetail = PurchaseItems.ToList();
 
             if (_purchaseService.AddPurchase(PurchaseMaster))

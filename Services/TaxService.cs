@@ -17,16 +17,23 @@ namespace MyWPFCRUDApp.Services
         {
             using var conn = new MySqlConnection(Con);
             conn.Open();
-            var sql = @"INSERT INTO MTaxCategory (
-                CategoryName,TaxPercentage
-            ) 
-            VALUES (
-                @CategoryName,@TaxPercentage
-            )";
+            var sql = @"INSERT INTO MTaxCategory
+(
+    CGST,
+    SGST,
+    IGST
+)
+VALUES
+(
+    @CGST,
+    @SGST,
+    @IGST
+)";
 
             var cmd = new MySqlCommand(sql, conn);
-            cmd.Parameters.AddWithValue("@CategoryName", c.CategoryName);
-            cmd.Parameters.AddWithValue("@TaxPercentage", c.TaxPercentage);
+            cmd.Parameters.AddWithValue("@CGST", c.CGST);
+            cmd.Parameters.AddWithValue("@SGST", c.SGST);
+            cmd.Parameters.AddWithValue("@IGST", c.IGST);
             cmd.Parameters.AddWithValue("@createdDate", DateTime.Now);
             cmd.Parameters.AddWithValue("@modifiedDate", DateTime.Now);
             cmd.Parameters.AddWithValue("@createdBy", "ADMIN");
@@ -46,8 +53,9 @@ namespace MyWPFCRUDApp.Services
                 list.Add(new MTaxCategory
                 {
                     Id = reader.GetInt32("Id"),
-                    CategoryName = reader.GetString("CategoryName"),
-                    TaxPercentage = reader.GetInt32("TaxPercentage")
+                    CGST = reader.GetDecimal("CGST"),
+                    SGST = reader.GetDecimal("SGST"),
+                    IGST = reader.GetDecimal("IGST")
                 });
             }
             return list;
@@ -57,10 +65,10 @@ namespace MyWPFCRUDApp.Services
             using var conn = new MySqlConnection(Con);
             conn.Open();
             var sql = @"UPDATE MTaxCategory SET 
-                CategoryName = @CategoryName, 
-                TaxPercentage = @TaxPercentage,
-                ModifiedBy = @ModifiedBy,
-                ModifiedDate = CURRENT_TIMESTAMP
+               
+CGST=@CGST,
+SGST=@SGST,
+IGST=@IGST
             WHERE Id = @Id";
 
             var cmd = new MySqlCommand(sql, conn);
@@ -69,8 +77,9 @@ namespace MyWPFCRUDApp.Services
             cmd.Parameters.AddWithValue("@Id", c.Id);
 
             // Basic Company Details
-            cmd.Parameters.AddWithValue("@CategoryName", c.CategoryName);
-            cmd.Parameters.AddWithValue("@TaxPercentage", c.TaxPercentage);
+            cmd.Parameters.AddWithValue("@CGST", c.CGST);
+            cmd.Parameters.AddWithValue("@SGST", c.SGST);
+            cmd.Parameters.AddWithValue("@IGST", c.IGST);
             cmd.Parameters.AddWithValue("@ModifiedBy", "ADMIN");
 
             return cmd.ExecuteNonQuery() > 0;

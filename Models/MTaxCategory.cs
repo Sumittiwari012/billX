@@ -9,8 +9,10 @@ namespace WPFCRUDApp.Models
 {
     public class MTaxCategory: BaseEntity
     {
-        public string CategoryName { get; set; }
+        public decimal CGST { get; set; }
 
-        public int TaxPercentage { get; set; }
+        public decimal SGST { get; set; }
+
+        public decimal IGST { get; set; }
     }
 }

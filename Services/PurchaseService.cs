@@ -200,6 +200,19 @@ namespace MyWPFCRUDApp.Services
         }
 
         /// <summary>
+        /// Returns the total number of purchase invoices saved so far.
+        /// Used to auto-generate the next invoice number.
+        /// </summary>
+        public long GetPurchaseCount()
+        {
+            using var conn = new MySqlConnection(Con);
+            conn.Open();
+            using var cmd = new MySqlCommand("SELECT COUNT(*) FROM MPurchaseMaster", conn);
+            var result = cmd.ExecuteScalar();
+            return result != null && result != DBNull.Value ? Convert.ToInt64(result) : 0;
+        }
+
+        /// <summary>
         /// Retrieves purchase history for a specific supplier.
         /// </summary>
         public List<MPurchaseMaster> GetPurchasesBySupplier(long supplierId)

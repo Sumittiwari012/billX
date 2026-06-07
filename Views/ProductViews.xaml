@@ -107,47 +107,7 @@
                 BorderThickness="1"
                 CornerRadius="8"
                 Padding="12"
-                Margin="0,0,0,8">
-            <Grid>
-                <Grid.ColumnDefinitions>
-                    <ColumnDefinition Width="Auto"/>
-                    <ColumnDefinition Width="200"/>
-                    <ColumnDefinition Width="30"/>
-                    <ColumnDefinition Width="Auto"/>
-                    <ColumnDefinition Width="200"/>
-                    <ColumnDefinition Width="30"/>
-                    <ColumnDefinition Width="*"/>
-                </Grid.ColumnDefinitions>
-
-                <!-- Wholesale Price Percentage -->
-                <StackPanel Grid.Column="0" Orientation="Horizontal" VerticalAlignment="Center">
-                    <TextBlock Text="Wholesale Price:" FontWeight="Bold" Margin="0,0,8,0" VerticalAlignment="Center"/>
-                </StackPanel>
-                <TextBox Grid.Column="1" 
-                         Text="{Binding WholesalePricePercentage, StringFormat=0, UpdateSourceTrigger=PropertyChanged}"
-                         Padding="8,6"
-                         VerticalAlignment="Center"/>
-                <TextBlock Grid.Column="2" Text="%" FontWeight="Bold" VerticalAlignment="Center" HorizontalAlignment="Center"/>
-
-                <!-- MRP Percentage -->
-                <StackPanel Grid.Column="3" Orientation="Horizontal" VerticalAlignment="Center">
-                    <TextBlock Text="MRP:" FontWeight="Bold" Margin="12,0,8,0" VerticalAlignment="Center"/>
-                </StackPanel>
-                <TextBox Grid.Column="4" 
-                         Text="{Binding MRPPercentage, StringFormat=0, UpdateSourceTrigger=PropertyChanged}"
-                         Padding="8,6"
-                         VerticalAlignment="Center"/>
-                <TextBlock Grid.Column="5" Text="%" FontWeight="Bold" VerticalAlignment="Center" HorizontalAlignment="Center"/>
-
-                <!-- Info -->
-                <TextBlock Grid.Column="6" 
-                           Text="Enter percentages of Purchase Price to auto-calculate Wholesale Price &amp; MRP"
-                           Foreground="#666"
-                           FontSize="12"
-                           VerticalAlignment="Center"
-                           Margin="12,0,0,0"/>
-            </Grid>
-        </Border>
+                Margin="0,0,0,8"/>
 
         <!-- ═══════════════════════════════════════════════
              ROW 2 · Multi-select delete notice bar

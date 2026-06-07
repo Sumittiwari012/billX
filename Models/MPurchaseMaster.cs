@@ -6,6 +6,7 @@ using System.Text;
 using System.Text.Json.Serialization;
 using System.Threading.Tasks;
 using WPFCRUDApp.Models;
+using System.ComponentModel;
 
 namespace MyWPFCRUDApp.Models
 {
@@ -23,6 +24,30 @@ namespace MyWPFCRUDApp.Models
 
         public string PaymentMode { get; set; } // Cash, Credit, Online
         public string Remarks { get; set; }
+
+        // ── Tax amounts (persisted) ────────────────────────────────────────────
+        [Column(TypeName = "decimal(18,2)")]
+        public decimal CGSTAmount { get; set; }
+
+        [Column(TypeName = "decimal(18,2)")]
+        public decimal SGSTAmount { get; set; }
+
+        [Column(TypeName = "decimal(18,2)")]
+        public decimal IGSTAmount { get; set; }
+
+        // ── GST applicability flags (set by DetermineGSTType in PurchaseViewModel) ─
+        /// <summary>True when supplier and company share the same state code (first 2 GST digits).</summary>
+        [NotMapped]
+        public bool CGST_Applicable { get; set; }
+
+        /// <summary>True when supplier and company share the same state code (first 2 GST digits).</summary>
+        [NotMapped]
+        public bool SGST_Applicable { get; set; }
+
+        /// <summary>True when supplier and company are in different states.</summary>
+        [NotMapped]
+        public bool IGST_Applicable { get; set; }
+
         public virtual ICollection<MPurchaseDetail> MPurchaseDetail { get; set; }
 
         [ForeignKey(nameof(SupplierId))]

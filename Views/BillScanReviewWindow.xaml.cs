@@ -26,26 +26,34 @@ namespace MyWPFCRUDApp.Views
             set { _scannedBill = value; OnPropertyChanged(); }
         }
 
-        // Default 20% wholesale, 40% MRP — user can change live
-        private decimal _wholesalePercentage = 20;
+        // Wholesale % and MRP % — loaded from persistent user settings
+        private decimal _wholesalePercentage;
         public decimal WholesalePercentage
         {
             get => _wholesalePercentage;
             set
             {
                 if (SetField(ref _wholesalePercentage, value))
+                {
+                    UserSettings.Instance.WholesalePercentage = value;
+                    UserSettings.Instance.Save();
                     RecalculatePrices();
+                }
             }
         }
 
-        private decimal _mrpPercentage = 40;
+        private decimal _mrpPercentage;
         public decimal MRPPercentage
         {
             get => _mrpPercentage;
             set
             {
                 if (SetField(ref _mrpPercentage, value))
+                {
+                    UserSettings.Instance.MRPPercentage = value;
+                    UserSettings.Instance.Save();
                     RecalculatePrices();
+                }
             }
         }
 
@@ -54,6 +62,10 @@ namespace MyWPFCRUDApp.Views
         {
             InitializeComponent();
             DataContext = this;
+
+            // Load last-used percentages (defaults: 20% wholesale, 40% MRP on first run)
+            _wholesalePercentage = UserSettings.Instance.WholesalePercentage;
+            _mrpPercentage       = UserSettings.Instance.MRPPercentage;
 
             ScannedBill = bill;
 
