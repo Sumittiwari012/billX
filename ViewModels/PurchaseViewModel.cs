@@ -2,7 +2,6 @@ using MyWPFCRUDApp.Helpers;
 using MyWPFCRUDApp.Views;
 using MyWPFCRUDApp.Models;
 using MyWPFCRUDApp.Services;
-using MyWPFCRUDApp.Views;
 using Microsoft.Win32;
 using System;
 using System.Collections.ObjectModel;
@@ -18,22 +17,22 @@ namespace MyWPFCRUDApp.ViewModels
         // ── Services ───────────────────────────────────────────────────────────
         private readonly PurchaseService _purchaseService;
         private readonly SupplierService _supplierService;
-        private readonly ProductService  _productService;
+        private readonly ProductService _productService;
         private readonly BillScanService _billScanService;
 
         // ── Commands ───────────────────────────────────────────────────────────
-        public ICommand AddItemCommand         { get; }
-        public ICommand PurchaseDeleteCommand  { get; }
-        public ICommand PurchaseSaveCommand    { get; }
-        public ICommand PurchaseResetCommand   { get; }
-        public ICommand BarcodeSearchCommand   { get; }
+        public ICommand AddItemCommand { get; }
+        public ICommand PurchaseDeleteCommand { get; }
+        public ICommand PurchaseSaveCommand { get; }
+        public ICommand PurchaseResetCommand { get; }
+        public ICommand BarcodeSearchCommand { get; }
         public ICommand OpenAddSupplierCommand { get; }
-        public ICommand ScanBillCommand        { get; }
+        public ICommand ScanBillCommand { get; }
         public ICommand OpenApiKeySetupCommand { get; }
 
         // ── Collections ────────────────────────────────────────────────────────
-        public ObservableCollection<MSupplier>       Suppliers     { get; set; }
-        public ObservableCollection<MProducts>       Products      { get; set; }
+        public ObservableCollection<MSupplier> Suppliers { get; set; }
+        public ObservableCollection<MProducts> Products { get; set; }
         public ObservableCollection<MPurchaseDetail> PurchaseItems { get; set; }
 
         // ── Form models ────────────────────────────────────────────────────────
@@ -74,7 +73,7 @@ namespace MyWPFCRUDApp.ViewModels
             {
                 if (SetProperty(ref _selectedProduct, value) && value != null)
                 {
-                    NewItem.ProductId     = value.Id;
+                    NewItem.ProductId = value.Id;
                     NewItem.PurchasePrice = value.PurchasePrice;
                     OnPropertyChanged(nameof(NewItem));
                 }
@@ -93,16 +92,16 @@ namespace MyWPFCRUDApp.ViewModels
         {
             _purchaseService = new PurchaseService();
             _supplierService = new SupplierService();
-            _productService  = new ProductService();
+            _productService = new ProductService();
             _billScanService = new BillScanService();
 
-            AddItemCommand         = new RelayCommand(_ => AddItemToGrid());
-            PurchaseDeleteCommand  = new RelayCommand(p => RemoveItemFromGrid(p as MPurchaseDetail));
-            PurchaseSaveCommand    = new RelayCommand(_ => SavePurchase());
-            PurchaseResetCommand   = new RelayCommand(_ => ResetForm());
-            BarcodeSearchCommand   = new RelayCommand(p => HandleBarcodeSearch(p?.ToString()));
+            AddItemCommand = new RelayCommand(_ => AddItemToGrid());
+            PurchaseDeleteCommand = new RelayCommand(p => RemoveItemFromGrid(p as MPurchaseDetail));
+            PurchaseSaveCommand = new RelayCommand(_ => SavePurchase());
+            PurchaseResetCommand = new RelayCommand(_ => ResetForm());
+            BarcodeSearchCommand = new RelayCommand(p => HandleBarcodeSearch(p?.ToString()));
             OpenAddSupplierCommand = new RelayCommand(_ => OpenSupplierWindow());
-            ScanBillCommand        = new RelayCommand(async _ => await ExecuteScanBillAsync());
+            ScanBillCommand = new RelayCommand(async _ => await ExecuteScanBillAsync());
             OpenApiKeySetupCommand = new RelayCommand(_ => OpenApiKeySetup());
 
             InitializeData();
@@ -140,7 +139,7 @@ namespace MyWPFCRUDApp.ViewModels
             // ── STEP 3: Pick bill file ─────────────────────────────────────────
             var ofd = new OpenFileDialog
             {
-                Title  = "Select Purchase Bill (PDF or Image)",
+                Title = "Select Purchase Bill (PDF or Image)",
                 Filter = "Supported files|*.pdf;*.jpg;*.jpeg;*.png;*.webp" +
                          "|PDF|*.pdf|Images|*.jpg;*.jpeg;*.png;*.webp"
             };
@@ -202,7 +201,7 @@ namespace MyWPFCRUDApp.ViewModels
 
             foreach (var item in approved.Items)
             {
-                double  qty   = item.Quantity > 0 ? item.Quantity : 1;
+                double qty = item.Quantity > 0 ? item.Quantity : 1;
                 decimal price = item.PurchasePrice;
                 decimal netAmt = (decimal)qty * price;
 
@@ -211,14 +210,14 @@ namespace MyWPFCRUDApp.ViewModels
 
                 PurchaseItems.Add(new MPurchaseDetail
                 {
-                    ProductId      = 0,                      // 0 = not yet linked to a product
-                    ProductName    = item.Description,       // scanned description as name
-                    Barcode        = barcode,
-                    Quantity       = qty,
-                    PurchasePrice  = price,
+                    ProductId = 0,                      // 0 = not yet linked to a product
+                    ProductName = item.Description,       // scanned description as name
+                    Barcode = barcode,
+                    Quantity = qty,
+                    PurchasePrice = price,
                     WholesalePrice = item.WholesalePrice,
-                    MRP            = item.MRP,
-                    AfterTaxation  = netAmt
+                    MRP = item.MRP,
+                    AfterTaxation = netAmt
                 });
 
                 added++;
@@ -295,15 +294,15 @@ namespace MyWPFCRUDApp.ViewModels
             {
                 PurchaseItems.Add(new MPurchaseDetail
                 {
-                    ProductId      = product.Id,
-                    ProductName    = product.ProductName,
-                    Barcode        = product.Barcode,
-                    Product        = product,
-                    Quantity       = 1,
-                    PurchasePrice  = product.PurchasePrice,
+                    ProductId = product.Id,
+                    ProductName = product.ProductName,
+                    Barcode = product.Barcode,
+                    Product = product,
+                    Quantity = 1,
+                    PurchasePrice = product.PurchasePrice,
                     WholesalePrice = product.WholesalePrice,
-                    MRP            = product.MRP,
-                    AfterTaxation  = product.PurchasePrice
+                    MRP = product.MRP,
+                    AfterTaxation = product.PurchasePrice
                 });
             }
             RecalculateTotal();
@@ -333,10 +332,10 @@ namespace MyWPFCRUDApp.ViewModels
         private void InitializeData()
         {
             PurchaseMaster = new MPurchaseMaster { PurchaseDate = DateTime.Now };
-            NewItem        = new MPurchaseDetail();
-            PurchaseItems  = new ObservableCollection<MPurchaseDetail>();
-            Suppliers      = new ObservableCollection<MSupplier>(_supplierService.GetAllSuppliers());
-            Products       = new ObservableCollection<MProducts>(_productService.GetProducts());
+            NewItem = new MPurchaseDetail();
+            PurchaseItems = new ObservableCollection<MPurchaseDetail>();
+            Suppliers = new ObservableCollection<MSupplier>(_supplierService.GetAllSuppliers());
+            Products = new ObservableCollection<MProducts>(_productService.GetProducts());
         }
 
         private void AddItemToGrid()
@@ -347,7 +346,7 @@ namespace MyWPFCRUDApp.ViewModels
                 return;
             }
             AddToCart(SelectedProduct);
-            NewItem         = new MPurchaseDetail();
+            NewItem = new MPurchaseDetail();
             SelectedProduct = null;
         }
 
@@ -367,16 +366,82 @@ namespace MyWPFCRUDApp.ViewModels
             if (!PurchaseItems.Any())
             { MessageBox.Show("Please add at least one item."); return; }
 
+            // ── STEP 1: Save any new products that don't exist yet ─────────────
+            // Get defaults for category/subcategory/unit
+            var cats = new CategoryService().GetCategory();
+            var subs = new SubCategoryService().GetSubCategoryList();
+            var units = new UnitService().GetUnit();
+            long defaultCatId = cats.Any() ? cats.First().Id : 1;
+            long defaultSubId = subs.Any() ? subs.First().Id : 1;
+            long defaultUnitId = units.Any() ? units.First().Id : 1;
+
+            int newProductsCreated = 0;
+
+            foreach (var item in PurchaseItems)
+            {
+                // If ProductId is already set, product exists — skip
+                if (item.ProductId > 0) continue;
+
+                // Try to find by barcode first (may have been created already)
+                var existing = _productService.GetByBarcode(item.Barcode);
+                if (existing != null)
+                {
+                    item.ProductId = existing.Id;
+                    continue;
+                }
+
+                // Create the product using the same InsertProduct function
+                var newProduct = new MProducts
+                {
+                    ProductName = item.ProductName,
+                    Barcode = item.Barcode,
+                    CategoryId = defaultCatId,
+                    SubCategoryId = defaultSubId,
+                    UnitId = defaultUnitId,
+                    PurchasePrice = item.PurchasePrice,
+                    WholesalePrice = item.WholesalePrice,
+                    RetailSalePrice = item.WholesalePrice,
+                    MRP = item.MRP,
+                    CGST = 0,
+                    SGST = 0,
+                    IGST = 0,
+                    CESS = 0,
+                };
+
+                if (_productService.InsertProduct(newProduct))
+                {
+                    // Fetch the newly inserted product to get its DB-assigned Id
+                    var inserted = _productService.GetByBarcode(item.Barcode);
+                    if (inserted != null)
+                    {
+                        item.ProductId = inserted.Id;
+                        newProductsCreated++;
+                    }
+                }
+                else
+                {
+                    MessageBox.Show(
+                        $"Failed to save product '{item.ProductName}' (barcode: {item.Barcode}).\n" +
+                        "Check for duplicate barcodes and try again.",
+                        "Product Save Failed", MessageBoxButton.OK, MessageBoxImage.Error);
+                    return; // Stop — don't save the invoice with missing product IDs
+                }
+            }
+
+            // ── All products saved — proceed to save the purchase invoice ──────
             PurchaseMaster.MPurchaseDetail = PurchaseItems.ToList();
 
             if (_purchaseService.AddPurchase(PurchaseMaster))
             {
-                MessageBox.Show("Purchase recorded and stock updated successfully!");
+                string msg = newProductsCreated > 0
+                    ? $"✔ Purchase recorded successfully!\n📦 {newProductsCreated} new product(s) were added to your product list."
+                    : "✔ Purchase recorded and stock updated successfully!";
+                MessageBox.Show(msg, "Saved", MessageBoxButton.OK, MessageBoxImage.Information);
                 ResetForm();
             }
             else
             {
-                MessageBox.Show("Error occurred while saving the purchase.");
+                MessageBox.Show("Error occurred while saving the purchase invoice.");
             }
         }
 
