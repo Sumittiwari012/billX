@@ -27,10 +27,10 @@ namespace MyWPFCRUDApp.Services
                 // 1. Insert Purchase Master
                 var masterSql = @"INSERT INTO MPurchaseMaster (
                     InvoiceNumber, SupplierId, PurchaseDate, TotalAmount,
-                    Discount, PaymentMode, Remarks, CreatedBy, CreatedDate
+                    Discount, PaymentMode,AmountPaid, Remarks, CreatedBy, CreatedDate
                 ) VALUES (
                     @InvoiceNumber, @SupplierId, @PurchaseDate, @TotalAmount,
-                    @Discount, @PaymentMode, @Remarks, @CreatedBy, @CreatedDate
+                    @Discount, @PaymentMode,@AmountPaid, @Remarks, @CreatedBy, @CreatedDate
                 ); SELECT LAST_INSERT_ID();";
 
                 long masterId;
@@ -45,6 +45,7 @@ namespace MyWPFCRUDApp.Services
                     cmdMaster.Parameters.AddWithValue("@Remarks", purchase.Remarks ?? (object)DBNull.Value);
                     cmdMaster.Parameters.AddWithValue("@CreatedBy", "WPFUser");
                     cmdMaster.Parameters.AddWithValue("@CreatedDate", DateTime.Now);
+                    cmdMaster.Parameters.AddWithValue("@AmountPaid", purchase.AmountPaid);
 
                     masterId = Convert.ToInt64(cmdMaster.ExecuteScalar());
                 }
@@ -218,27 +219,53 @@ namespace MyWPFCRUDApp.Services
         public List<MPurchaseMaster> GetPurchasesBySupplier(long supplierId)
         {
             var list = new List<MPurchaseMaster>();
-            using var conn = new MySqlConnection(Con);
-            conn.Open();
+            Console.WriteLine($"[GetPurchasesBySupplier] Querying for SupplierId={supplierId}");
 
-            var sql = "SELECT * FROM MPurchaseMaster WHERE SupplierId = @SupplierId ORDER BY PurchaseDate DESC";
-            using var cmd = new MySqlCommand(sql, conn);
-            cmd.Parameters.AddWithValue("@SupplierId", supplierId);
-
-            using var reader = cmd.ExecuteReader();
-            while (reader.Read())
+            try
             {
-                list.Add(new MPurchaseMaster
+                using var conn = new MySqlConnection(Con);
+                conn.Open();
+                Console.WriteLine("[GetPurchasesBySupplier] DB connection opened.");
+
+                var sql = @"SELECT InvoiceNumber, SupplierId, PurchaseDate, 
+                           TotalAmount, Discount, PaymentMode, Remarks
+                    FROM MPurchaseMaster 
+                    WHERE SupplierId = @SupplierId 
+                    ORDER BY PurchaseDate DESC";
+
+                using var cmd = new MySqlCommand(sql, conn);
+                cmd.Parameters.AddWithValue("@SupplierId", supplierId);
+
+                using var reader = cmd.ExecuteReader();
+                int rowCount = 0;
+                while (reader.Read())
                 {
-                    InvoiceNumber = reader.GetString("InvoiceNumber"),
-                    SupplierId = reader.GetInt64("SupplierId"),
-                    PurchaseDate = reader.GetDateTime("PurchaseDate"),
-                    TotalAmount = reader.GetDecimal("TotalAmount"),
-                    Discount = reader.GetDecimal("Discount"),
-                    PaymentMode = reader["PaymentMode"]?.ToString(),
-                    Remarks = reader["Remarks"]?.ToString()
-                });
+                    rowCount++;
+                    list.Add(new MPurchaseMaster
+                    {
+                        InvoiceNumber = reader["InvoiceNumber"] == DBNull.Value ? ""
+                                        : reader.GetString("InvoiceNumber"),
+                        SupplierId = reader["SupplierId"] == DBNull.Value ? 0
+                                        : reader.GetInt64("SupplierId"),
+                        PurchaseDate = reader["PurchaseDate"] == DBNull.Value ? DateTime.MinValue
+                                        : reader.GetDateTime("PurchaseDate"),
+                        TotalAmount = reader["TotalAmount"] == DBNull.Value ? 0m
+                                        : reader.GetDecimal("TotalAmount"),
+                        Discount = reader["Discount"] == DBNull.Value ? 0m
+                                        : reader.GetDecimal("Discount"),
+                        PaymentMode = reader["PaymentMode"] == DBNull.Value ? null
+                                        : reader.GetString("PaymentMode"),
+                        Remarks = reader["Remarks"] == DBNull.Value ? null
+                                        : reader.GetString("Remarks"),
+                    });
+                }
+                Console.WriteLine($"[GetPurchasesBySupplier] Read {rowCount} rows.");
             }
+            catch (Exception ex)
+            {
+                Console.WriteLine($"[GetPurchasesBySupplier] EXCEPTION: {ex.Message}\n{ex.StackTrace}");
+            }
+
             return list;
         }
     }

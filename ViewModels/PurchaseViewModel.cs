@@ -1,9 +1,10 @@
+using Microsoft.Win32;
 using MyWPFCRUDApp.Helpers;
-using MyWPFCRUDApp.Views;
 using MyWPFCRUDApp.Models;
 using MyWPFCRUDApp.Services;
-using Microsoft.Win32;
+using MyWPFCRUDApp.Views;
 using System;
+using System.Windows.Media;
 using System.Collections.ObjectModel;
 using System.Linq;
 using System.Windows;
@@ -30,9 +31,24 @@ namespace MyWPFCRUDApp.ViewModels
         public ICommand OpenAddSupplierCommand { get; }
         public ICommand ScanBillCommand { get; }
         public ICommand OpenApiKeySetupCommand { get; }
+        public ICommand ToggleHistoryCommand { get; }
 
         // ── Collections ────────────────────────────────────────────────────────
         public ObservableCollection<MSupplier> Suppliers { get; set; }
+
+        private ObservableCollection<MPurchaseMaster> _supplierHistory;
+        public ObservableCollection<MPurchaseMaster> SupplierHistory
+        {
+            get => _supplierHistory;
+            set => SetProperty(ref _supplierHistory, value);
+        }
+
+        private bool _isHistoryOpen;
+        public bool IsHistoryOpen
+        {
+            get => _isHistoryOpen;
+            set => SetProperty(ref _isHistoryOpen, value);
+        }
         public ObservableCollection<MProducts> Products { get; set; }
         public ObservableCollection<MPurchaseDetail> PurchaseItems { get; set; }
         public ObservableCollection<MTaxCategory> TaxCategories { get; set; }
@@ -75,15 +91,75 @@ namespace MyWPFCRUDApp.ViewModels
             get => _selectedSupplier;
             set
             {
-                if (SetProperty(ref _selectedSupplier, value) && value != null)
-                    PurchaseMaster.SupplierId = value.Id;
+                if (SetProperty(ref _selectedSupplier, value))
+                {
+                    if (value != null)
+                    {
+                        PurchaseMaster.SupplierId = value.Id;
 
-                DetermineApplicableTaxes();  // recalculate whenever supplier changes
-                OnPropertyChanged(nameof(ScanHintText));
-                OnPropertyChanged(nameof(ScanHintVisibility));
+                        // Load supplier balance
+                        SupplierBalance = value.CurrentBalance;
+
+                        LoadSupplierHistory(value.Id);
+                    }
+                    else
+                    {
+                        SupplierBalance = 0;
+                        SupplierHistory = new ObservableCollection<MPurchaseMaster>();
+                    }
+
+                    IsHistoryOpen = false;
+                    DetermineApplicableTaxes();
+                    OnPropertyChanged(nameof(ScanHintText));
+                    OnPropertyChanged(nameof(ScanHintVisibility));
+                }
+            }
+        }
+        private decimal _amountPaid;
+        public decimal AmountPaid
+        {
+            get => _amountPaid;
+            set
+            {
+                if (SetProperty(ref _amountPaid, value))
+                {
+                    PurchaseMaster.AmountPaid = value;
+
+                    OnPropertyChanged(nameof(BalanceAmount));
+                    OnPropertyChanged(nameof(BalanceBrush));
+                }
             }
         }
 
+        private string _paymentMethod = "Cash";
+        public string PaymentMethod
+        {
+            get => _paymentMethod;
+            set
+            {
+                if (SetProperty(ref _paymentMethod, value))
+                {
+                    PurchaseMaster.PaymentMode = value;
+                }
+            }
+        }
+
+        public decimal BalanceAmount =>
+            AmountPaid - PurchaseMaster.TotalAmount;
+
+        public Brush BalanceBrush
+        {
+            get
+            {
+                if (BalanceAmount > 0)
+                    return Brushes.Green;
+
+                if (BalanceAmount < 0)
+                    return Brushes.Red;
+
+                return Brushes.Black;
+            }
+        }
         private MProducts _selectedProduct;
         public MProducts SelectedProduct
         {
@@ -189,6 +265,12 @@ namespace MyWPFCRUDApp.ViewModels
             get => _netAmount;
             private set => SetProperty(ref _netAmount, value);
         }
+        private decimal _supplierBalance;
+        public decimal SupplierBalance
+        {
+            get => _supplierBalance;
+            set => SetProperty(ref _supplierBalance, value);
+        }
         private decimal _discount;
         public decimal Discount
         {
@@ -283,6 +365,7 @@ namespace MyWPFCRUDApp.ViewModels
             OpenAddSupplierCommand = new RelayCommand(_ => OpenSupplierWindow());
             ScanBillCommand       = new RelayCommand(async _ => await ExecuteScanBillAsync());
             OpenApiKeySetupCommand = new RelayCommand(_ => OpenApiKeySetup());
+            ToggleHistoryCommand  = new RelayCommand(_ => ToggleHistory());
 
             InitializeData();
         }
@@ -430,6 +513,8 @@ namespace MyWPFCRUDApp.ViewModels
             OnPropertyChanged(nameof(SGSTAmount));
             OnPropertyChanged(nameof(IGSTAmount));
             OnPropertyChanged(nameof(PurchaseMaster));
+            OnPropertyChanged(nameof(BalanceAmount));
+            OnPropertyChanged(nameof(BalanceBrush));
         }
 
         // ════════════════════════════════════════════════════════════════════════
@@ -496,6 +581,44 @@ namespace MyWPFCRUDApp.ViewModels
             RecalculateTotal();
         }
 
+        private void ToggleHistory()
+        {
+            Console.WriteLine($"[ToggleHistory] Called. SelectedSupplier={SelectedSupplier?.SupplierName ?? "null"}");
+
+            if (SelectedSupplier == null)
+            {
+                Console.WriteLine("[ToggleHistory] No supplier selected — skipping.");
+                MessageBox.Show("Please select a supplier first to view purchase history.",
+                                "No Supplier", MessageBoxButton.OK, MessageBoxImage.Information);
+                return;
+            }
+
+            Console.WriteLine($"[ToggleHistory] Loading history for SupplierId={SelectedSupplier.Id}");
+            LoadSupplierHistory(SelectedSupplier.Id);
+
+            IsHistoryOpen = !IsHistoryOpen;
+            Console.WriteLine($"[ToggleHistory] IsHistoryOpen is now {IsHistoryOpen}. " +
+                              $"SupplierHistory count={SupplierHistory?.Count ?? -1}");
+        }
+
+        private void LoadSupplierHistory(long supplierId)
+        {
+            Console.WriteLine($"[LoadSupplierHistory] Fetching for SupplierId={supplierId}");
+            try
+            {
+                var records = _purchaseService.GetPurchasesBySupplier(supplierId);
+                Console.WriteLine($"[LoadSupplierHistory] Got {records.Count} records from DB.");
+                SupplierHistory = new ObservableCollection<MPurchaseMaster>(
+                    records.OrderByDescending(r => r.PurchaseDate));
+                Console.WriteLine($"[LoadSupplierHistory] SupplierHistory set with {SupplierHistory.Count} items.");
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine($"[LoadSupplierHistory] EXCEPTION: {ex.Message}\n{ex.StackTrace}");
+                SupplierHistory = new ObservableCollection<MPurchaseMaster>();
+            }
+        }
+
         private void OpenApiKeySetup()
         {
             var win = new ApiKeySetupWindow { Owner = Application.Current.MainWindow };
@@ -530,13 +653,15 @@ namespace MyWPFCRUDApp.ViewModels
                 InvoiceNumber = nextInvoice,
                 Discount = 0
             };
-
+            // Add this line inside InitializeData(), alongside the other collection initializations:
+            SupplierHistory = new ObservableCollection<MPurchaseMaster>();
             Discount = PurchaseMaster.Discount;
             NewItem       = new MPurchaseDetail();
             PurchaseItems = new ObservableCollection<MPurchaseDetail>();
             Suppliers     = new ObservableCollection<MSupplier>(_supplierService.GetAllSuppliers());
             Products      = new ObservableCollection<MProducts>(_productService.GetProducts());
-
+            
+            
             // ── Load company GST (the "My" side of DetermineApplicableTaxes) ──
             try
             {
@@ -583,6 +708,7 @@ namespace MyWPFCRUDApp.ViewModels
                 OnPropertyChanged(nameof(CGSTPercent));
                 OnPropertyChanged(nameof(SGSTPercent));
                 OnPropertyChanged(nameof(IGSTPercent));
+                OnPropertyChanged(nameof(PurchaseItems));
             }
             catch
             {
@@ -678,15 +804,39 @@ namespace MyWPFCRUDApp.ViewModels
                     return;
                 }
             }
-
+            PurchaseMaster.PaymentMode = PaymentMethod;
+            PurchaseMaster.AmountPaid = AmountPaid;
             PurchaseMaster.MPurchaseDetail = PurchaseItems.ToList();
+            decimal balance = BalanceAmount;
 
+            if (balance > 0)
+            {
+                SelectedSupplier.CurrentBalance -= balance;
+            }
+            else if (balance < 0)
+            {
+                SelectedSupplier.CurrentBalance += Math.Abs(balance);
+            }
+            _supplierService.UpdateSupplier(SelectedSupplier);
             if (_purchaseService.AddPurchase(PurchaseMaster))
             {
+                // Refresh supplier balance
+                var updatedSupplier =
+                    _supplierService.GetAllSuppliers()
+                                    .FirstOrDefault(x => x.Id == SelectedSupplier.Id);
+
+                if (updatedSupplier != null)
+                {
+                    SelectedSupplier = updatedSupplier;
+                    SupplierBalance = updatedSupplier.CurrentBalance;
+                }
+
                 string msg = newProductsCreated > 0
                     ? $"✔ Purchase recorded successfully!\n📦 {newProductsCreated} new product(s) were added to your product list."
                     : "✔ Purchase recorded and stock updated successfully!";
+
                 MessageBox.Show(msg, "Saved", MessageBoxButton.OK, MessageBoxImage.Information);
+
                 ResetForm();
             }
             else
@@ -699,6 +849,8 @@ namespace MyWPFCRUDApp.ViewModels
         {
             InitializeData();
             SelectedSupplier = null;
+            SupplierHistory = new ObservableCollection<MPurchaseMaster>();
+            IsHistoryOpen = false;
             OnPropertyChanged(nameof(ScanHintText));
             OnPropertyChanged(nameof(ScanHintVisibility));
         }

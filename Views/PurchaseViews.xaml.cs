@@ -27,7 +27,22 @@ namespace MyWPFCRUDApp.Views
         // FIX: Removed PreviewMouseLeftButtonDown entirely.
         //      Setting e.Handled=true there was preventing the Click event from
         //      firing — the button appeared pressed but RemoveButton_Click never ran.
-        //      CommitEdit is now called at the start of Click instead.
+        //      Com
+        //      mitEdit is now called at the start of Click instead.
+        private void HistoryToggle_Click(object sender, RoutedEventArgs e)
+        {
+            if (DataContext is PurchaseViewModel vm)
+            {
+                //MessageBox.Show("PurchaseViewModel found");
+
+                var method = typeof(PurchaseViewModel)
+                    .GetMethod("ToggleHistory",
+                        System.Reflection.BindingFlags.NonPublic |
+                        System.Reflection.BindingFlags.Instance);
+
+                method?.Invoke(vm, null);
+            }
+        }
         private void RemoveButton_Click(object sender, RoutedEventArgs e)
         {
             // Commit any open cell edit so the grid isn't in edit mode during removal

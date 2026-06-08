@@ -22,6 +22,7 @@ namespace MyWPFCRUDApp.Models
         [Column(TypeName = "decimal(18,2)")]
         public decimal Discount { get; set; }
 
+        public decimal AmountPaid { get; set; }
         public string PaymentMode { get; set; } // Cash, Credit, Online
         public string Remarks { get; set; }
 

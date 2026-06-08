@@ -311,7 +311,8 @@ namespace MyWPFCRUDApp.Services
     "ALTER TABLE MTaxCategory ADD COLUMN CGST DOUBLE NOT NULL DEFAULT 0.0,ADD COLUMN SGST DOUBLE NOT NULL DEFAULT 0.0,ADD COLUMN IGST DOUBLE NOT NULL DEFAULT 0.0;"
 },
                 {"remove_two_columns_from_tax","ALTER TABLE MTaxCategory DROP COLUMN CategoryName,DROP COLUMN TaxPercentage;"},
-{ "Add_IGST_To_MProducts", "ALTER TABLE MProducts ADD COLUMN IGST DOUBLE DEFAULT 0.0 AFTER SGST;" }
+{ "Add_IGST_To_MProducts", "ALTER TABLE MProducts ADD COLUMN IGST DOUBLE DEFAULT 0.0 AFTER SGST;" },
+                { "AmtPaid_column_Added_in_PurchaseMasterTable","ALTER TABLE MPurchaseMaster ADD COLUMN AmountPaid DOUBLE NOT NULL DEFAULT 0.0;"}
         
         // Future changes go here:
         // { "Remove_OldColumn", "ALTER TABLE MProducts DROP COLUMN OldColumn;" }
