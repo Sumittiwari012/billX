@@ -1,4 +1,5 @@
 ﻿using MySql.Data.MySqlClient;
+using System.Diagnostics;
 
 namespace MyWPFCRUDApp.Services
 {
@@ -306,23 +307,11 @@ namespace MyWPFCRUDApp.Services
             var migrations = new Dictionary<string, string>
     {
         {
-    "Drop_MTaxCategory",
-    "DROP TABLE IF EXISTS MTaxCategory;"
+    "categoryname_column_and_taxpercentage_removed_and_three_columns_added",
+    "ALTER TABLE MTaxCategory ADD COLUMN CGST DOUBLE NOT NULL DEFAULT 0.0,ADD COLUMN SGST DOUBLE NOT NULL DEFAULT 0.0,ADD COLUMN IGST DOUBLE NOT NULL DEFAULT 0.0;"
 },
-{
-    "Create_MTaxCategory_GST",
-    @"CREATE TABLE MTaxCategory (
-        Id BIGINT AUTO_INCREMENT PRIMARY KEY,
-        CreatedBy VARCHAR(100) DEFAULT 'System',
-        CreatedDate DATETIME DEFAULT CURRENT_TIMESTAMP,
-        ModifiedBy VARCHAR(100) DEFAULT 'System',
-        ModifiedDate DATETIME DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
-
-        CGST DOUBLE DEFAULT 0.0,
-        SGST DOUBLE DEFAULT 0.0,
-        IGST DOUBLE DEFAULT 0.0
-    ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;"
-}
+                {"remove_two_columns_from_tax","ALTER TABLE MTaxCategory DROP COLUMN CategoryName,DROP COLUMN TaxPercentage;"},
+{ "Add_IGST_To_MProducts", "ALTER TABLE MProducts ADD COLUMN IGST DOUBLE DEFAULT 0.0 AFTER SGST;" }
         
         // Future changes go here:
         // { "Remove_OldColumn", "ALTER TABLE MProducts DROP COLUMN OldColumn;" }
@@ -341,8 +330,8 @@ namespace MyWPFCRUDApp.Services
                     }
                     catch (Exception ex)
                     {
-                        // Log the error but don't stop the app from working if possible
-                        System.Diagnostics.Debug.WriteLine($"Migration {migration.Key} failed: {ex.Message}");
+                        Debug.WriteLine(
+        $"Migration {migration.Key} failed: {ex.Message}");
                     }
                 }
             }

@@ -6,7 +6,7 @@
   "compilationOptions": {},
   "targets": {
     ".NETCoreApp,Version=v8.0": {
-      "MyWPFCRUDApp/1.2.27": {
+      "MyWPFCRUDApp/1.2.28": {
         "dependencies": {
           "ClosedXML": "0.102.2",
           "ExcelDataReader.DataSet": "3.8.0",
@@ -920,7 +920,7 @@
     }
   },
   "libraries": {
-    "MyWPFCRUDApp/1.2.27": {
+    "MyWPFCRUDApp/1.2.28": {
       "type": "project",
       "serviceable": false,
       "sha512": ""
