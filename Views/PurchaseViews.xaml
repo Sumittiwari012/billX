@@ -18,8 +18,8 @@
                 BorderBrush="#DEE2E6" BorderThickness="1">
             <Grid>
                 <Grid.ColumnDefinitions>
-                    <ColumnDefinition Width="2.5*"/>
-                    <ColumnDefinition Width="1.2*"/>
+                    <ColumnDefinition Width="1.7*"/>
+                    <ColumnDefinition Width="2.2*"/>
                     <ColumnDefinition Width="Auto"/>
                     <ColumnDefinition Width="1.5*"/>
                     <ColumnDefinition Width="Auto"/>
@@ -28,6 +28,10 @@
                 <StackPanel Grid.Column="0" Margin="0,0,12,0">
                     <Label Content="Supplier *" FontSize="11" FontWeight="Bold"/>
                     <DockPanel>
+                        <Button Content="History"
+                                Command="{Binding OpenDisplayHistoryCommand}"
+                                DockPanel.Dock="Right"
+                                Padding="10,0" Margin="5,0,0,0"/>
                         <Button Content="+ New"
                                 Command="{Binding OpenAddSupplierCommand}"
                                 DockPanel.Dock="Right"
@@ -39,10 +43,20 @@
                     </DockPanel>
                 </StackPanel>
 
-                <StackPanel Grid.Column="1" Margin="0,0,12,0">
-                    <Label Content="Invoice Number *" FontSize="11" FontWeight="Bold"/>
-                    <TextBox Text="{Binding PurchaseMaster.InvoiceNumber, UpdateSourceTrigger=PropertyChanged}"
-                             Height="32" VerticalContentAlignment="Center"/>
+                <StackPanel Grid.Column="1" Margin="0,0,12,0" Orientation="Horizontal">
+                    <StackPanel Margin="0,0,12,0">
+                        <Label Content="Invoice Number *" FontSize="11" FontWeight="Bold"/>
+                        <TextBox Text="{Binding PurchaseMaster.InvoiceNumber, UpdateSourceTrigger=PropertyChanged}"
+                                 Width="130" Height="32" VerticalContentAlignment="Center" HorizontalAlignment="Left"/>
+                    </StackPanel>
+
+                    <StackPanel>
+                        <Label Content="Supplier Balance" FontSize="11" FontWeight="Bold" Foreground="#495057"/>
+                        <Border Background="#F1F3F5" BorderBrush="#DEE2E6" BorderThickness="1" CornerRadius="4" Height="32" Padding="10,0" MinWidth="110">
+                            <TextBlock Text="{Binding SupplierBalance, StringFormat={}{0:C}, TargetNullValue='₹0.00'}" 
+                                       Foreground="#E03131" FontWeight="Bold" VerticalAlignment="Center" HorizontalAlignment="Right"/>
+                        </Border>
+                    </StackPanel>
                 </StackPanel>
 
                 <StackPanel Grid.Column="2" Margin="0,0,12,0">
@@ -120,7 +134,6 @@
                           GridLinesVisibility="Horizontal"
                           HorizontalGridLinesBrush="#E9ECEF"
                           CellEditEnding="PurchaseGrid_CellEditEnding">
-
                     <DataGrid.Columns>
                         <DataGridTextColumn Header="#"
                                             Binding="{Binding RelativeSource={RelativeSource AncestorType=DataGridRow}, Path=Header}"
@@ -207,14 +220,13 @@
                             <DataGridTemplateColumn.CellTemplate>
                                 <DataTemplate>
                                     <Button Content="Remove"
-        Command="{Binding DataContext.PurchaseDeleteCommand,
-                          RelativeSource={RelativeSource AncestorType=DataGrid}}"
-        CommandParameter="{Binding}"
-        Background="Transparent"
-        BorderThickness="0"
-        Foreground="#E03131"
-        Cursor="Hand"
-        FontWeight="SemiBold"/>
+                                            Command="{Binding DataContext.PurchaseDeleteCommand, RelativeSource={RelativeSource AncestorType=DataGrid}}"
+                                            CommandParameter="{Binding}"
+                                            Background="Transparent"
+                                            BorderThickness="0"
+                                            Foreground="#E03131"
+                                            Cursor="Hand"
+                                            FontWeight="SemiBold"/>
                                 </DataTemplate>
                             </DataGridTemplateColumn.CellTemplate>
                         </DataGridTemplateColumn>
@@ -222,102 +234,102 @@
                 </DataGrid>
             </GroupBox>
 
-            <Border Grid.Column="1"
-                    Background="White"
-                    BorderBrush="#DEE2E6"
-                    BorderThickness="1"
-                    Padding="14"
-                    CornerRadius="8"
-                    VerticalAlignment="Stretch">
+            <Border Grid.Column="1" Background="White" BorderBrush="#DEE2E6" BorderThickness="1" Padding="14,10" CornerRadius="8" VerticalAlignment="Stretch">
+                <StackPanel Width="280">
 
-                <Grid Width="250">
-                    <Grid.RowDefinitions>
-                        <RowDefinition Height="*"/>
-                        <RowDefinition Height="Auto"/>
-                        <RowDefinition Height="Auto"/>
-                    </Grid.RowDefinitions>
+                    <Expander Header="Tax Configuration" IsExpanded="False" Margin="0,0,0,5" BorderBrush="#DEE2E6" FontWeight="SemiBold" Foreground="#495057">
+                        <StackPanel Margin="8,6" TextElement.FontWeight="Normal">
+                            <ComboBox ItemsSource="{Binding TaxCategories}"
+                                      SelectedItem="{Binding SelectedTaxCategory}"
+                                      Height="28" Margin="0,0,0,8">
+                                <ComboBox.ItemTemplate>
+                                    <DataTemplate>
+                                        <StackPanel Orientation="Horizontal">
+                                            <TextBlock Text="{Binding CGST, StringFormat=CGST: {0}%}" Margin="0,0,8,0" />
+                                            <TextBlock Text="{Binding SGST, StringFormat=SGST: {0}%}" Margin="0,0,8,0" />
+                                            <TextBlock Text="{Binding IGST, StringFormat=IGST: {0}%}" />
+                                        </StackPanel>
+                                    </DataTemplate>
+                                </ComboBox.ItemTemplate>
+                            </ComboBox>
 
-                    <Grid Grid.Row="0" Margin="0,0,0,15">
-                        <Grid.RowDefinitions>
-                            <RowDefinition Height="Auto"/>
-                            <RowDefinition Height="*"/>
-                        </Grid.RowDefinitions>
+                            
+                        </StackPanel>
+                    </Expander>
 
-                        <TextBlock Text="DISPLAY HISTORY" Foreground="#495057" FontWeight="Bold" FontSize="11" Margin="0,0,0,8"/>
+                    <StackPanel>
+                        <TextBlock Text="INVOICE SUMMARY" Foreground="#495057" FontWeight="Bold" FontSize="12" Margin="0,5,0,8"/>
 
-                        <ListBox Grid.Row="1" ItemsSource="{Binding InvoiceHistory}" BorderThickness="0" Background="Transparent" AlternationCount="2">
-                            <ListBox.ItemTemplate>
-                                <DataTemplate>
-                                    <Border BorderBrush="#E9ECEF" BorderThickness="0,0,0,1" Padding="2,6">
-                                        <DockPanel>
-                                            <TextBlock Text="{Binding InvoiceNumber}" FontSize="11" Foreground="#495057" FontWeight="Medium"/>
-                                            <TextBlock Text="{Binding TotalAmount, StringFormat={}{0:C}}" DockPanel.Dock="Right" HorizontalAlignment="Right" FontSize="11" Foreground="#1971C2" FontWeight="Bold"/>
-                                        </DockPanel>
-                                    </Border>
-                                </DataTemplate>
-                            </ListBox.ItemTemplate>
-                        </ListBox>
-                    </Grid>
-
-                    <Separator Grid.Row="1" Background="#DEE2E6" Margin="0,0,0,15"/>
-
-                    <StackPanel Grid.Row="2" VerticalAlignment="Bottom">
-                        <TextBlock Text="INVOICE SUMMARY" Foreground="#495057" FontWeight="Bold" FontSize="11" Margin="0,0,0,12"/>
-
-                        <DockPanel Margin="0,4">
-                            <TextBlock Text="Net Amount" FontWeight="SemiBold" Foreground="#495057"/>
-                            <TextBlock Text="{Binding NetAmount, StringFormat={}{0:N2}}" DockPanel.Dock="Right" HorizontalAlignment="Right"/>
+                        <DockPanel Margin="0,3">
+                            <TextBlock Text="Net Amount" FontSize="12" FontWeight="SemiBold" Foreground="#495057" VerticalAlignment="Center"/>
+                            <TextBlock Text="{Binding NetAmount, StringFormat={}{0:N2}}" FontSize="12" DockPanel.Dock="Right" HorizontalAlignment="Right" VerticalAlignment="Center"/>
                         </DockPanel>
 
-                        <DockPanel Margin="0,4">
-                            <TextBlock Text="Discount" FontWeight="SemiBold" Foreground="#495057"/>
-                            <TextBox Width="100" TextAlignment="Right" HorizontalAlignment="Right"
-                                     Text="{Binding Discount,
-       UpdateSourceTrigger=PropertyChanged}"/>
+                        <DockPanel Margin="0,3">
+                            <TextBlock Text="Discount" FontSize="12" FontWeight="SemiBold" Foreground="#495057" VerticalAlignment="Center"/>
+                            <TextBox Width="90" Height="24" TextAlignment="Right" HorizontalAlignment="Right" Text="{Binding Discount, UpdateSourceTrigger=PropertyChanged}"/>
                         </DockPanel>
 
-                        <DockPanel Margin="0,4">
+                        <DockPanel Margin="0,3">
                             <StackPanel Orientation="Horizontal" VerticalAlignment="Center">
-                                <TextBlock Text="CGST" FontWeight="SemiBold" Foreground="#495057"/>
-                                <TextBlock Text="{Binding CGSTPercent, StringFormat={} @ {0}%}" FontSize="10" Foreground="#868E96" Margin="5,1,0,0" VerticalAlignment="Center"/>
+                                <TextBlock Text="CGST" FontSize="12" FontWeight="SemiBold" Foreground="#495057"/>
+                                <TextBlock Text="{Binding CGSTPercent, StringFormat={} @ {0}%}" FontSize="10" Foreground="#868E96" Margin="4,1,0,0" VerticalAlignment="Center"/>
                             </StackPanel>
-                            <TextBlock Text="{Binding CGSTAmount, StringFormat={}{0:N2}}" HorizontalAlignment="Right" VerticalAlignment="Center"/>
+                            <TextBlock Text="{Binding CGSTAmount, StringFormat={}{0:N2}}" FontSize="12" HorizontalAlignment="Right" VerticalAlignment="Center"/>
                         </DockPanel>
 
-                        <DockPanel Margin="0,4">
+                        <DockPanel Margin="0,3">
                             <StackPanel Orientation="Horizontal" VerticalAlignment="Center">
-                                <TextBlock Text="SGST" FontWeight="SemiBold" Foreground="#495057"/>
-                                <TextBlock Text="{Binding SGSTPercent, StringFormat={} @ {0}%}" FontSize="10" Foreground="#868E96" Margin="5,1,0,0" VerticalAlignment="Center"/>
+                                <TextBlock Text="SGST" FontSize="12" FontWeight="SemiBold" Foreground="#495057"/>
+                                <TextBlock Text="{Binding SGSTPercent, StringFormat={} @ {0}%}" FontSize="10" Foreground="#868E96" Margin="4,1,0,0" VerticalAlignment="Center"/>
                             </StackPanel>
-                            <TextBlock Text="{Binding SGSTAmount, StringFormat={}{0:N2}}" HorizontalAlignment="Right" VerticalAlignment="Center"/>
+                            <TextBlock Text="{Binding SGSTAmount, StringFormat={}{0:N2}}" FontSize="12" HorizontalAlignment="Right" VerticalAlignment="Center"/>
                         </DockPanel>
 
-                        <DockPanel Margin="0,4">
+                        <DockPanel Margin="0,3">
                             <StackPanel Orientation="Horizontal" VerticalAlignment="Center">
-                                <TextBlock Text="IGST" FontWeight="SemiBold" Foreground="#495057"/>
-                                <TextBlock Text="{Binding IGSTPercent, StringFormat={} @ {0}%}" FontSize="10" Foreground="#868E96" Margin="5,1,0,0" VerticalAlignment="Center"/>
+                                <TextBlock Text="IGST" FontSize="12" FontWeight="SemiBold" Foreground="#495057"/>
+                                <TextBlock Text="{Binding IGSTPercent, StringFormat={} @ {0}%}" FontSize="10" Foreground="#868E96" Margin="4,1,0,0" VerticalAlignment="Center"/>
                             </StackPanel>
-                            <TextBlock Text="{Binding IGSTAmount, StringFormat={}{0:N2}}" HorizontalAlignment="Right" VerticalAlignment="Center"/>
+                            <TextBlock Text="{Binding IGSTAmount, StringFormat={}{0:N2}}" FontSize="12" HorizontalAlignment="Right" VerticalAlignment="Center"/>
                         </DockPanel>
 
-                        <Separator Margin="0,10"/>
+                        <Separator Margin="0,8"/>
 
-                        <DockPanel Margin="0,4">
+                        <DockPanel Margin="0,3">
                             <TextBlock Text="Grand Total" FontWeight="Bold" FontSize="14" VerticalAlignment="Center" Foreground="#212529"/>
                             <TextBlock Text="{Binding PurchaseMaster.TotalAmount, StringFormat={}{0:C}}"
-                                       FontWeight="ExtraBold" FontSize="20" Foreground="#1971C2" HorizontalAlignment="Right"/>
+                                       FontWeight="ExtraBold" FontSize="18" Foreground="#1971C2" HorizontalAlignment="Right"/>
                         </DockPanel>
-                        <Separator Margin="0,15"/>
+
+                        <Separator Margin="0,8"/>
+
+                        <DockPanel Margin="0,3">
+                            <TextBlock Text="Payment Method" FontSize="12" FontWeight="SemiBold" Foreground="#495057" VerticalAlignment="Center"/>
+                            <ComboBox Width="110" Height="26" HorizontalAlignment="Right" SelectedItem="{Binding PaymentMethod, UpdateSourceTrigger=PropertyChanged}">
+                                <ComboBoxItem Content="Cash" IsSelected="True"/>
+                                <ComboBoxItem Content="UPI"/>
+                                <ComboBoxItem Content="NetBanking"/>
+                                <ComboBoxItem Content="Card"/>
+                                <ComboBoxItem Content="Cheque"/>
+                            </ComboBox>
+                        </DockPanel>
+
+                        <DockPanel Margin="0,3">
+                            <TextBlock Text="Amount Paid" FontSize="12" FontWeight="SemiBold" Foreground="#495057" VerticalAlignment="Center"/>
+                            <TextBox Width="110" Height="26" TextAlignment="Right" HorizontalAlignment="Right" 
+                                     Text="{Binding AmountPaid, UpdateSourceTrigger=PropertyChanged}" VerticalContentAlignment="Center"/>
+                        </DockPanel>
 
                         <Button Content="SAVE INVOICE"
-        Command="{Binding PurchaseSaveCommand}"
-        Height="45"
-        Margin="0,10,0,0"
-        Background="#1971C2"
-        Foreground="White"
-        FontSize="14"
-        FontWeight="Bold"
-        Cursor="Hand">
+                                Command="{Binding PurchaseSaveCommand}"
+                                Height="40"
+                                Margin="0,15,0,0"
+                                Background="#1971C2"
+                                Foreground="White"
+                                FontSize="14"
+                                FontWeight="Bold"
+                                Cursor="Hand">
                             <Button.Resources>
                                 <Style TargetType="Border">
                                     <Setter Property="CornerRadius" Value="6"/>
@@ -325,7 +337,7 @@
                             </Button.Resources>
                         </Button>
                     </StackPanel>
-                </Grid>
+                </StackPanel>
             </Border>
         </Grid>
     </Grid>

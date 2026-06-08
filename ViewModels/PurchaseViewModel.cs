@@ -35,6 +35,23 @@ namespace MyWPFCRUDApp.ViewModels
         public ObservableCollection<MSupplier> Suppliers { get; set; }
         public ObservableCollection<MProducts> Products { get; set; }
         public ObservableCollection<MPurchaseDetail> PurchaseItems { get; set; }
+        public ObservableCollection<MTaxCategory> TaxCategories { get; set; }
+
+        private MTaxCategory _selectedTaxCategory;
+        public MTaxCategory SelectedTaxCategory
+        {
+            get => _selectedTaxCategory;
+            set
+            {
+                if (SetProperty(ref _selectedTaxCategory, value) && value != null)
+                {
+                    TaxContext.SelectedTax = value;
+
+                    DetermineApplicableTaxes();
+                    RecalculateTotal();
+                }
+            }
+        }
 
         // ── Form models ────────────────────────────────────────────────────────
         private MPurchaseMaster _purchaseMaster;
@@ -538,15 +555,23 @@ namespace MyWPFCRUDApp.ViewModels
             // RecalculateTotal() calls during initialisation.
             try
             {
-                var tax = _taxService
-     .GetTaxCategory()
-     .FirstOrDefault();
+                // Load all tax configurations for dropdown
+                TaxCategories = new ObservableCollection<MTaxCategory>(
+                    _taxService.GetTaxCategory());
 
-                if (TaxContext.SelectedTax != null)
+                // Restore previously selected tax configuration
+                SelectedTaxCategory =
+                    TaxContext.SelectedTax ??
+                    TaxCategories.FirstOrDefault();
+
+                // Ensure global context is initialized
+                TaxContext.SelectedTax = SelectedTaxCategory;
+
+                if (SelectedTaxCategory != null)
                 {
-                    _cgstPercent = TaxContext.SelectedTax.CGST;
-                    _sgstPercent = TaxContext.SelectedTax.SGST;
-                    _igstPercent = TaxContext.SelectedTax.IGST;
+                    _cgstPercent = SelectedTaxCategory.CGST;
+                    _sgstPercent = SelectedTaxCategory.SGST;
+                    _igstPercent = SelectedTaxCategory.IGST;
                 }
                 else
                 {
@@ -561,9 +586,9 @@ namespace MyWPFCRUDApp.ViewModels
             }
             catch
             {
-                _cgstPercent = 0m;
-                _sgstPercent = 0m;
-                _igstPercent = 0m;
+                _cgstPercent = 0;
+                _sgstPercent = 0;
+                _igstPercent = 0;
             }
 
             // ── Run DetermineApplicableTaxes() once so flags and totals are

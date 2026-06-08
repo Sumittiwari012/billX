@@ -34,7 +34,7 @@
                     </ComboBox.ItemTemplate>
 
                 </ComboBox>
-                
+
                 <Border BorderBrush="#DDD"
                 BorderThickness="1"
                 CornerRadius="5"
