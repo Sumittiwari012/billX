@@ -61,12 +61,12 @@ namespace MyWPFCRUDApp.Services
 
                     // ── B. Insert Purchase Detail ────────────────────────────────────
                     var detailSql = @"INSERT INTO MPurchaseDetail (
-                        PurchaseMasterId, ProductId, Quantity,
-                        PurchasePrice, WholesalePrice, MRP, AfterTaxation
-                    ) VALUES (
-                        @MasterId, @ProductId, @Qty,
-                        @Price, @Wholesale, @MRP, @AfterTax
-                    )";
+    PurchaseMasterId, ProductId, Quantity,
+    PurchasePrice, WholesalePrice, MRP, RetailPrice, AfterTaxation
+) VALUES (
+    @MasterId, @ProductId, @Qty,
+    @Price, @Wholesale, @MRP, @Retail, @AfterTax
+)";
 
                     using (var cmdDetail = new MySqlCommand(detailSql, conn, trans))
                     {
@@ -76,43 +76,34 @@ namespace MyWPFCRUDApp.Services
                         cmdDetail.Parameters.AddWithValue("@Price", detail.PurchasePrice);
                         cmdDetail.Parameters.AddWithValue("@Wholesale", detail.WholesalePrice);
                         cmdDetail.Parameters.AddWithValue("@MRP", detail.MRP);
+                        cmdDetail.Parameters.AddWithValue("@Retail", detail.Retail);   // ← add
                         cmdDetail.Parameters.AddWithValue("@AfterTax", detail.AfterTaxation);
                         cmdDetail.ExecuteNonQuery();
                     }
 
                     // ── C. Update Product Prices ─────────────────────────────────────
                     var updateProductSql = @"UPDATE MProducts SET
-                        PurchasePrice  = @Price,
-                        WholesalePrice = @Wholesale,
-                        MRP            = @MRP,
-                        ModifiedBy     = 'WPFUser',
-                        ModifiedDate   = @Now
-                        WHERE Id = @ProductId";
+    PurchasePrice   = @Price,
+    WholesalePrice  = @Wholesale,
+    MRP             = @MRP,
+    RetailSalePrice = @Retail,   -- ← was 'RetailPrice', but MProducts column is RetailSalePrice
+    ModifiedBy      = 'WPFUser',
+    ModifiedDate    = @Now
+    WHERE Id = @ProductId";
 
                     using (var cmdProd = new MySqlCommand(updateProductSql, conn, trans))
                     {
                         cmdProd.Parameters.AddWithValue("@Price", detail.PurchasePrice);
                         cmdProd.Parameters.AddWithValue("@Wholesale", detail.WholesalePrice);
                         cmdProd.Parameters.AddWithValue("@MRP", detail.MRP);
+                        cmdProd.Parameters.AddWithValue("@Retail", detail.Retail);   // ← add
                         cmdProd.Parameters.AddWithValue("@Now", DateTime.Now);
                         cmdProd.Parameters.AddWithValue("@ProductId", detail.ProductId);
                         cmdProd.ExecuteNonQuery();
                     }
 
-                    // ── D. Increment Stock ───────────────────────────────────────────
-                    var updateStockSql = @"UPDATE ProductQuantity SET
-                        Quantity     = Quantity + @Qty,
-                        ModifiedBy   = 'WPFUser',
-                        ModifiedDate = @Now
-                        WHERE Barcode = (SELECT Barcode FROM MProducts WHERE Id = @ProductId LIMIT 1)";
-
-                    using (var cmdStock = new MySqlCommand(updateStockSql, conn, trans))
-                    {
-                        cmdStock.Parameters.AddWithValue("@Qty", detail.Quantity);
-                        cmdStock.Parameters.AddWithValue("@Now", DateTime.Now);
-                        cmdStock.Parameters.AddWithValue("@ProductId", detail.ProductId);
-                        cmdStock.ExecuteNonQuery();
-                    }
+                   
+                   
                 }
 
                 trans.Commit();
@@ -142,18 +133,18 @@ namespace MyWPFCRUDApp.Services
 
             // ── 1. Insert into MProducts ──────────────────────────────────────
             var productSql = @"INSERT INTO MProducts (
-                ProductCode, ProductName, Barcode,
-                CategoryId, SubCategoryId, UnitId,
-                PurchasePrice, RetailSalePrice, WholesalePrice, MRP,
-                DiscountPercentage, CGST, SGST, IGST, CESS,
-                createdDate, createdBy, modifiedDate, modifiedBy
-            ) VALUES (
-                @ProductCode, @ProductName, @Barcode,
-                @CategoryId, @SubCategoryId, @UnitId,
-                @PurchasePrice, @RetailSalePrice, @WholesalePrice, @MRP,
-                0, 0, 0, 0, 0,
-                @CreatedDate, 'WPFUser', @CreatedDate, 'WPFUser'
-            ); SELECT LAST_INSERT_ID();";
+    ProductCode, ProductName, Barcode,
+    CategoryId, SubCategoryId, UnitId,
+    PurchasePrice, RetailSalePrice, WholesalePrice, MRP,
+    DiscountPercentage, CGST, SGST, IGST, CESS,
+    createdDate, createdBy, modifiedDate, modifiedBy
+) VALUES (
+    @ProductCode, @ProductName, @Barcode,
+    @CategoryId, @SubCategoryId, @UnitId,
+    @PurchasePrice, @RetailPrice, @WholesalePrice, @MRP,
+    0, 0, 0, 0, 0,
+    @CreatedDate, 'WPFUser', @CreatedDate, 'WPFUser'
+); SELECT LAST_INSERT_ID();";
 
             long newProductId;
             using (var cmdProd = new MySqlCommand(productSql, conn, trans))
@@ -165,9 +156,10 @@ namespace MyWPFCRUDApp.Services
                 cmdProd.Parameters.AddWithValue("@SubCategoryId", defaultSubId);
                 cmdProd.Parameters.AddWithValue("@UnitId", defaultUnitId);
                 cmdProd.Parameters.AddWithValue("@PurchasePrice", detail.PurchasePrice);
-                cmdProd.Parameters.AddWithValue("@RetailSalePrice", detail.MRP > 0 ? detail.MRP : detail.PurchasePrice);
+                
                 cmdProd.Parameters.AddWithValue("@WholesalePrice", detail.WholesalePrice);
                 cmdProd.Parameters.AddWithValue("@MRP", detail.MRP);
+                cmdProd.Parameters.AddWithValue("@RetailPrice", detail.Retail > 0 ? detail.Retail : detail.PurchasePrice);
                 cmdProd.Parameters.AddWithValue("@CreatedDate", DateTime.Now);
 
                 newProductId = Convert.ToInt64(cmdProd.ExecuteScalar());

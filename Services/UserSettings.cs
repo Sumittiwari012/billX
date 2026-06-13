@@ -27,6 +27,7 @@ namespace MyWPFCRUDApp.Services
 
         /// <summary>MRP markup % used in the Bill Scan Review window.</summary>
         public decimal MRPPercentage { get; set; } = 40m;
+        public decimal RetailPercentage { get; set; } = 30m;
 
         // ── Load ──────────────────────────────────────────────────────────────
         private static UserSettings Load()

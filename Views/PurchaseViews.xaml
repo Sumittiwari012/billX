@@ -272,7 +272,17 @@
                                 </Style>
                             </DataGridTextColumn.ElementStyle>
                         </DataGridTextColumn>
-
+                        <DataGridTextColumn Header="Retail (₹)"
+                     Binding="{Binding Retail, UpdateSourceTrigger=PropertyChanged, StringFormat={}{0:N2}}"
+                     Width="100">
+                            <DataGridTextColumn.ElementStyle>
+                                <Style TargetType="TextBlock">
+                                    <Setter Property="TextAlignment" Value="Right"/>
+                                    <Setter Property="Foreground" Value="#1971C2"/>
+                                    <Setter Property="FontWeight" Value="Bold"/>
+                                </Style>
+                            </DataGridTextColumn.ElementStyle>
+                        </DataGridTextColumn>
                         <DataGridTextColumn Header="Qty"
                                             Binding="{Binding Quantity, UpdateSourceTrigger=PropertyChanged}"
                                             Width="70">

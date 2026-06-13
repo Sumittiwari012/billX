@@ -41,7 +41,20 @@ namespace MyWPFCRUDApp.Views
                 }
             }
         }
-
+        private decimal _retailPercentage;
+        public decimal RetailPercentage
+        {
+            get => _retailPercentage;
+            set
+            {
+                if (SetField(ref _retailPercentage, value))
+                {
+                    UserSettings.Instance.RetailPercentage = value;
+                    UserSettings.Instance.Save();
+                    RecalculatePrices();
+                }
+            }
+        }
         private decimal _mrpPercentage;
         public decimal MRPPercentage
         {
@@ -63,14 +76,23 @@ namespace MyWPFCRUDApp.Views
             InitializeComponent();
             DataContext = this;
 
-            // Load last-used percentages (defaults: 20% wholesale, 40% MRP on first run)
             _wholesalePercentage = UserSettings.Instance.WholesalePercentage;
-            _mrpPercentage       = UserSettings.Instance.MRPPercentage;
+            _retailPercentage = UserSettings.Instance.RetailPercentage;
+            _mrpPercentage = UserSettings.Instance.MRPPercentage;
 
             ScannedBill = bill;
 
-            // Calculate Wholesale and MRP once items are loaded
+            foreach (var item in ScannedBill.Items)
+                item.PropertyChanged += Item_PropertyChanged;
+
             RecalculatePrices();
+            ScannedBill.RecalculateGrandTotal();
+        }
+
+        private void Item_PropertyChanged(object sender, PropertyChangedEventArgs e)
+        {
+            if (e.PropertyName == nameof(ScannedBillItem.Amount))
+                ScannedBill.RecalculateGrandTotal();
         }
 
         // ── Recalculate Wholesale and MRP for all rows ─────────────────────────
@@ -87,21 +109,30 @@ namespace MyWPFCRUDApp.Views
 
                 item.MRP = item.PurchasePrice
                     + (item.PurchasePrice * _mrpPercentage / 100m);
+                item.RetailPrice = item.PurchasePrice
+                    + (item.PurchasePrice * _retailPercentage / 100m);
             }
         }
 
         // ── Grid cell edit ended — recalc if Purchase Price was edited ─────────
         private void ItemsGrid_CellEditEnding(object sender, DataGridCellEditEndingEventArgs e)
         {
-            Dispatcher.BeginInvoke(new Action(RecalculatePrices),
-                System.Windows.Threading.DispatcherPriority.Background);
+            Dispatcher.BeginInvoke(new Action(() =>
+            {
+                RecalculatePrices();
+                ScannedBill.RecalculateGrandTotal();
+            }), System.Windows.Threading.DispatcherPriority.Background);
         }
 
         // ── Delete a row ──────────────────────────────────────────────────────
         private void DeleteRowButton_Click(object sender, RoutedEventArgs e)
         {
             if (sender is Button btn && btn.Tag is ScannedBillItem item)
+            {
+                item.PropertyChanged -= Item_PropertyChanged;
                 ScannedBill.Items.Remove(item);
+                ScannedBill.RecalculateGrandTotal();
+            }
         }
 
         // ── Approve ───────────────────────────────────────────────────────────
@@ -137,5 +168,10 @@ namespace MyWPFCRUDApp.Views
         public event PropertyChangedEventHandler PropertyChanged;
         private void OnPropertyChanged([CallerMemberName] string name = null)
             => PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(name));
+
+        private void ItemsGrid_SelectionChanged(object sender, SelectionChangedEventArgs e)
+        {
+
+        }
     }
 }

@@ -284,6 +284,13 @@ namespace MyWPFCRUDApp.ViewModels
                 }
             }
         }
+        private decimal _retail;
+        public decimal Retail
+        {
+            get => _retail;
+            set => SetProperty(ref _retail, value);
+        }
+
         // ════════════════════════════════════════════════════════════════════════
         // ISSUE #3 — DetermineApplicableTaxes()
         //
@@ -451,14 +458,15 @@ namespace MyWPFCRUDApp.ViewModels
 
                 PurchaseItems.Add(new MPurchaseDetail
                 {
-                    ProductId      = 0,
-                    ProductName    = item.Description,
-                    Barcode        = barcode,
-                    Quantity       = qty,
-                    PurchasePrice  = price,
+                    ProductId = 0,
+                    ProductName = item.Description,
+                    Barcode = barcode,
+                    Quantity = qty,
+                    PurchasePrice = price,
                     WholesalePrice = item.WholesalePrice,
-                    MRP            = item.MRP,
-                    AfterTaxation  = netAmt
+                    MRP = item.MRP,
+                    Retail = item.RetailPrice,   // ← add this
+                    AfterTaxation = netAmt
                 });
                 added++;
             }
@@ -567,15 +575,16 @@ namespace MyWPFCRUDApp.ViewModels
             {
                 PurchaseItems.Add(new MPurchaseDetail
                 {
-                    ProductId      = product.Id,
-                    ProductName    = product.ProductName,
-                    Barcode        = product.Barcode,
-                    Product        = product,
-                    Quantity       = 1,
-                    PurchasePrice  = product.PurchasePrice,
+                    ProductId = product.Id,
+                    ProductName = product.ProductName,
+                    Barcode = product.Barcode,
+                    Product = product,
+                    Quantity = 1,
+                    PurchasePrice = product.PurchasePrice,
                     WholesalePrice = product.WholesalePrice,
-                    MRP            = product.MRP,
-                    AfterTaxation  = product.PurchasePrice
+                    MRP = product.MRP,
+                    Retail = product.RetailSalePrice,   // ← add
+                    AfterTaxation = product.PurchasePrice
                 });
             }
             RecalculateTotal();
@@ -774,16 +783,19 @@ namespace MyWPFCRUDApp.ViewModels
 
                 var newProduct = new MProducts
                 {
-                    ProductName    = item.ProductName,
-                    Barcode        = item.Barcode,
-                    CategoryId     = defaultCatId,
-                    SubCategoryId  = defaultSubId,
-                    UnitId         = defaultUnitId,
-                    PurchasePrice  = item.PurchasePrice,
+                    ProductName = item.ProductName,
+                    Barcode = item.Barcode,
+                    CategoryId = defaultCatId,
+                    SubCategoryId = defaultSubId,
+                    UnitId = defaultUnitId,
+                    PurchasePrice = item.PurchasePrice,
                     WholesalePrice = item.WholesalePrice,
-                    RetailSalePrice = item.WholesalePrice,
-                    MRP            = item.MRP,
-                    CGST = 0, SGST = 0, IGST = 0, CESS = 0,
+                    RetailSalePrice = item.Retail,   // ← changed from item.WholesalePrice
+                    MRP = item.MRP,
+                    CGST = 0,
+                    SGST = 0,
+                    IGST = 0,
+                    CESS = 0,
                 };
 
                 if (_productService.InsertProduct(newProduct))

@@ -15,7 +15,7 @@ namespace MyWPFCRUDApp.Models
         public long ProductId { get; set; }
         [ForeignKey(nameof(ProductId))]
         public virtual MProducts? Product { get; set; }
-
+        
         public double Quantity { get; set; }
 
         [Column(TypeName = "decimal(18,2)")]
@@ -26,6 +26,9 @@ namespace MyWPFCRUDApp.Models
 
         [Column(TypeName = "decimal(18,2)")]
         public decimal MRP { get; set; }
+
+        [Column(TypeName = "decimal(18,2)")]
+        public decimal Retail { get; set; }
 
         [Column(TypeName = "decimal(18,2)")]
         public decimal AfterTaxation { get; set; }

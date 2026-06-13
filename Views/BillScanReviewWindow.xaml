@@ -9,11 +9,18 @@
 
     <Grid Margin="16">
         <Grid.RowDefinitions>
-            <RowDefinition Height="Auto"/>  <!-- 0: Header -->
-            <RowDefinition Height="Auto"/>  <!-- 1: Bill header fields -->
-            <RowDefinition Height="*"/>     <!-- 2: DataGrid -->
-            <RowDefinition Height="Auto"/>  <!-- 3: Percentage inputs -->
-            <RowDefinition Height="Auto"/>  <!-- 4: Buttons -->
+            <RowDefinition Height="Auto"/>
+            <!-- 0: Header -->
+            <RowDefinition Height="Auto"/>
+            <!-- 1: Bill header fields -->
+            <RowDefinition Height="*"/>
+            <!-- 2: DataGrid -->
+            <RowDefinition Height="Auto"/>
+            <!-- 3: Grand Total -->
+            <RowDefinition Height="Auto"/>
+            <!-- 4: Percentage inputs -->
+            <RowDefinition Height="Auto"/>
+            <!-- 5: Buttons -->
         </Grid.RowDefinitions>
 
         <!-- ── ROW 0: Header ── -->
@@ -29,8 +36,9 @@
         </Border>
 
         <!-- ── ROW 1: Bill Header Fields ── -->
+        <!-- ── ROW 1: Bill Header Fields ── -->
         <Border Grid.Row="1" Background="White" BorderBrush="#DEE2E6"
-                BorderThickness="1" CornerRadius="8" Padding="14" Margin="0,0,0,10">
+                BorderThickness="1" CornerRadius="8" Padding="14" Margin="0,0,0,10" RenderTransformOrigin="0.608,0.713">
             <Grid>
                 <Grid.ColumnDefinitions>
                     <ColumnDefinition Width="*"/>
@@ -39,26 +47,11 @@
                     <ColumnDefinition Width="*"/>
                 </Grid.ColumnDefinitions>
 
-                <StackPanel Grid.Column="0" Margin="0,0,12,0">
-                    <TextBlock Text="Invoice Number" FontSize="11" FontWeight="Bold" Foreground="#6C757D"/>
-                    <TextBox Text="{Binding ScannedBill.InvoiceNumber, UpdateSourceTrigger=PropertyChanged}"
-                             Height="30" Margin="0,4,0,0"/>
-                </StackPanel>
-                <StackPanel Grid.Column="1" Margin="0,0,12,0">
-                    <TextBlock Text="Bill Date" FontSize="11" FontWeight="Bold" Foreground="#6C757D"/>
-                    <TextBox Text="{Binding ScannedBill.InvoiceDate, UpdateSourceTrigger=PropertyChanged}"
-                             Height="30" Margin="0,4,0,0"/>
-                </StackPanel>
+
                 <StackPanel Grid.Column="2" Margin="0,0,12,0">
-                    <TextBlock Text="Supplier (from bill)" FontSize="11" FontWeight="Bold" Foreground="#6C757D"/>
+                    <TextBlock Text="Supplier (from bill)" FontSize="11" FontWeight="Bold" Foreground="#6C757D" RenderTransformOrigin="-1.468,3.15" Width="230"/>
                     <TextBox Text="{Binding ScannedBill.SupplierName, UpdateSourceTrigger=PropertyChanged}"
-                             Height="30" Margin="0,4,0,0"/>
-                </StackPanel>
-                <StackPanel Grid.Column="3">
-                    <TextBlock Text="Grand Total (₹)" FontSize="11" FontWeight="Bold" Foreground="#6C757D"/>
-                    <TextBlock Text="{Binding ScannedBill.GrandTotal, StringFormat=₹{0:N2}}"
-                               FontSize="20" FontWeight="ExtraBold" Foreground="#1971C2"
-                               Margin="0,4,0,0"/>
+                             Height="30"/>
                 </StackPanel>
             </Grid>
         </Border>
@@ -76,7 +69,7 @@
                   HorizontalGridLinesBrush="#E9ECEF"
                   Background="White"
                   BorderBrush="#DEE2E6"
-                  BorderThickness="1">
+                  BorderThickness="1" SelectionChanged="ItemsGrid_SelectionChanged">
 
             <DataGrid.Columns>
 
@@ -114,7 +107,16 @@
                         </Style>
                     </DataGridTextColumn.ElementStyle>
                 </DataGridTextColumn>
-
+                <DataGridTextColumn Header="Retail (₹)"
+    Binding="{Binding RetailPrice, UpdateSourceTrigger=PropertyChanged, StringFormat={}{0:N2}}"
+    Width="115">
+                    <DataGridTextColumn.ElementStyle>
+                        <Style TargetType="TextBlock">
+                            <Setter Property="TextAlignment" Value="Right"/>
+                            <Setter Property="Foreground" Value="#2B8A3E"/>
+                        </Style>
+                    </DataGridTextColumn.ElementStyle>
+                </DataGridTextColumn>
                 <!-- MRP — auto-filled by % input -->
                 <DataGridTextColumn Header="MRP (₹)"
                     Binding="{Binding MRP, UpdateSourceTrigger=PropertyChanged, StringFormat={}{0:N2}}"
@@ -152,9 +154,19 @@
 
             </DataGrid.Columns>
         </DataGrid>
-
+        <!-- ── Grand Total ── -->
+        <Border Grid.Row="3" Background="White" BorderBrush="#DEE2E6"
+                BorderThickness="1" CornerRadius="8" Padding="14" Margin="0,8,0,0"
+                HorizontalAlignment="Right">
+            <StackPanel HorizontalAlignment="Right">
+                <TextBlock Text="Grand Total (₹)" FontSize="11" FontWeight="Bold" Foreground="#6C757D" HorizontalAlignment="Right"/>
+                <TextBlock Text="{Binding ScannedBill.GrandTotal, StringFormat=₹{0:N2}}"
+                           FontSize="20" FontWeight="ExtraBold" Foreground="#1971C2"
+                           Margin="0,4,0,0" HorizontalAlignment="Right"/>
+            </StackPanel>
+        </Border>
         <!-- ── ROW 3: Percentage Inputs ── -->
-        <Border Grid.Row="3"
+        <Border Grid.Row="4"
                 Background="White"
                 BorderBrush="#DEE2E6"
                 BorderThickness="1"
@@ -163,14 +175,11 @@
                 Margin="0,8,0,0">
             <StackPanel Orientation="Horizontal" VerticalAlignment="Center">
 
-                <TextBlock Text="Auto-calculate prices from Purchase Price:"
-                           FontWeight="SemiBold" FontSize="12"
-                           VerticalAlignment="Center" Margin="0,0,20,0"/>
-
                 <!-- Wholesale % -->
                 <Border Background="#EBF8EE" CornerRadius="4" Padding="10,6" Margin="0,0,16,0">
+
                     <StackPanel Orientation="Horizontal">
-                        <TextBlock Text="Wholesale = Purchase +"
+                        <TextBlock Text="Wholesale = "
                                    VerticalAlignment="Center" FontSize="12" Margin="0,0,8,0"/>
                         <TextBox Width="60" Height="28"
                                  Text="{Binding WholesalePercentage, UpdateSourceTrigger=PropertyChanged}"
@@ -183,11 +192,25 @@
                                    Foreground="#2B8A3E" Margin="4,0,0,0"/>
                     </StackPanel>
                 </Border>
-
+                <Border Background="#EBF8EE" CornerRadius="4" Padding="10,6" Margin="0,0,16,0">
+                    <StackPanel Orientation="Horizontal">
+                        <TextBlock Text="Reatil = "
+                   VerticalAlignment="Center" FontSize="12" Margin="0,0,8,0"/>
+                        <TextBox Width="60" Height="28"
+                 Text="{Binding RetailPercentage, UpdateSourceTrigger=PropertyChanged}"
+                 VerticalContentAlignment="Center"
+                 TextAlignment="Center"
+                 FontWeight="Bold"
+                 BorderBrush="#2B8A3E"/>
+                        <TextBlock Text="%" VerticalAlignment="Center"
+                   FontSize="12" FontWeight="Bold"
+                   Foreground="#2B8A3E" Margin="4,0,0,0"/>
+                    </StackPanel>
+                </Border>
                 <!-- MRP % -->
                 <Border Background="#E7F5FF" CornerRadius="4" Padding="10,6">
                     <StackPanel Orientation="Horizontal">
-                        <TextBlock Text="MRP = Purchase +"
+                        <TextBlock Text="MRP = "
                                    VerticalAlignment="Center" FontSize="12" Margin="0,0,8,0"/>
                         <TextBox Width="60" Height="28"
                                  Text="{Binding MRPPercentage, UpdateSourceTrigger=PropertyChanged}"
@@ -208,7 +231,7 @@
         </Border>
 
         <!-- ── ROW 4: Buttons ── -->
-        <Grid Grid.Row="4" Margin="0,10,0,0">
+        <Grid Grid.Row="5" Margin="0,10,0,0">
             <Grid.ColumnDefinitions>
                 <ColumnDefinition Width="*"/>
                 <ColumnDefinition Width="Auto"/>

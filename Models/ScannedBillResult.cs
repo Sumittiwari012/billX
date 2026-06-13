@@ -3,13 +3,26 @@ using System.Collections.Generic;
 
 namespace MyWPFCRUDApp.Models
 {
-    public class ScannedBillResult
+    public class ScannedBillResult:BaseViewModel
     {
         public string InvoiceNumber { get; set; } = "";
         public string InvoiceDate   { get; set; } = "";
         public string SupplierName  { get; set; } = "";
-        public decimal GrandTotal   { get; set; }
+        
+        private decimal _grandTotal;
+        public decimal GrandTotal
+        {
+            get => _grandTotal;
+            set => SetProperty(ref _grandTotal, value);
+        }
+
         public List<ScannedBillItem> Items { get; set; } = new();
+
+        public void RecalculateGrandTotal()
+        {
+            GrandTotal = Items.Sum(i => i.Amount);
+        }
+
     }
 
     public class ScannedBillItem : BaseViewModel
@@ -49,7 +62,12 @@ namespace MyWPFCRUDApp.Models
             get => _wholesalePrice;
             set => SetProperty(ref _wholesalePrice, value);
         }
-
+        private decimal _retailPrice;
+        public decimal RetailPrice
+        {
+            get => _retailPrice;
+            set => SetProperty(ref _retailPrice, value);
+        }
         private decimal _mrp;
         public decimal MRP
         {
@@ -77,6 +95,7 @@ namespace MyWPFCRUDApp.Models
             get => _matchedProductName;
             set => SetProperty(ref _matchedProductName, value);
         }
+
 
         private void RecalcAmount()
         {
