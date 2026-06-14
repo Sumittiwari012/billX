@@ -40,6 +40,9 @@
     <Compile Update="Views\SubCategoryViews.xaml.cs">
       <SubType>Code</SubType>
     </Compile>
+    <Compile Update="Views\SupplierHistoryWindow.xaml.cs">
+      <SubType>Code</SubType>
+    </Compile>
     <Compile Update="Views\SupplierViews.xaml.cs">
       <SubType>Code</SubType>
     </Compile>

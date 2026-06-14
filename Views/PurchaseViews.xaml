@@ -29,88 +29,11 @@
                     <Label Content="Supplier *" FontSize="11" FontWeight="Bold"/>
                     <DockPanel>
                         <!-- History dropdown toggle -->
-                        <Grid DockPanel.Dock="Right" Margin="5,0,0,0">
-                            <ToggleButton x:Name="HistoryToggle"
-              Content="History ▾"
-              Click="HistoryToggle_Click"
-              Padding="10,0"
-              Height="32"/>
-                            <Popup IsOpen="{Binding IsHistoryOpen, Mode=TwoWay}"
-                                   PlacementTarget="{Binding ElementName=HistoryToggle}"
-                                   Placement="Bottom"
-                                   StaysOpen="False"
-                                   AllowsTransparency="True">
-                                <Border Background="White"
-                                        BorderBrush="#CED4DA"
-                                        BorderThickness="1"
-                                        CornerRadius="4"
-                                        MinWidth="280"
-                                        MaxHeight="260"
-                                        >
-                                    <Border.Effect>
-                                        <DropShadowEffect BlurRadius="8" ShadowDepth="2" Opacity="0.15" Color="Black"/>
-                                    </Border.Effect>
-                                    <Grid>
-                                        <Grid.RowDefinitions>
-                                            <RowDefinition Height="Auto"/>
-                                            <RowDefinition Height="*"/>
-                                        </Grid.RowDefinitions>
-                                        <!-- Header -->
-                                        <Border Grid.Row="0" Background="#F8F9FA"
-                                                BorderBrush="#DEE2E6" BorderThickness="0,0,0,1"
-                                                Padding="10,6">
-                                            <TextBlock Text="Purchase History" FontWeight="Bold" FontSize="12" Foreground="#495057"/>
-                                        </Border>
-                                        <!-- List or empty state -->
-                                        <ScrollViewer Grid.Row="1" VerticalScrollBarVisibility="Auto">
-                                            <ItemsControl ItemsSource="{Binding SupplierHistory}">
-                                                <ItemsControl.Style>
-                                                    <Style TargetType="ItemsControl">
-                                                        <Style.Triggers>
-                                                            <DataTrigger Binding="{Binding SupplierHistory.Count}" Value="0">
-                                                                <Setter Property="Template">
-                                                                    <Setter.Value>
-                                                                        <ControlTemplate>
-                                                                            <TextBlock Text="No purchases found for this supplier."
-                                                                                       Foreground="#868E96" FontSize="11"
-                                                                                       Padding="12,10" TextAlignment="Center"/>
-                                                                        </ControlTemplate>
-                                                                    </Setter.Value>
-                                                                </Setter>
-                                                            </DataTrigger>
-                                                        </Style.Triggers>
-                                                    </Style>
-                                                </ItemsControl.Style>
-                                                <ItemsControl.ItemTemplate>
-                                                    <DataTemplate>
-                                                        <Border BorderBrush="#F1F3F5" BorderThickness="0,0,0,1" Padding="10,7">
-                                                            <Grid>
-                                                                <Grid.ColumnDefinitions>
-                                                                    <ColumnDefinition Width="*"/>
-                                                                    <ColumnDefinition Width="Auto"/>
-                                                                </Grid.ColumnDefinitions>
-                                                                <StackPanel Grid.Column="0">
-                                                                    <TextBlock Text="{Binding InvoiceNumber}"
-                                                                               FontWeight="SemiBold" FontSize="12"
-                                                                               Foreground="#212529"/>
-                                                                    <TextBlock Text="{Binding PurchaseDate, StringFormat={}{0:dd MMM yyyy}}"
-                                                                               FontSize="11" Foreground="#868E96" Margin="0,1,0,0"/>
-                                                                </StackPanel>
-                                                                <TextBlock Grid.Column="1"
-                                                                           Text="{Binding TotalAmount, StringFormat=₹{0:N2}}"
-                                                                           FontWeight="Bold" FontSize="12"
-                                                                           Foreground="#2F9E44"
-                                                                           VerticalAlignment="Center"/>
-                                                            </Grid>
-                                                        </Border>
-                                                    </DataTemplate>
-                                                </ItemsControl.ItemTemplate>
-                                            </ItemsControl>
-                                        </ScrollViewer>
-                                    </Grid>
-                                </Border>
-                            </Popup>
-                        </Grid>
+                        <Button Content="History"
+        Click="HistoryButton_Click"
+        DockPanel.Dock="Right"
+        Padding="10,0" Margin="5,0,0,0"
+        Height="32"/>
                         <Button Content="+ New"
                                 Command="{Binding OpenAddSupplierCommand}"
                                 DockPanel.Dock="Right"

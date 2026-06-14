@@ -15,26 +15,61 @@ namespace MyWPFCRUDApp.Models
         public long ProductId { get; set; }
         [ForeignKey(nameof(ProductId))]
         public virtual MProducts? Product { get; set; }
-        
-        public double Quantity { get; set; }
 
-        [Column(TypeName = "decimal(18,2)")]
-        public decimal PurchasePrice { get; set; }
+        private double _quantity;
+        public double Quantity
+        {
+            get => _quantity;
+            set { if (_quantity != value) { _quantity = value; OnPropertyChanged(); RecalcAmount(); } }
+        }
 
+        private decimal _purchasePrice;
         [Column(TypeName = "decimal(18,2)")]
-        public decimal WholesalePrice { get; set; }
+        public decimal PurchasePrice
+        {
+            get => _purchasePrice;
+            set { if (_purchasePrice != value) { _purchasePrice = value; OnPropertyChanged(); RecalcAmount(); } }
+        }
 
+        private decimal _wholesalePrice;
         [Column(TypeName = "decimal(18,2)")]
-        public decimal MRP { get; set; }
+        public decimal WholesalePrice
+        {
+            get => _wholesalePrice;
+            set { if (_wholesalePrice != value) { _wholesalePrice = value; OnPropertyChanged(); } }
+        }
 
+        private decimal _mrp;
         [Column(TypeName = "decimal(18,2)")]
-        public decimal Retail { get; set; }
+        public decimal MRP
+        {
+            get => _mrp;
+            set { if (_mrp != value) { _mrp = value; OnPropertyChanged(); } }
+        }
 
+        private decimal _retail;
         [Column(TypeName = "decimal(18,2)")]
-        public decimal AfterTaxation { get; set; }
+        public decimal Retail
+        {
+            get => _retail;
+            set { if (_retail != value) { _retail = value; OnPropertyChanged(); } }
+        }
+
+        private decimal _afterTaxation;
+        [Column(TypeName = "decimal(18,2)")]
+        public decimal AfterTaxation
+        {
+            get => _afterTaxation;
+            set { if (_afterTaxation != value) { _afterTaxation = value; OnPropertyChanged(); } }
+        }
+
+        private void RecalcAmount()
+        {
+            if (_quantity > 0 && _purchasePrice > 0)
+                AfterTaxation = (decimal)_quantity * _purchasePrice;
+        }
 
         // ── Editable display fields ────────────────────────────────────────────
-        [NotMapped]
         private string _barcode = string.Empty;
         [NotMapped]
         public string Barcode
@@ -43,7 +78,6 @@ namespace MyWPFCRUDApp.Models
             set { _barcode = value; OnPropertyChanged(); }
         }
 
-        [NotMapped]
         private string _productName = string.Empty;
         [NotMapped]
         public string ProductName
@@ -52,7 +86,6 @@ namespace MyWPFCRUDApp.Models
             set { _productName = value; OnPropertyChanged(); }
         }
 
-        // ── INotifyPropertyChanged ─────────────────────────────────────────────
         public event PropertyChangedEventHandler? PropertyChanged;
         private void OnPropertyChanged([CallerMemberName] string? name = null)
             => PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(name));

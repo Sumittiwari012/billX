@@ -1,6 +1,8 @@
-﻿using MyWPFCRUDApp.ViewModels;
+﻿using MyWPFCRUDApp.Models;
+using MyWPFCRUDApp.ViewModels;
 using System;
 using System.Collections.Generic;
+using System.Collections.ObjectModel;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
@@ -19,12 +21,16 @@ namespace MyWPFCRUDApp.Views
     /// <summary>
     /// Interaction logic for SupplierViews.xaml
     /// </summary>
-    public partial class SupplierViews : UserControl
+    public partial class SupplierHistoryWindow : Window
     {
-        public SupplierViews()
+        public SupplierHistoryWindow(ObservableCollection<MPurchaseMaster> history)
         {
             InitializeComponent();
-            this.DataContext = new SupplierViewModel();
+
+            HistoryList.ItemsSource = history;
+            EmptyText.Visibility = (history == null || history.Count == 0)
+                ? Visibility.Visible
+                : Visibility.Collapsed;
         }
     }
 }

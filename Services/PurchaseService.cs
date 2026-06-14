@@ -211,47 +211,73 @@ namespace MyWPFCRUDApp.Services
         public List<MPurchaseMaster> GetPurchasesBySupplier(long supplierId)
         {
             var list = new List<MPurchaseMaster>();
-            Console.WriteLine($"[GetPurchasesBySupplier] Querying for SupplierId={supplierId}");
-
             try
             {
                 using var conn = new MySqlConnection(Con);
                 conn.Open();
-                Console.WriteLine("[GetPurchasesBySupplier] DB connection opened.");
 
-                var sql = @"SELECT InvoiceNumber, SupplierId, PurchaseDate, 
-                           TotalAmount, Discount, PaymentMode, Remarks
-                    FROM MPurchaseMaster 
-                    WHERE SupplierId = @SupplierId 
-                    ORDER BY PurchaseDate DESC";
+                // Step 1: Fetch all purchase masters for supplier
+                var masterSql = @"SELECT Id, InvoiceNumber, SupplierId, PurchaseDate, 
+                          TotalAmount, Discount, PaymentMode, Remarks
+                   FROM MPurchaseMaster 
+                   WHERE SupplierId = @SupplierId 
+                   ORDER BY PurchaseDate DESC";
 
-                using var cmd = new MySqlCommand(sql, conn);
-                cmd.Parameters.AddWithValue("@SupplierId", supplierId);
+                using var cmdMaster = new MySqlCommand(masterSql, conn);
+                cmdMaster.Parameters.AddWithValue("@SupplierId", supplierId);
 
-                using var reader = cmd.ExecuteReader();
-                int rowCount = 0;
-                while (reader.Read())
+                var masterIds = new List<(long Id, MPurchaseMaster Master)>();
+                using (var reader = cmdMaster.ExecuteReader())
                 {
-                    rowCount++;
-                    list.Add(new MPurchaseMaster
+                    while (reader.Read())
                     {
-                        InvoiceNumber = reader["InvoiceNumber"] == DBNull.Value ? ""
-                                        : reader.GetString("InvoiceNumber"),
-                        SupplierId = reader["SupplierId"] == DBNull.Value ? 0
-                                        : reader.GetInt64("SupplierId"),
-                        PurchaseDate = reader["PurchaseDate"] == DBNull.Value ? DateTime.MinValue
-                                        : reader.GetDateTime("PurchaseDate"),
-                        TotalAmount = reader["TotalAmount"] == DBNull.Value ? 0m
-                                        : reader.GetDecimal("TotalAmount"),
-                        Discount = reader["Discount"] == DBNull.Value ? 0m
-                                        : reader.GetDecimal("Discount"),
-                        PaymentMode = reader["PaymentMode"] == DBNull.Value ? null
-                                        : reader.GetString("PaymentMode"),
-                        Remarks = reader["Remarks"] == DBNull.Value ? null
-                                        : reader.GetString("Remarks"),
-                    });
+                        var master = new MPurchaseMaster
+                        {
+                            Id = reader.GetInt64("Id"),
+                            InvoiceNumber = reader["InvoiceNumber"] == DBNull.Value ? "" : reader.GetString("InvoiceNumber"),
+                            SupplierId = reader.GetInt64("SupplierId"),
+                            PurchaseDate = reader["PurchaseDate"] == DBNull.Value ? DateTime.MinValue : reader.GetDateTime("PurchaseDate"),
+                            TotalAmount = reader["TotalAmount"] == DBNull.Value ? 0m : reader.GetDecimal("TotalAmount"),
+                            Discount = reader["Discount"] == DBNull.Value ? 0m : reader.GetDecimal("Discount"),
+                            PaymentMode = reader["PaymentMode"] == DBNull.Value ? null : reader.GetString("PaymentMode"),
+                            Remarks = reader["Remarks"] == DBNull.Value ? null : reader.GetString("Remarks"),
+                        };
+                        long masterId = reader.GetInt64("Id");
+                        masterIds.Add((masterId, master));
+                        list.Add(master);
+                    }
                 }
-                Console.WriteLine($"[GetPurchasesBySupplier] Read {rowCount} rows.");
+
+                // Step 2: Fetch details for each master
+                foreach (var (masterId, master) in masterIds)
+                {
+                    var detailSql = @"SELECT d.ProductId, d.Quantity, d.PurchasePrice,
+                                     d.WholesalePrice, d.MRP, d.RetailPrice, d.AfterTaxation,
+                                     p.ProductName, p.Barcode
+                              FROM MPurchaseDetail d
+                              LEFT JOIN MProducts p ON p.Id = d.ProductId
+                              WHERE d.PurchaseMasterId = @MasterId";
+
+                    using var cmdDetail = new MySqlCommand(detailSql, conn);
+                    cmdDetail.Parameters.AddWithValue("@MasterId", masterId);
+
+                    using var dr = cmdDetail.ExecuteReader();
+                    while (dr.Read())
+                    {
+                        master.Details.Add(new MPurchaseDetail
+                        {
+                            ProductId = dr.GetInt64("ProductId"),
+                            ProductName = dr["ProductName"] == DBNull.Value ? "" : dr.GetString("ProductName"),
+                            Barcode = dr["Barcode"] == DBNull.Value ? "" : dr.GetString("Barcode"),
+                            Quantity = dr.GetDouble("Quantity"),
+                            PurchasePrice = dr.GetDecimal("PurchasePrice"),
+                            WholesalePrice = dr.GetDecimal("WholesalePrice"),
+                            MRP = dr.GetDecimal("MRP"),
+                            Retail = dr["RetailPrice"] == DBNull.Value ? 0m : dr.GetDecimal("RetailPrice"),
+                            AfterTaxation = dr.GetDecimal("AfterTaxation"),
+                        });
+                    }
+                }
             }
             catch (Exception ex)
             {
@@ -259,6 +285,112 @@ namespace MyWPFCRUDApp.Services
             }
 
             return list;
+        }
+        public bool UpdatePurchase(long masterId, MPurchaseMaster purchase)
+        {
+            if (purchase == null || purchase.MPurchaseDetail == null) return false;
+
+            using var conn = new MySqlConnection(Con);
+            conn.Open();
+            using var trans = conn.BeginTransaction();
+
+            try
+            {
+                // 1. Update master row
+                var masterSql = @"UPDATE MPurchaseMaster SET
+            InvoiceNumber = @InvoiceNumber,
+            SupplierId    = @SupplierId,
+            PurchaseDate  = @PurchaseDate,
+            TotalAmount   = @TotalAmount,
+            Discount      = @Discount,
+            PaymentMode   = @PaymentMode,
+            AmountPaid    = @AmountPaid,
+            Remarks       = @Remarks,
+            ModifiedBy    = 'WPFUser',
+            ModifiedDate  = @Now
+            WHERE Id = @MasterId";
+
+                using (var cmd = new MySqlCommand(masterSql, conn, trans))
+                {
+                    cmd.Parameters.AddWithValue("@InvoiceNumber", purchase.InvoiceNumber);
+                    cmd.Parameters.AddWithValue("@SupplierId", purchase.SupplierId);
+                    cmd.Parameters.AddWithValue("@PurchaseDate", purchase.PurchaseDate);
+                    cmd.Parameters.AddWithValue("@TotalAmount", purchase.TotalAmount);
+                    cmd.Parameters.AddWithValue("@Discount", purchase.Discount);
+                    cmd.Parameters.AddWithValue("@PaymentMode", purchase.PaymentMode ?? (object)DBNull.Value);
+                    cmd.Parameters.AddWithValue("@AmountPaid", purchase.AmountPaid);
+                    cmd.Parameters.AddWithValue("@Remarks", purchase.Remarks ?? (object)DBNull.Value);
+                    cmd.Parameters.AddWithValue("@Now", DateTime.Now);
+                    cmd.Parameters.AddWithValue("@MasterId", masterId);
+                    cmd.ExecuteNonQuery();
+                }
+
+                // 2. Delete old detail lines and re-insert fresh
+                using (var cmd = new MySqlCommand(
+                    "DELETE FROM MPurchaseDetail WHERE PurchaseMasterId = @MasterId", conn, trans))
+                {
+                    cmd.Parameters.AddWithValue("@MasterId", masterId);
+                    cmd.ExecuteNonQuery();
+                }
+
+                // 3. Insert updated lines + update product prices
+                foreach (var detail in purchase.MPurchaseDetail)
+                {
+                    if (detail.ProductId == 0)
+                        detail.ProductId = InsertNewProduct(detail, conn, trans);
+
+                    var detailSql = @"INSERT INTO MPurchaseDetail (
+                PurchaseMasterId, ProductId, Quantity,
+                PurchasePrice, WholesalePrice, MRP, RetailPrice, AfterTaxation
+            ) VALUES (
+                @MasterId, @ProductId, @Qty,
+                @Price, @Wholesale, @MRP, @Retail, @AfterTax
+            )";
+
+                    using (var cmd = new MySqlCommand(detailSql, conn, trans))
+                    {
+                        cmd.Parameters.AddWithValue("@MasterId", masterId);
+                        cmd.Parameters.AddWithValue("@ProductId", detail.ProductId);
+                        cmd.Parameters.AddWithValue("@Qty", detail.Quantity);
+                        cmd.Parameters.AddWithValue("@Price", detail.PurchasePrice);
+                        cmd.Parameters.AddWithValue("@Wholesale", detail.WholesalePrice);
+                        cmd.Parameters.AddWithValue("@MRP", detail.MRP);
+                        cmd.Parameters.AddWithValue("@Retail", detail.Retail);
+                        cmd.Parameters.AddWithValue("@AfterTax", detail.AfterTaxation);
+                        cmd.ExecuteNonQuery();
+                    }
+
+                    // Update product prices to latest values
+                    var updateProductSql = @"UPDATE MProducts SET
+                PurchasePrice   = @Price,
+                WholesalePrice  = @Wholesale,
+                MRP             = @MRP,
+                RetailSalePrice = @Retail,
+                ModifiedBy      = 'WPFUser',
+                ModifiedDate    = @Now
+                WHERE Id = @ProductId";
+
+                    using (var cmd = new MySqlCommand(updateProductSql, conn, trans))
+                    {
+                        cmd.Parameters.AddWithValue("@Price", detail.PurchasePrice);
+                        cmd.Parameters.AddWithValue("@Wholesale", detail.WholesalePrice);
+                        cmd.Parameters.AddWithValue("@MRP", detail.MRP);
+                        cmd.Parameters.AddWithValue("@Retail", detail.Retail);
+                        cmd.Parameters.AddWithValue("@Now", DateTime.Now);
+                        cmd.Parameters.AddWithValue("@ProductId", detail.ProductId);
+                        cmd.ExecuteNonQuery();
+                    }
+                }
+
+                trans.Commit();
+                return true;
+            }
+            catch (Exception ex)
+            {
+                trans.Rollback();
+                Console.WriteLine($"[UpdatePurchase] EXCEPTION: {ex.Message}\n{ex.StackTrace}");
+                throw;
+            }
         }
     }
 }

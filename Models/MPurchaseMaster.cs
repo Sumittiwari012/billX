@@ -10,7 +10,7 @@ using System.ComponentModel;
 
 namespace MyWPFCRUDApp.Models
 {
-    public class MPurchaseMaster
+    public class MPurchaseMaster:BaseEntity
     {
         public string InvoiceNumber { get; set; } // The Bill No. from the supplier
         public long SupplierId { get; set; }
@@ -54,5 +54,7 @@ namespace MyWPFCRUDApp.Models
         [ForeignKey(nameof(SupplierId))]
         [JsonIgnore] // Stops the API from requiring the full Category object
         public virtual MSupplier? MSupplier { get; set; }
+        [NotMapped]
+        public List<MPurchaseDetail> Details { get; set; } = new();
     }
 }

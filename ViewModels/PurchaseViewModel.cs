@@ -21,7 +21,7 @@ namespace MyWPFCRUDApp.ViewModels
         private readonly ProductService _productService;
         private readonly BillScanService _billScanService;
         private readonly TaxService _taxService;
-
+        private long _editingMasterId = 0;
         // ── Commands ───────────────────────────────────────────────────────────
         public ICommand AddItemCommand { get; }
         public ICommand PurchaseDeleteCommand { get; }
@@ -32,6 +32,7 @@ namespace MyWPFCRUDApp.ViewModels
         public ICommand ScanBillCommand { get; }
         public ICommand OpenApiKeySetupCommand { get; }
         public ICommand ToggleHistoryCommand { get; }
+        public ICommand LoadHistoryInvoiceCommand { get; }
 
         // ── Collections ────────────────────────────────────────────────────────
         public ObservableCollection<MSupplier> Suppliers { get; set; }
@@ -52,6 +53,7 @@ namespace MyWPFCRUDApp.ViewModels
         public ObservableCollection<MProducts> Products { get; set; }
         public ObservableCollection<MPurchaseDetail> PurchaseItems { get; set; }
         public ObservableCollection<MTaxCategory> TaxCategories { get; set; }
+
 
         private MTaxCategory _selectedTaxCategory;
         public MTaxCategory SelectedTaxCategory
@@ -114,6 +116,55 @@ namespace MyWPFCRUDApp.ViewModels
                     OnPropertyChanged(nameof(ScanHintVisibility));
                 }
             }
+        }
+        private decimal _purchasePrice;
+        public decimal PurchasePrice
+        {
+            get => _purchasePrice;
+            set
+            {
+                if (_purchasePrice != value)
+                {
+                    _purchasePrice = value;
+                    OnPropertyChanged();
+                    RecalcAmount();
+                }
+            }
+        }
+
+        private double _quantity;
+        public double Quantity
+        {
+            get => _quantity;
+            set
+            {
+                if (_quantity != value)
+                {
+                    _quantity = value;
+                    OnPropertyChanged();
+                    RecalcAmount();
+                }
+            }
+        }
+
+        private decimal _afterTaxation;
+        public decimal AfterTaxation
+        {
+            get => _afterTaxation;
+            set
+            {
+                if (_afterTaxation != value)
+                {
+                    _afterTaxation = value;
+                    OnPropertyChanged();
+                }
+            }
+        }
+
+        private void RecalcAmount()
+        {
+            if (_quantity > 0 && _purchasePrice > 0)
+                AfterTaxation = (decimal)_quantity * _purchasePrice;
         }
         private decimal _amountPaid;
         public decimal AmountPaid
@@ -373,10 +424,41 @@ namespace MyWPFCRUDApp.ViewModels
             ScanBillCommand       = new RelayCommand(async _ => await ExecuteScanBillAsync());
             OpenApiKeySetupCommand = new RelayCommand(_ => OpenApiKeySetup());
             ToggleHistoryCommand  = new RelayCommand(_ => ToggleHistory());
+            LoadHistoryInvoiceCommand = new RelayCommand(p => LoadHistoryInvoice(p as MPurchaseMaster));
 
             InitializeData();
         }
+        private void LoadHistoryInvoice(MPurchaseMaster master)
+        {
+            if (master == null) return;
 
+            _editingMasterId = master.Id;   // ← key fix
+            PurchaseMaster.InvoiceNumber = master.InvoiceNumber;
+            PurchaseMaster.PurchaseDate = master.PurchaseDate;
+            PurchaseMaster.Discount = master.Discount;
+            Discount = master.Discount;
+            OnPropertyChanged(nameof(PurchaseMaster));
+
+            PurchaseItems.Clear();
+            foreach (var d in master.Details)
+            {
+                PurchaseItems.Add(new MPurchaseDetail
+                {
+                    ProductId = d.ProductId,
+                    ProductName = d.ProductName,
+                    Barcode = d.Barcode,
+                    Quantity = d.Quantity,
+                    PurchasePrice = d.PurchasePrice,
+                    WholesalePrice = d.WholesalePrice,
+                    MRP = d.MRP,
+                    Retail = d.Retail,
+                    AfterTaxation = d.AfterTaxation,
+                });
+            }
+
+            RecalculateTotal();
+            OnPropertyChanged(nameof(PurchaseItems));
+        }
         // ════════════════════════════════════════════════════════════════════════
         // SCAN BILL FLOW
         // ════════════════════════════════════════════════════════════════════════
@@ -761,11 +843,11 @@ namespace MyWPFCRUDApp.ViewModels
             if (!PurchaseItems.Any())
             { MessageBox.Show("Please add at least one item."); return; }
 
-            var cats      = new CategoryService().GetCategory();
-            var subs      = new SubCategoryService().GetSubCategoryList();
-            var units     = new UnitService().GetUnit();
-            long defaultCatId  = cats.Any()  ? cats.First().Id  : 1;
-            long defaultSubId  = subs.Any()  ? subs.First().Id  : 1;
+            var cats = new CategoryService().GetCategory();
+            var subs = new SubCategoryService().GetSubCategoryList();
+            var units = new UnitService().GetUnit();
+            long defaultCatId = cats.Any() ? cats.First().Id : 1;
+            long defaultSubId = subs.Any() ? subs.First().Id : 1;
             long defaultUnitId = units.Any() ? units.First().Id : 1;
 
             int newProductsCreated = 0;
@@ -775,11 +857,7 @@ namespace MyWPFCRUDApp.ViewModels
                 if (item.ProductId > 0) continue;
 
                 var existing = _productService.GetByBarcode(item.Barcode);
-                if (existing != null)
-                {
-                    item.ProductId = existing.Id;
-                    continue;
-                }
+                if (existing != null) { item.ProductId = existing.Id; continue; }
 
                 var newProduct = new MProducts
                 {
@@ -790,7 +868,7 @@ namespace MyWPFCRUDApp.ViewModels
                     UnitId = defaultUnitId,
                     PurchasePrice = item.PurchasePrice,
                     WholesalePrice = item.WholesalePrice,
-                    RetailSalePrice = item.Retail,   // ← changed from item.WholesalePrice
+                    RetailSalePrice = item.Retail,
                     MRP = item.MRP,
                     CGST = 0,
                     SGST = 0,
@@ -801,64 +879,67 @@ namespace MyWPFCRUDApp.ViewModels
                 if (_productService.InsertProduct(newProduct))
                 {
                     var inserted = _productService.GetByBarcode(item.Barcode);
-                    if (inserted != null)
-                    {
-                        item.ProductId = inserted.Id;
-                        newProductsCreated++;
-                    }
+                    if (inserted != null) { item.ProductId = inserted.Id; newProductsCreated++; }
                 }
                 else
                 {
-                    MessageBox.Show(
-                        $"Failed to save product '{item.ProductName}' (barcode: {item.Barcode}).\n" +
-                        "Check for duplicate barcodes and try again.",
+                    MessageBox.Show($"Failed to save product '{item.ProductName}'.",
                         "Product Save Failed", MessageBoxButton.OK, MessageBoxImage.Error);
                     return;
                 }
             }
+
             PurchaseMaster.PaymentMode = PaymentMethod;
             PurchaseMaster.AmountPaid = AmountPaid;
+            PurchaseMaster.SupplierId = SelectedSupplier.Id;
             PurchaseMaster.MPurchaseDetail = PurchaseItems.ToList();
-            decimal balance = BalanceAmount;
 
-            if (balance > 0)
-            {
-                SelectedSupplier.CurrentBalance -= balance;
-            }
-            else if (balance < 0)
-            {
-                SelectedSupplier.CurrentBalance += Math.Abs(balance);
-            }
-            _supplierService.UpdateSupplier(SelectedSupplier);
-            if (_purchaseService.AddPurchase(PurchaseMaster))
-            {
-                // Refresh supplier balance
-                var updatedSupplier =
-                    _supplierService.GetAllSuppliers()
-                                    .FirstOrDefault(x => x.Id == SelectedSupplier.Id);
+            bool success;
 
+            if (_editingMasterId > 0)
+            {
+                // UPDATE existing invoice — no supplier balance change
+                success = _purchaseService.UpdatePurchase(_editingMasterId, PurchaseMaster);
+            }
+            else
+            {
+                // INSERT new invoice + adjust supplier balance
+                decimal bal = BalanceAmount;
+                if (bal > 0) SelectedSupplier.CurrentBalance -= bal;
+                else if (bal < 0) SelectedSupplier.CurrentBalance += Math.Abs(bal);
+                _supplierService.UpdateSupplier(SelectedSupplier);
+
+                success = _purchaseService.AddPurchase(PurchaseMaster);
+            }
+
+            if (success)
+            {
+                var updatedSupplier = _supplierService.GetAllSuppliers()
+                                        .FirstOrDefault(x => x.Id == SelectedSupplier.Id);
                 if (updatedSupplier != null)
                 {
                     SelectedSupplier = updatedSupplier;
                     SupplierBalance = updatedSupplier.CurrentBalance;
                 }
 
-                string msg = newProductsCreated > 0
-                    ? $"✔ Purchase recorded successfully!\n📦 {newProductsCreated} new product(s) were added to your product list."
-                    : "✔ Purchase recorded and stock updated successfully!";
+                string msg = _editingMasterId > 0
+                    ? "✔ Invoice updated successfully!"
+                    : newProductsCreated > 0
+                        ? $"✔ Purchase recorded!\n📦 {newProductsCreated} new product(s) added."
+                        : "✔ Purchase recorded and stock updated!";
 
                 MessageBox.Show(msg, "Saved", MessageBoxButton.OK, MessageBoxImage.Information);
-
                 ResetForm();
             }
             else
             {
-                MessageBox.Show("Error occurred while saving the purchase invoice.");
+                MessageBox.Show("Error occurred while saving.");
             }
         }
 
         private void ResetForm()
         {
+            _editingMasterId = 0;   // ← reset edit mode
             InitializeData();
             SelectedSupplier = null;
             SupplierHistory = new ObservableCollection<MPurchaseMaster>();
