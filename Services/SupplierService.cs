@@ -48,7 +48,55 @@ namespace MyWPFCRUDApp.Services
 
             return cmd.ExecuteNonQuery() > 0;
         }
+        public decimal RecalculateAndUpdateSupplierBalance(long supplierId)
+        {
+            using var conn = new MySqlConnection(Con);
+            conn.Open();
 
+            // Total purchase amount for this supplier
+            var totalPurchaseSql = @"SELECT COALESCE(SUM(TotalAmount), 0) 
+                             FROM MPurchaseMaster 
+                             WHERE SupplierId = @SupplierId";
+
+            decimal totalPurchase;
+            using (var cmd = new MySqlCommand(totalPurchaseSql, conn))
+            {
+                cmd.Parameters.AddWithValue("@SupplierId", supplierId);
+                totalPurchase = Convert.ToDecimal(cmd.ExecuteScalar());
+            }
+
+            // Total paid against this supplier across all invoices
+            var totalPaidSql = @"SELECT COALESCE(SUM(AmountPaid), 0) 
+                         FROM MPayment 
+                         WHERE SupplierId = @SupplierId";
+
+            decimal totalPaid;
+            using (var cmd = new MySqlCommand(totalPaidSql, conn))
+            {
+                cmd.Parameters.AddWithValue("@SupplierId", supplierId);
+                totalPaid = Convert.ToDecimal(cmd.ExecuteScalar());
+            }
+
+            // Balance = Total Purchase - Total Paid (what we still owe)
+            decimal balance = totalPurchase - totalPaid;
+
+            // Update CurrentBalance in MSupplier
+            var updateSql = @"UPDATE MSupplier SET 
+                        CurrentBalance = @Balance,
+                        ModifiedBy     = 'System',
+                        ModifiedDate   = @Now
+                      WHERE Id = @SupplierId";
+
+            using (var cmd = new MySqlCommand(updateSql, conn))
+            {
+                cmd.Parameters.AddWithValue("@Balance", balance);
+                cmd.Parameters.AddWithValue("@Now", DateTime.Now);
+                cmd.Parameters.AddWithValue("@SupplierId", supplierId);
+                cmd.ExecuteNonQuery();
+            }
+
+            return balance;
+        }
         // ─── GET ALL ───────────────────────────────────────────────────────────
         public List<MSupplier> GetAllSuppliers()
         {

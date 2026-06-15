@@ -83,3 +83,9 @@ E:\Mohua's_fashion\MyWPFCRUDApp\obj\Debug\net8.0-windows\MyWPFCRUDApp.genruntime
 E:\Mohua's_fashion\MyWPFCRUDApp\obj\Debug\net8.0-windows\ref\MyWPFCRUDApp.dll
 E:\Mohua's_fashion\MyWPFCRUDApp\obj\Debug\net8.0-windows\Views\SupplierHistoryWindow.baml
 E:\Mohua's_fashion\MyWPFCRUDApp\obj\Debug\net8.0-windows\Views\SupplierHistoryWindow.g.cs
+E:\Mohua's_fashion\MyWPFCRUDApp\obj\Debug\net8.0-windows\Views\BankAccountViews.g.cs
+E:\Mohua's_fashion\MyWPFCRUDApp\obj\Debug\net8.0-windows\Views\BankAccountViews.baml
+E:\Mohua's_fashion\MyWPFCRUDApp\obj\Debug\net8.0-windows\Views\PaymentMethodViews.baml
+E:\Mohua's_fashion\MyWPFCRUDApp\obj\Debug\net8.0-windows\Views\PaymentMethodViews.g.cs
+E:\Mohua's_fashion\MyWPFCRUDApp\obj\Debug\net8.0-windows\Views\PaymentWindow.baml
+E:\Mohua's_fashion\MyWPFCRUDApp\obj\Debug\net8.0-windows\Views\PaymentWindow.g.cs

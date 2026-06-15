@@ -10,6 +10,9 @@
     <Compile Update="Views\AddSupplierWindow.xaml.cs">
       <SubType>Code</SubType>
     </Compile>
+    <Compile Update="Views\BankAccountViews.xaml.cs">
+      <SubType>Code</SubType>
+    </Compile>
     <Compile Update="Views\CategoryViews.xaml.cs">
       <SubType>Code</SubType>
     </Compile>
@@ -26,6 +29,12 @@
       <SubType>Code</SubType>
     </Compile>
     <Compile Update="Views\PasswordInputDialog.xaml.cs">
+      <SubType>Code</SubType>
+    </Compile>
+    <Compile Update="Views\PaymentMethodViews.xaml.cs">
+      <SubType>Code</SubType>
+    </Compile>
+    <Compile Update="Views\PaymentWindow.xaml.cs">
       <SubType>Code</SubType>
     </Compile>
     <Compile Update="Views\ProductViews.xaml.cs">

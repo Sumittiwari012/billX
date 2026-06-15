@@ -3,60 +3,152 @@
   "WorkspaceRootPath": "E:\\Mohua\u0027s_fashion\\MyWPFCRUDApp\\",
   "Documents": [
     {
-      "AbsoluteMoniker": "D:0:0:{63FD5C72-1F5C-48F0-8CE4-22CDA6BF3658}|MyWPFCRUDApp.csproj|e:\\mohua\u0027s_fashion\\mywpfcrudapp\\models\\mpurchasedetail.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}",
-      "RelativeMoniker": "D:0:0:{63FD5C72-1F5C-48F0-8CE4-22CDA6BF3658}|MyWPFCRUDApp.csproj|solutionrelative:models\\mpurchasedetail.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}"
-    },
-    {
-      "AbsoluteMoniker": "D:0:0:{63FD5C72-1F5C-48F0-8CE4-22CDA6BF3658}|MyWPFCRUDApp.csproj|e:\\mohua\u0027s_fashion\\mywpfcrudapp\\services\\purchaseservice.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}",
-      "RelativeMoniker": "D:0:0:{63FD5C72-1F5C-48F0-8CE4-22CDA6BF3658}|MyWPFCRUDApp.csproj|solutionrelative:services\\purchaseservice.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}"
-    },
-    {
       "AbsoluteMoniker": "D:0:0:{63FD5C72-1F5C-48F0-8CE4-22CDA6BF3658}|MyWPFCRUDApp.csproj|e:\\mohua\u0027s_fashion\\mywpfcrudapp\\viewmodels\\purchaseviewmodel.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}",
       "RelativeMoniker": "D:0:0:{63FD5C72-1F5C-48F0-8CE4-22CDA6BF3658}|MyWPFCRUDApp.csproj|solutionrelative:viewmodels\\purchaseviewmodel.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}"
     },
     {
-      "AbsoluteMoniker": "D:0:0:{63FD5C72-1F5C-48F0-8CE4-22CDA6BF3658}|MyWPFCRUDApp.csproj|e:\\mohua\u0027s_fashion\\mywpfcrudapp\\views\\purchaseviews.xaml.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}",
-      "RelativeMoniker": "D:0:0:{63FD5C72-1F5C-48F0-8CE4-22CDA6BF3658}|MyWPFCRUDApp.csproj|solutionrelative:views\\purchaseviews.xaml.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}"
+      "AbsoluteMoniker": "D:0:0:{63FD5C72-1F5C-48F0-8CE4-22CDA6BF3658}|MyWPFCRUDApp.csproj|e:\\mohua\u0027s_fashion\\mywpfcrudapp\\viewmodels\\paymentwindowviewmodel.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}",
+      "RelativeMoniker": "D:0:0:{63FD5C72-1F5C-48F0-8CE4-22CDA6BF3658}|MyWPFCRUDApp.csproj|solutionrelative:viewmodels\\paymentwindowviewmodel.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}"
     },
     {
-      "AbsoluteMoniker": "D:0:0:{63FD5C72-1F5C-48F0-8CE4-22CDA6BF3658}|MyWPFCRUDApp.csproj|e:\\mohua\u0027s_fashion\\mywpfcrudapp\\views\\purchaseviews.xaml||{F11ACC28-31D1-4C80-A34B-F4E09D3D753C}",
-      "RelativeMoniker": "D:0:0:{63FD5C72-1F5C-48F0-8CE4-22CDA6BF3658}|MyWPFCRUDApp.csproj|solutionrelative:views\\purchaseviews.xaml||{F11ACC28-31D1-4C80-A34B-F4E09D3D753C}"
-    },
-    {
-      "AbsoluteMoniker": "D:0:0:{63FD5C72-1F5C-48F0-8CE4-22CDA6BF3658}|MyWPFCRUDApp.csproj|e:\\mohua\u0027s_fashion\\mywpfcrudapp\\services\\unitservice.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}",
-      "RelativeMoniker": "D:0:0:{63FD5C72-1F5C-48F0-8CE4-22CDA6BF3658}|MyWPFCRUDApp.csproj|solutionrelative:services\\unitservice.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}"
-    },
-    {
-      "AbsoluteMoniker": "D:0:0:{63FD5C72-1F5C-48F0-8CE4-22CDA6BF3658}|MyWPFCRUDApp.csproj|e:\\mohua\u0027s_fashion\\mywpfcrudapp\\services\\databaseinitializer.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}",
-      "RelativeMoniker": "D:0:0:{63FD5C72-1F5C-48F0-8CE4-22CDA6BF3658}|MyWPFCRUDApp.csproj|solutionrelative:services\\databaseinitializer.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}"
-    },
-    {
-      "AbsoluteMoniker": "D:0:0:{63FD5C72-1F5C-48F0-8CE4-22CDA6BF3658}|MyWPFCRUDApp.csproj|e:\\mohua\u0027s_fashion\\mywpfcrudapp\\models\\baseentity.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}",
-      "RelativeMoniker": "D:0:0:{63FD5C72-1F5C-48F0-8CE4-22CDA6BF3658}|MyWPFCRUDApp.csproj|solutionrelative:models\\baseentity.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}"
-    },
-    {
-      "AbsoluteMoniker": "D:0:0:{63FD5C72-1F5C-48F0-8CE4-22CDA6BF3658}|MyWPFCRUDApp.csproj|e:\\mohua\u0027s_fashion\\mywpfcrudapp\\models\\mpurchasemaster.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}",
-      "RelativeMoniker": "D:0:0:{63FD5C72-1F5C-48F0-8CE4-22CDA6BF3658}|MyWPFCRUDApp.csproj|solutionrelative:models\\mpurchasemaster.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}"
-    },
-    {
-      "AbsoluteMoniker": "D:0:0:{63FD5C72-1F5C-48F0-8CE4-22CDA6BF3658}|MyWPFCRUDApp.csproj|e:\\mohua\u0027s_fashion\\mywpfcrudapp\\views\\supplierhistorywindow.xaml.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}",
-      "RelativeMoniker": "D:0:0:{63FD5C72-1F5C-48F0-8CE4-22CDA6BF3658}|MyWPFCRUDApp.csproj|solutionrelative:views\\supplierhistorywindow.xaml.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}"
+      "AbsoluteMoniker": "D:0:0:{63FD5C72-1F5C-48F0-8CE4-22CDA6BF3658}|MyWPFCRUDApp.csproj|e:\\mohua\u0027s_fashion\\mywpfcrudapp\\services\\supplierservice.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}",
+      "RelativeMoniker": "D:0:0:{63FD5C72-1F5C-48F0-8CE4-22CDA6BF3658}|MyWPFCRUDApp.csproj|solutionrelative:services\\supplierservice.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}"
     },
     {
       "AbsoluteMoniker": "D:0:0:{63FD5C72-1F5C-48F0-8CE4-22CDA6BF3658}|MyWPFCRUDApp.csproj|e:\\mohua\u0027s_fashion\\mywpfcrudapp\\views\\supplierhistorywindow.xaml||{F11ACC28-31D1-4C80-A34B-F4E09D3D753C}",
       "RelativeMoniker": "D:0:0:{63FD5C72-1F5C-48F0-8CE4-22CDA6BF3658}|MyWPFCRUDApp.csproj|solutionrelative:views\\supplierhistorywindow.xaml||{F11ACC28-31D1-4C80-A34B-F4E09D3D753C}"
     },
     {
+      "AbsoluteMoniker": "D:0:0:{63FD5C72-1F5C-48F0-8CE4-22CDA6BF3658}|MyWPFCRUDApp.csproj|e:\\mohua\u0027s_fashion\\mywpfcrudapp\\views\\supplierviews.xaml.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}",
+      "RelativeMoniker": "D:0:0:{63FD5C72-1F5C-48F0-8CE4-22CDA6BF3658}|MyWPFCRUDApp.csproj|solutionrelative:views\\supplierviews.xaml.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}"
+    },
+    {
+      "AbsoluteMoniker": "D:0:0:{63FD5C72-1F5C-48F0-8CE4-22CDA6BF3658}|MyWPFCRUDApp.csproj|e:\\mohua\u0027s_fashion\\mywpfcrudapp\\views\\supplierhistorywindow.xaml.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}",
+      "RelativeMoniker": "D:0:0:{63FD5C72-1F5C-48F0-8CE4-22CDA6BF3658}|MyWPFCRUDApp.csproj|solutionrelative:views\\supplierhistorywindow.xaml.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}"
+    },
+    {
+      "AbsoluteMoniker": "D:0:0:{63FD5C72-1F5C-48F0-8CE4-22CDA6BF3658}|MyWPFCRUDApp.csproj|e:\\mohua\u0027s_fashion\\mywpfcrudapp\\viewmodels\\productviewmodel.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}",
+      "RelativeMoniker": "D:0:0:{63FD5C72-1F5C-48F0-8CE4-22CDA6BF3658}|MyWPFCRUDApp.csproj|solutionrelative:viewmodels\\productviewmodel.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}"
+    },
+    {
+      "AbsoluteMoniker": "D:0:0:{63FD5C72-1F5C-48F0-8CE4-22CDA6BF3658}|MyWPFCRUDApp.csproj|e:\\mohua\u0027s_fashion\\mywpfcrudapp\\models\\mpurchasemaster.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}",
+      "RelativeMoniker": "D:0:0:{63FD5C72-1F5C-48F0-8CE4-22CDA6BF3658}|MyWPFCRUDApp.csproj|solutionrelative:models\\mpurchasemaster.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}"
+    },
+    {
+      "AbsoluteMoniker": "D:0:0:{63FD5C72-1F5C-48F0-8CE4-22CDA6BF3658}|MyWPFCRUDApp.csproj|e:\\mohua\u0027s_fashion\\mywpfcrudapp\\services\\purchaseservice.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}",
+      "RelativeMoniker": "D:0:0:{63FD5C72-1F5C-48F0-8CE4-22CDA6BF3658}|MyWPFCRUDApp.csproj|solutionrelative:services\\purchaseservice.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}"
+    },
+    {
+      "AbsoluteMoniker": "D:0:0:{63FD5C72-1F5C-48F0-8CE4-22CDA6BF3658}|MyWPFCRUDApp.csproj|e:\\mohua\u0027s_fashion\\mywpfcrudapp\\views\\paymentwindow.xaml||{F11ACC28-31D1-4C80-A34B-F4E09D3D753C}",
+      "RelativeMoniker": "D:0:0:{63FD5C72-1F5C-48F0-8CE4-22CDA6BF3658}|MyWPFCRUDApp.csproj|solutionrelative:views\\paymentwindow.xaml||{F11ACC28-31D1-4C80-A34B-F4E09D3D753C}"
+    },
+    {
+      "AbsoluteMoniker": "D:0:0:{63FD5C72-1F5C-48F0-8CE4-22CDA6BF3658}|MyWPFCRUDApp.csproj|e:\\mohua\u0027s_fashion\\mywpfcrudapp\\views\\paymentwindow.xaml.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}",
+      "RelativeMoniker": "D:0:0:{63FD5C72-1F5C-48F0-8CE4-22CDA6BF3658}|MyWPFCRUDApp.csproj|solutionrelative:views\\paymentwindow.xaml.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}"
+    },
+    {
+      "AbsoluteMoniker": "D:0:0:{63FD5C72-1F5C-48F0-8CE4-22CDA6BF3658}|MyWPFCRUDApp.csproj|e:\\mohua\u0027s_fashion\\mywpfcrudapp\\views\\purchaseviews.xaml.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}",
+      "RelativeMoniker": "D:0:0:{63FD5C72-1F5C-48F0-8CE4-22CDA6BF3658}|MyWPFCRUDApp.csproj|solutionrelative:views\\purchaseviews.xaml.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}"
+    },
+    {
+      "AbsoluteMoniker": "D:0:0:{63FD5C72-1F5C-48F0-8CE4-22CDA6BF3658}|MyWPFCRUDApp.csproj|e:\\mohua\u0027s_fashion\\mywpfcrudapp\\services\\paymentservice.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}",
+      "RelativeMoniker": "D:0:0:{63FD5C72-1F5C-48F0-8CE4-22CDA6BF3658}|MyWPFCRUDApp.csproj|solutionrelative:services\\paymentservice.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}"
+    },
+    {
+      "AbsoluteMoniker": "D:0:0:{63FD5C72-1F5C-48F0-8CE4-22CDA6BF3658}|MyWPFCRUDApp.csproj|e:\\mohua\u0027s_fashion\\mywpfcrudapp\\views\\purchaseviews.xaml||{F11ACC28-31D1-4C80-A34B-F4E09D3D753C}",
+      "RelativeMoniker": "D:0:0:{63FD5C72-1F5C-48F0-8CE4-22CDA6BF3658}|MyWPFCRUDApp.csproj|solutionrelative:views\\purchaseviews.xaml||{F11ACC28-31D1-4C80-A34B-F4E09D3D753C}"
+    },
+    {
+      "AbsoluteMoniker": "D:0:0:{63FD5C72-1F5C-48F0-8CE4-22CDA6BF3658}|MyWPFCRUDApp.csproj|e:\\mohua\u0027s_fashion\\mywpfcrudapp\\models\\baseentity.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}",
+      "RelativeMoniker": "D:0:0:{63FD5C72-1F5C-48F0-8CE4-22CDA6BF3658}|MyWPFCRUDApp.csproj|solutionrelative:models\\baseentity.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}"
+    },
+    {
+      "AbsoluteMoniker": "D:0:0:{63FD5C72-1F5C-48F0-8CE4-22CDA6BF3658}|MyWPFCRUDApp.csproj|e:\\mohua\u0027s_fashion\\mywpfcrudapp\\models\\mpayment.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}",
+      "RelativeMoniker": "D:0:0:{63FD5C72-1F5C-48F0-8CE4-22CDA6BF3658}|MyWPFCRUDApp.csproj|solutionrelative:models\\mpayment.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}"
+    },
+    {
+      "AbsoluteMoniker": "D:0:0:{63FD5C72-1F5C-48F0-8CE4-22CDA6BF3658}|MyWPFCRUDApp.csproj|e:\\mohua\u0027s_fashion\\mywpfcrudapp\\services\\databaseinitializer.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}",
+      "RelativeMoniker": "D:0:0:{63FD5C72-1F5C-48F0-8CE4-22CDA6BF3658}|MyWPFCRUDApp.csproj|solutionrelative:services\\databaseinitializer.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}"
+    },
+    {
+      "AbsoluteMoniker": "D:0:0:{63FD5C72-1F5C-48F0-8CE4-22CDA6BF3658}|MyWPFCRUDApp.csproj|e:\\mohua\u0027s_fashion\\mywpfcrudapp\\viewmodels\\mainviewmodel.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}",
+      "RelativeMoniker": "D:0:0:{63FD5C72-1F5C-48F0-8CE4-22CDA6BF3658}|MyWPFCRUDApp.csproj|solutionrelative:viewmodels\\mainviewmodel.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}"
+    },
+    {
+      "AbsoluteMoniker": "D:0:0:{63FD5C72-1F5C-48F0-8CE4-22CDA6BF3658}|MyWPFCRUDApp.csproj|e:\\mohua\u0027s_fashion\\mywpfcrudapp\\views\\paymentmethodviews.xaml.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}",
+      "RelativeMoniker": "D:0:0:{63FD5C72-1F5C-48F0-8CE4-22CDA6BF3658}|MyWPFCRUDApp.csproj|solutionrelative:views\\paymentmethodviews.xaml.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}"
+    },
+    {
+      "AbsoluteMoniker": "D:0:0:{63FD5C72-1F5C-48F0-8CE4-22CDA6BF3658}|MyWPFCRUDApp.csproj|e:\\mohua\u0027s_fashion\\mywpfcrudapp\\views\\paymentmethodviews.xaml||{F11ACC28-31D1-4C80-A34B-F4E09D3D753C}",
+      "RelativeMoniker": "D:0:0:{63FD5C72-1F5C-48F0-8CE4-22CDA6BF3658}|MyWPFCRUDApp.csproj|solutionrelative:views\\paymentmethodviews.xaml||{F11ACC28-31D1-4C80-A34B-F4E09D3D753C}"
+    },
+    {
+      "AbsoluteMoniker": "D:0:0:{63FD5C72-1F5C-48F0-8CE4-22CDA6BF3658}|MyWPFCRUDApp.csproj|e:\\mohua\u0027s_fashion\\mywpfcrudapp\\models\\mpaymentmethod.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}",
+      "RelativeMoniker": "D:0:0:{63FD5C72-1F5C-48F0-8CE4-22CDA6BF3658}|MyWPFCRUDApp.csproj|solutionrelative:models\\mpaymentmethod.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}"
+    },
+    {
+      "AbsoluteMoniker": "D:0:0:{63FD5C72-1F5C-48F0-8CE4-22CDA6BF3658}|MyWPFCRUDApp.csproj|e:\\mohua\u0027s_fashion\\mywpfcrudapp\\viewmodels\\paymentmethodviewmodel.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}",
+      "RelativeMoniker": "D:0:0:{63FD5C72-1F5C-48F0-8CE4-22CDA6BF3658}|MyWPFCRUDApp.csproj|solutionrelative:viewmodels\\paymentmethodviewmodel.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}"
+    },
+    {
+      "AbsoluteMoniker": "D:0:0:{63FD5C72-1F5C-48F0-8CE4-22CDA6BF3658}|MyWPFCRUDApp.csproj|e:\\mohua\u0027s_fashion\\mywpfcrudapp\\services\\paymentmethodservice.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}",
+      "RelativeMoniker": "D:0:0:{63FD5C72-1F5C-48F0-8CE4-22CDA6BF3658}|MyWPFCRUDApp.csproj|solutionrelative:services\\paymentmethodservice.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}"
+    },
+    {
+      "AbsoluteMoniker": "D:0:0:{63FD5C72-1F5C-48F0-8CE4-22CDA6BF3658}|MyWPFCRUDApp.csproj|e:\\mohua\u0027s_fashion\\mywpfcrudapp\\views\\bankaccountviews.xaml||{F11ACC28-31D1-4C80-A34B-F4E09D3D753C}",
+      "RelativeMoniker": "D:0:0:{63FD5C72-1F5C-48F0-8CE4-22CDA6BF3658}|MyWPFCRUDApp.csproj|solutionrelative:views\\bankaccountviews.xaml||{F11ACC28-31D1-4C80-A34B-F4E09D3D753C}"
+    },
+    {
+      "AbsoluteMoniker": "D:0:0:{63FD5C72-1F5C-48F0-8CE4-22CDA6BF3658}|MyWPFCRUDApp.csproj|e:\\mohua\u0027s_fashion\\mywpfcrudapp\\viewmodels\\bankviewmodel.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}",
+      "RelativeMoniker": "D:0:0:{63FD5C72-1F5C-48F0-8CE4-22CDA6BF3658}|MyWPFCRUDApp.csproj|solutionrelative:viewmodels\\bankviewmodel.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}"
+    },
+    {
+      "AbsoluteMoniker": "D:0:0:{63FD5C72-1F5C-48F0-8CE4-22CDA6BF3658}|MyWPFCRUDApp.csproj|e:\\mohua\u0027s_fashion\\mywpfcrudapp\\services\\bankaccountservice.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}",
+      "RelativeMoniker": "D:0:0:{63FD5C72-1F5C-48F0-8CE4-22CDA6BF3658}|MyWPFCRUDApp.csproj|solutionrelative:services\\bankaccountservice.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}"
+    },
+    {
+      "AbsoluteMoniker": "D:0:0:{63FD5C72-1F5C-48F0-8CE4-22CDA6BF3658}|MyWPFCRUDApp.csproj|e:\\mohua\u0027s_fashion\\mywpfcrudapp\\models\\mbankaccountmaster.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}",
+      "RelativeMoniker": "D:0:0:{63FD5C72-1F5C-48F0-8CE4-22CDA6BF3658}|MyWPFCRUDApp.csproj|solutionrelative:models\\mbankaccountmaster.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}"
+    },
+    {
+      "AbsoluteMoniker": "D:0:0:{63FD5C72-1F5C-48F0-8CE4-22CDA6BF3658}|MyWPFCRUDApp.csproj|e:\\mohua\u0027s_fashion\\mywpfcrudapp\\models\\munit.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}",
+      "RelativeMoniker": "D:0:0:{63FD5C72-1F5C-48F0-8CE4-22CDA6BF3658}|MyWPFCRUDApp.csproj|solutionrelative:models\\munit.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}"
+    },
+    {
+      "AbsoluteMoniker": "D:0:0:{63FD5C72-1F5C-48F0-8CE4-22CDA6BF3658}|MyWPFCRUDApp.csproj|e:\\mohua\u0027s_fashion\\mywpfcrudapp\\views\\bankaccountviews.xaml.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}",
+      "RelativeMoniker": "D:0:0:{63FD5C72-1F5C-48F0-8CE4-22CDA6BF3658}|MyWPFCRUDApp.csproj|solutionrelative:views\\bankaccountviews.xaml.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}"
+    },
+    {
+      "AbsoluteMoniker": "D:0:0:{63FD5C72-1F5C-48F0-8CE4-22CDA6BF3658}|MyWPFCRUDApp.csproj|e:\\mohua\u0027s_fashion\\mywpfcrudapp\\views\\unitviews.xaml||{F11ACC28-31D1-4C80-A34B-F4E09D3D753C}",
+      "RelativeMoniker": "D:0:0:{63FD5C72-1F5C-48F0-8CE4-22CDA6BF3658}|MyWPFCRUDApp.csproj|solutionrelative:views\\unitviews.xaml||{F11ACC28-31D1-4C80-A34B-F4E09D3D753C}"
+    },
+    {
+      "AbsoluteMoniker": "D:0:0:{63FD5C72-1F5C-48F0-8CE4-22CDA6BF3658}|MyWPFCRUDApp.csproj|e:\\mohua\u0027s_fashion\\mywpfcrudapp\\views\\unitviews.xaml.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}",
+      "RelativeMoniker": "D:0:0:{63FD5C72-1F5C-48F0-8CE4-22CDA6BF3658}|MyWPFCRUDApp.csproj|solutionrelative:views\\unitviews.xaml.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}"
+    },
+    {
+      "AbsoluteMoniker": "D:0:0:{63FD5C72-1F5C-48F0-8CE4-22CDA6BF3658}|MyWPFCRUDApp.csproj|e:\\mohua\u0027s_fashion\\mywpfcrudapp\\viewmodels\\unitviewmodel.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}",
+      "RelativeMoniker": "D:0:0:{63FD5C72-1F5C-48F0-8CE4-22CDA6BF3658}|MyWPFCRUDApp.csproj|solutionrelative:viewmodels\\unitviewmodel.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}"
+    },
+    {
+      "AbsoluteMoniker": "D:0:0:{63FD5C72-1F5C-48F0-8CE4-22CDA6BF3658}|MyWPFCRUDApp.csproj|e:\\mohua\u0027s_fashion\\mywpfcrudapp\\services\\unitservice.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}",
+      "RelativeMoniker": "D:0:0:{63FD5C72-1F5C-48F0-8CE4-22CDA6BF3658}|MyWPFCRUDApp.csproj|solutionrelative:services\\unitservice.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}"
+    },
+    {
+      "AbsoluteMoniker": "D:0:0:{63FD5C72-1F5C-48F0-8CE4-22CDA6BF3658}|MyWPFCRUDApp.csproj|e:\\mohua\u0027s_fashion\\mywpfcrudapp\\views\\categoryviews.xaml||{F11ACC28-31D1-4C80-A34B-F4E09D3D753C}",
+      "RelativeMoniker": "D:0:0:{63FD5C72-1F5C-48F0-8CE4-22CDA6BF3658}|MyWPFCRUDApp.csproj|solutionrelative:views\\categoryviews.xaml||{F11ACC28-31D1-4C80-A34B-F4E09D3D753C}"
+    },
+    {
       "AbsoluteMoniker": "D:0:0:{63FD5C72-1F5C-48F0-8CE4-22CDA6BF3658}|MyWPFCRUDApp.csproj|e:\\mohua\u0027s_fashion\\mywpfcrudapp\\mywpfcrudapp.csproj||{FA3CD31E-987B-443A-9B81-186104E8DAC1}|",
       "RelativeMoniker": "D:0:0:{63FD5C72-1F5C-48F0-8CE4-22CDA6BF3658}|MyWPFCRUDApp.csproj|solutionrelative:mywpfcrudapp.csproj||{FA3CD31E-987B-443A-9B81-186104E8DAC1}|"
     },
     {
-      "AbsoluteMoniker": "D:0:0:{63FD5C72-1F5C-48F0-8CE4-22CDA6BF3658}|MyWPFCRUDApp.csproj|e:\\mohua\u0027s_fashion\\mywpfcrudapp\\views\\supplierviews.xaml||{F11ACC28-31D1-4C80-A34B-F4E09D3D753C}",
-      "RelativeMoniker": "D:0:0:{63FD5C72-1F5C-48F0-8CE4-22CDA6BF3658}|MyWPFCRUDApp.csproj|solutionrelative:views\\supplierviews.xaml||{F11ACC28-31D1-4C80-A34B-F4E09D3D753C}"
+      "AbsoluteMoniker": "D:0:0:{63FD5C72-1F5C-48F0-8CE4-22CDA6BF3658}|MyWPFCRUDApp.csproj|e:\\mohua\u0027s_fashion\\mywpfcrudapp\\models\\mpurchasedetail.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}",
+      "RelativeMoniker": "D:0:0:{63FD5C72-1F5C-48F0-8CE4-22CDA6BF3658}|MyWPFCRUDApp.csproj|solutionrelative:models\\mpurchasedetail.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}"
     },
     {
-      "AbsoluteMoniker": "D:0:0:{63FD5C72-1F5C-48F0-8CE4-22CDA6BF3658}|MyWPFCRUDApp.csproj|e:\\mohua\u0027s_fashion\\mywpfcrudapp\\views\\supplierviews.xaml.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}",
-      "RelativeMoniker": "D:0:0:{63FD5C72-1F5C-48F0-8CE4-22CDA6BF3658}|MyWPFCRUDApp.csproj|solutionrelative:views\\supplierviews.xaml.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}"
+      "AbsoluteMoniker": "D:0:0:{63FD5C72-1F5C-48F0-8CE4-22CDA6BF3658}|MyWPFCRUDApp.csproj|e:\\mohua\u0027s_fashion\\mywpfcrudapp\\views\\supplierviews.xaml||{F11ACC28-31D1-4C80-A34B-F4E09D3D753C}",
+      "RelativeMoniker": "D:0:0:{63FD5C72-1F5C-48F0-8CE4-22CDA6BF3658}|MyWPFCRUDApp.csproj|solutionrelative:views\\supplierviews.xaml||{F11ACC28-31D1-4C80-A34B-F4E09D3D753C}"
     },
     {
       "AbsoluteMoniker": "D:0:0:{63FD5C72-1F5C-48F0-8CE4-22CDA6BF3658}|MyWPFCRUDApp.csproj|e:\\mohua\u0027s_fashion\\mywpfcrudapp\\views\\billscanreviewwindow.xaml.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}",
@@ -113,10 +205,6 @@
       "RelativeMoniker": "D:0:0:{63FD5C72-1F5C-48F0-8CE4-22CDA6BF3658}|MyWPFCRUDApp.csproj|solutionrelative:viewmodels\\supplierviewmodel.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}"
     },
     {
-      "AbsoluteMoniker": "D:0:0:{63FD5C72-1F5C-48F0-8CE4-22CDA6BF3658}|MyWPFCRUDApp.csproj|e:\\mohua\u0027s_fashion\\mywpfcrudapp\\services\\supplierservice.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}",
-      "RelativeMoniker": "D:0:0:{63FD5C72-1F5C-48F0-8CE4-22CDA6BF3658}|MyWPFCRUDApp.csproj|solutionrelative:services\\supplierservice.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}"
-    },
-    {
       "AbsoluteMoniker": "D:0:0:{63FD5C72-1F5C-48F0-8CE4-22CDA6BF3658}|MyWPFCRUDApp.csproj|e:\\mohua\u0027s_fashion\\mywpfcrudapp\\views\\taxcategoryviews.xaml||{F11ACC28-31D1-4C80-A34B-F4E09D3D753C}",
       "RelativeMoniker": "D:0:0:{63FD5C72-1F5C-48F0-8CE4-22CDA6BF3658}|MyWPFCRUDApp.csproj|solutionrelative:views\\taxcategoryviews.xaml||{F11ACC28-31D1-4C80-A34B-F4E09D3D753C}"
     },
@@ -149,20 +237,12 @@
       "RelativeMoniker": "D:0:0:{63FD5C72-1F5C-48F0-8CE4-22CDA6BF3658}|MyWPFCRUDApp.csproj|solutionrelative:views\\addproductwindow.xaml||{F11ACC28-31D1-4C80-A34B-F4E09D3D753C}"
     },
     {
-      "AbsoluteMoniker": "D:0:0:{63FD5C72-1F5C-48F0-8CE4-22CDA6BF3658}|MyWPFCRUDApp.csproj|e:\\mohua\u0027s_fashion\\mywpfcrudapp\\viewmodels\\productviewmodel.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}",
-      "RelativeMoniker": "D:0:0:{63FD5C72-1F5C-48F0-8CE4-22CDA6BF3658}|MyWPFCRUDApp.csproj|solutionrelative:viewmodels\\productviewmodel.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}"
-    },
-    {
       "AbsoluteMoniker": "D:0:0:{63FD5C72-1F5C-48F0-8CE4-22CDA6BF3658}|MyWPFCRUDApp.csproj|e:\\mohua\u0027s_fashion\\mywpfcrudapp\\services\\billscanservice.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}",
       "RelativeMoniker": "D:0:0:{63FD5C72-1F5C-48F0-8CE4-22CDA6BF3658}|MyWPFCRUDApp.csproj|solutionrelative:services\\billscanservice.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}"
     },
     {
       "AbsoluteMoniker": "D:0:0:{63FD5C72-1F5C-48F0-8CE4-22CDA6BF3658}|MyWPFCRUDApp.csproj|e:\\mohua\u0027s_fashion\\mywpfcrudapp\\views\\addproductwindow.xaml.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}",
       "RelativeMoniker": "D:0:0:{63FD5C72-1F5C-48F0-8CE4-22CDA6BF3658}|MyWPFCRUDApp.csproj|solutionrelative:views\\addproductwindow.xaml.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}"
-    },
-    {
-      "AbsoluteMoniker": "D:0:0:{63FD5C72-1F5C-48F0-8CE4-22CDA6BF3658}|MyWPFCRUDApp.csproj|e:\\mohua\u0027s_fashion\\mywpfcrudapp\\viewmodels\\mainviewmodel.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}",
-      "RelativeMoniker": "D:0:0:{63FD5C72-1F5C-48F0-8CE4-22CDA6BF3658}|MyWPFCRUDApp.csproj|solutionrelative:viewmodels\\mainviewmodel.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}"
     },
     {
       "AbsoluteMoniker": "D:0:0:{63FD5C72-1F5C-48F0-8CE4-22CDA6BF3658}|MyWPFCRUDApp.csproj|e:\\mohua\u0027s_fashion\\mywpfcrudapp\\services\\productservice.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}",
@@ -242,10 +322,6 @@
     {
       "AbsoluteMoniker": "D:0:0:{63FD5C72-1F5C-48F0-8CE4-22CDA6BF3658}|MyWPFCRUDApp.csproj|e:\\mohua\u0027s_fashion\\mywpfcrudapp\\models\\customer.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}",
       "RelativeMoniker": "D:0:0:{63FD5C72-1F5C-48F0-8CE4-22CDA6BF3658}|MyWPFCRUDApp.csproj|solutionrelative:models\\customer.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}"
-    },
-    {
-      "AbsoluteMoniker": "D:0:0:{63FD5C72-1F5C-48F0-8CE4-22CDA6BF3658}|MyWPFCRUDApp.csproj|e:\\mohua\u0027s_fashion\\mywpfcrudapp\\views\\unitviews.xaml.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}",
-      "RelativeMoniker": "D:0:0:{63FD5C72-1F5C-48F0-8CE4-22CDA6BF3658}|MyWPFCRUDApp.csproj|solutionrelative:views\\unitviews.xaml.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}"
     }
   ],
   "DocumentGroupContainers": [
@@ -255,7 +331,7 @@
       "DocumentGroups": [
         {
           "DockedWidth": 200,
-          "SelectedChildIndex": 15,
+          "SelectedChildIndex": 13,
           "Children": [
             {
               "$type": "Bookmark",
@@ -291,161 +367,7 @@
             },
             {
               "$type": "Document",
-              "DocumentIndex": 7,
-              "Title": "BaseEntity.cs",
-              "DocumentMoniker": "E:\\Mohua\u0027s_fashion\\MyWPFCRUDApp\\Models\\BaseEntity.cs",
-              "RelativeDocumentMoniker": "Models\\BaseEntity.cs",
-              "ToolTip": "E:\\Mohua\u0027s_fashion\\MyWPFCRUDApp\\Models\\BaseEntity.cs",
-              "RelativeToolTip": "Models\\BaseEntity.cs",
-              "ViewState": "AgIAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA==",
-              "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.000738|",
-              "WhenOpened": "2026-06-14T06:28:15.106Z",
-              "EditorCaption": ""
-            },
-            {
-              "$type": "Document",
-              "DocumentIndex": 2,
-              "Title": "PurchaseViewModel.cs",
-              "DocumentMoniker": "E:\\Mohua\u0027s_fashion\\MyWPFCRUDApp\\ViewModels\\PurchaseViewModel.cs",
-              "RelativeDocumentMoniker": "ViewModels\\PurchaseViewModel.cs",
-              "ToolTip": "E:\\Mohua\u0027s_fashion\\MyWPFCRUDApp\\ViewModels\\PurchaseViewModel.cs",
-              "RelativeToolTip": "ViewModels\\PurchaseViewModel.cs",
-              "ViewState": "AgIAAKEDAAAAAAAAAAAcwLcDAAAAAAAAAAAAAA==",
-              "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.000738|",
-              "WhenOpened": "2026-03-30T14:37:49.859Z",
-              "EditorCaption": ""
-            },
-            {
-              "$type": "Document",
               "DocumentIndex": 3,
-              "Title": "PurchaseViews.xaml.cs",
-              "DocumentMoniker": "E:\\Mohua\u0027s_fashion\\MyWPFCRUDApp\\Views\\PurchaseViews.xaml.cs",
-              "RelativeDocumentMoniker": "Views\\PurchaseViews.xaml.cs",
-              "ToolTip": "E:\\Mohua\u0027s_fashion\\MyWPFCRUDApp\\Views\\PurchaseViews.xaml.cs",
-              "RelativeToolTip": "Views\\PurchaseViews.xaml.cs",
-              "ViewState": "AgIAADgAAAAAAAAAAAAcwE4AAAAAAAAAAAAAAA==",
-              "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.000738|",
-              "WhenOpened": "2026-03-30T16:05:37.791Z",
-              "EditorCaption": ""
-            },
-            {
-              "$type": "Document",
-              "DocumentIndex": 4,
-              "Title": "PurchaseViews.xaml",
-              "DocumentMoniker": "E:\\Mohua\u0027s_fashion\\MyWPFCRUDApp\\Views\\PurchaseViews.xaml",
-              "RelativeDocumentMoniker": "Views\\PurchaseViews.xaml",
-              "ToolTip": "E:\\Mohua\u0027s_fashion\\MyWPFCRUDApp\\Views\\PurchaseViews.xaml",
-              "RelativeToolTip": "Views\\PurchaseViews.xaml",
-              "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.003549|",
-              "WhenOpened": "2026-03-30T15:50:57.345Z",
-              "EditorCaption": ""
-            },
-            {
-              "$type": "Document",
-              "DocumentIndex": 1,
-              "Title": "PurchaseService.cs",
-              "DocumentMoniker": "E:\\Mohua\u0027s_fashion\\MyWPFCRUDApp\\Services\\PurchaseService.cs",
-              "RelativeDocumentMoniker": "Services\\PurchaseService.cs",
-              "ToolTip": "E:\\Mohua\u0027s_fashion\\MyWPFCRUDApp\\Services\\PurchaseService.cs",
-              "RelativeToolTip": "Services\\PurchaseService.cs",
-              "ViewState": "AgIAAHMBAAAAAAAAAAAiwIoBAAABAAAAAAAAAA==",
-              "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.000738|",
-              "WhenOpened": "2026-03-30T14:01:52.667Z",
-              "EditorCaption": ""
-            },
-            {
-              "$type": "Document",
-              "DocumentIndex": 6,
-              "Title": "DatabaseInitializer.cs",
-              "DocumentMoniker": "E:\\Mohua\u0027s_fashion\\MyWPFCRUDApp\\Services\\DatabaseInitializer.cs",
-              "RelativeDocumentMoniker": "Services\\DatabaseInitializer.cs",
-              "ToolTip": "E:\\Mohua\u0027s_fashion\\MyWPFCRUDApp\\Services\\DatabaseInitializer.cs",
-              "RelativeToolTip": "Services\\DatabaseInitializer.cs",
-              "ViewState": "AgIAANwAAAAAAAAAAAAQwFsBAAAAAAAAAAAAAA==",
-              "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.000738|",
-              "WhenOpened": "2026-03-30T19:31:55.666Z",
-              "EditorCaption": ""
-            },
-            {
-              "$type": "Document",
-              "DocumentIndex": 5,
-              "Title": "UnitService.cs",
-              "DocumentMoniker": "E:\\Mohua\u0027s_fashion\\MyWPFCRUDApp\\Services\\UnitService.cs",
-              "RelativeDocumentMoniker": "Services\\UnitService.cs",
-              "ToolTip": "E:\\Mohua\u0027s_fashion\\MyWPFCRUDApp\\Services\\UnitService.cs",
-              "RelativeToolTip": "Services\\UnitService.cs",
-              "ViewState": "AgIAAAAAAAAAAAAAAAAAAAcAAAAAAAAAAAAAAA==",
-              "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.000738|",
-              "WhenOpened": "2026-04-04T19:04:32.289Z",
-              "EditorCaption": ""
-            },
-            {
-              "$type": "Document",
-              "DocumentIndex": 0,
-              "Title": "MPurchaseDetail.cs",
-              "DocumentMoniker": "E:\\Mohua\u0027s_fashion\\MyWPFCRUDApp\\Models\\MPurchaseDetail.cs",
-              "RelativeDocumentMoniker": "Models\\MPurchaseDetail.cs",
-              "ToolTip": "E:\\Mohua\u0027s_fashion\\MyWPFCRUDApp\\Models\\MPurchaseDetail.cs*",
-              "RelativeToolTip": "Models\\MPurchaseDetail.cs*",
-              "ViewState": "AgIAAFIAAAAAAAAAAAA8wFwAAAABAAAAAAAAAA==",
-              "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.000738|",
-              "WhenOpened": "2026-03-30T13:49:19.155Z",
-              "EditorCaption": ""
-            },
-            {
-              "$type": "Document",
-              "DocumentIndex": 9,
-              "Title": "SupplierHistoryWindow.xaml.cs",
-              "DocumentMoniker": "E:\\Mohua\u0027s_fashion\\MyWPFCRUDApp\\Views\\SupplierHistoryWindow.xaml.cs",
-              "RelativeDocumentMoniker": "Views\\SupplierHistoryWindow.xaml.cs",
-              "ToolTip": "E:\\Mohua\u0027s_fashion\\MyWPFCRUDApp\\Views\\SupplierHistoryWindow.xaml.cs",
-              "RelativeToolTip": "Views\\SupplierHistoryWindow.xaml.cs",
-              "ViewState": "AgIAAAcAAAAAAAAAAAA0wBwAAAABAAAAAAAAAA==",
-              "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.000738|",
-              "WhenOpened": "2026-06-14T05:56:53.105Z",
-              "EditorCaption": ""
-            },
-            {
-              "$type": "Document",
-              "DocumentIndex": 12,
-              "Title": "SupplierViews.xaml",
-              "DocumentMoniker": "E:\\Mohua\u0027s_fashion\\MyWPFCRUDApp\\Views\\SupplierViews.xaml",
-              "RelativeDocumentMoniker": "Views\\SupplierViews.xaml",
-              "ToolTip": "E:\\Mohua\u0027s_fashion\\MyWPFCRUDApp\\Views\\SupplierViews.xaml",
-              "RelativeToolTip": "Views\\SupplierViews.xaml",
-              "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.003549|",
-              "WhenOpened": "2026-06-14T05:42:00.981Z",
-              "EditorCaption": ""
-            },
-            {
-              "$type": "Document",
-              "DocumentIndex": 8,
-              "Title": "MPurchaseMaster.cs",
-              "DocumentMoniker": "E:\\Mohua\u0027s_fashion\\MyWPFCRUDApp\\Models\\MPurchaseMaster.cs",
-              "RelativeDocumentMoniker": "Models\\MPurchaseMaster.cs",
-              "ToolTip": "E:\\Mohua\u0027s_fashion\\MyWPFCRUDApp\\Models\\MPurchaseMaster.cs",
-              "RelativeToolTip": "Models\\MPurchaseMaster.cs",
-              "ViewState": "AgIAAAAAAAAAAAAAAAAAAAwAAAArAAAAAAAAAA==",
-              "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.000738|",
-              "WhenOpened": "2026-03-30T13:48:33.636Z",
-              "EditorCaption": ""
-            },
-            {
-              "$type": "Document",
-              "DocumentIndex": 11,
-              "Title": "MyWPFCRUDApp.csproj",
-              "DocumentMoniker": "E:\\Mohua\u0027s_fashion\\MyWPFCRUDApp\\MyWPFCRUDApp.csproj",
-              "RelativeDocumentMoniker": "MyWPFCRUDApp.csproj",
-              "ToolTip": "E:\\Mohua\u0027s_fashion\\MyWPFCRUDApp\\MyWPFCRUDApp.csproj",
-              "RelativeToolTip": "MyWPFCRUDApp.csproj",
-              "ViewState": "AgIAAAAAAAAAAAAAAAAAAAsAAAAVAAAAAAAAAA==",
-              "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.000758|",
-              "WhenOpened": "2026-03-30T21:07:41.013Z",
-              "EditorCaption": ""
-            },
-            {
-              "$type": "Document",
-              "DocumentIndex": 10,
               "Title": "SupplierHistoryWindow.xaml",
               "DocumentMoniker": "E:\\Mohua\u0027s_fashion\\MyWPFCRUDApp\\Views\\SupplierHistoryWindow.xaml",
               "RelativeDocumentMoniker": "Views\\SupplierHistoryWindow.xaml",
@@ -457,20 +379,468 @@
             },
             {
               "$type": "Document",
-              "DocumentIndex": 13,
+              "DocumentIndex": 1,
+              "Title": "PaymentWindowViewModel.cs",
+              "DocumentMoniker": "E:\\Mohua\u0027s_fashion\\MyWPFCRUDApp\\ViewModels\\PaymentWindowViewModel.cs",
+              "RelativeDocumentMoniker": "ViewModels\\PaymentWindowViewModel.cs",
+              "ToolTip": "E:\\Mohua\u0027s_fashion\\MyWPFCRUDApp\\ViewModels\\PaymentWindowViewModel.cs",
+              "RelativeToolTip": "ViewModels\\PaymentWindowViewModel.cs",
+              "ViewState": "AgIAAJsAAAAAAAAAAAA2wMwAAAAJAAAAAAAAAA==",
+              "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.000738|",
+              "WhenOpened": "2026-06-15T03:16:54.79Z",
+              "EditorCaption": ""
+            },
+            {
+              "$type": "Document",
+              "DocumentIndex": 5,
+              "Title": "SupplierHistoryWindow.xaml.cs",
+              "DocumentMoniker": "E:\\Mohua\u0027s_fashion\\MyWPFCRUDApp\\Views\\SupplierHistoryWindow.xaml.cs",
+              "RelativeDocumentMoniker": "Views\\SupplierHistoryWindow.xaml.cs",
+              "ToolTip": "E:\\Mohua\u0027s_fashion\\MyWPFCRUDApp\\Views\\SupplierHistoryWindow.xaml.cs",
+              "RelativeToolTip": "Views\\SupplierHistoryWindow.xaml.cs",
+              "ViewState": "AgIAAAcAAAAAAAAAAIAxwBIAAAAMAAAAAAAAAA==",
+              "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.000738|",
+              "WhenOpened": "2026-06-14T05:56:53.105Z",
+              "EditorCaption": ""
+            },
+            {
+              "$type": "Document",
+              "DocumentIndex": 4,
               "Title": "SupplierViews.xaml.cs",
               "DocumentMoniker": "E:\\Mohua\u0027s_fashion\\MyWPFCRUDApp\\Views\\SupplierViews.xaml.cs",
               "RelativeDocumentMoniker": "Views\\SupplierViews.xaml.cs",
               "ToolTip": "E:\\Mohua\u0027s_fashion\\MyWPFCRUDApp\\Views\\SupplierViews.xaml.cs",
               "RelativeToolTip": "Views\\SupplierViews.xaml.cs",
-              "ViewState": "AgIAAA8AAAAAAAAAAAAiwBkAAABLAAAAAAAAAA==",
+              "ViewState": "AgIAABQAAAAAAAAAAADgvx4AAAAMAAAAAAAAAA==",
               "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.000738|",
               "WhenOpened": "2026-06-14T03:29:09.637Z",
               "EditorCaption": ""
             },
             {
               "$type": "Document",
+              "DocumentIndex": 2,
+              "Title": "SupplierService.cs",
+              "DocumentMoniker": "E:\\Mohua\u0027s_fashion\\MyWPFCRUDApp\\Services\\SupplierService.cs",
+              "RelativeDocumentMoniker": "Services\\SupplierService.cs",
+              "ToolTip": "E:\\Mohua\u0027s_fashion\\MyWPFCRUDApp\\Services\\SupplierService.cs",
+              "RelativeToolTip": "Services\\SupplierService.cs",
+              "ViewState": "AgIAADAAAAAAAAAAAAAcwGIAAAAJAAAAAAAAAA==",
+              "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.000738|",
+              "WhenOpened": "2026-06-08T14:21:21.23Z",
+              "EditorCaption": ""
+            },
+            {
+              "$type": "Document",
+              "DocumentIndex": 0,
+              "Title": "PurchaseViewModel.cs",
+              "DocumentMoniker": "E:\\Mohua\u0027s_fashion\\MyWPFCRUDApp\\ViewModels\\PurchaseViewModel.cs",
+              "RelativeDocumentMoniker": "ViewModels\\PurchaseViewModel.cs",
+              "ToolTip": "E:\\Mohua\u0027s_fashion\\MyWPFCRUDApp\\ViewModels\\PurchaseViewModel.cs*",
+              "RelativeToolTip": "ViewModels\\PurchaseViewModel.cs*",
+              "ViewState": "AgIAAFoAAAAAAAAAAAAYwGYAAAA/AAAAAAAAAA==",
+              "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.000738|",
+              "WhenOpened": "2026-03-30T14:37:49.859Z",
+              "EditorCaption": ""
+            },
+            {
+              "$type": "Document",
+              "DocumentIndex": 6,
+              "Title": "ProductViewModel.cs",
+              "DocumentMoniker": "E:\\Mohua\u0027s_fashion\\MyWPFCRUDApp\\ViewModels\\ProductViewModel.cs",
+              "RelativeDocumentMoniker": "ViewModels\\ProductViewModel.cs",
+              "ToolTip": "E:\\Mohua\u0027s_fashion\\MyWPFCRUDApp\\ViewModels\\ProductViewModel.cs",
+              "RelativeToolTip": "ViewModels\\ProductViewModel.cs",
+              "ViewState": "AgIAAMYBAAAAAAAAAAAQwNABAAAzAAAAAAAAAA==",
+              "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.000738|",
+              "WhenOpened": "2026-03-30T19:58:34.853Z",
+              "EditorCaption": ""
+            },
+            {
+              "$type": "Document",
+              "DocumentIndex": 7,
+              "Title": "MPurchaseMaster.cs",
+              "DocumentMoniker": "E:\\Mohua\u0027s_fashion\\MyWPFCRUDApp\\Models\\MPurchaseMaster.cs",
+              "RelativeDocumentMoniker": "Models\\MPurchaseMaster.cs",
+              "ToolTip": "E:\\Mohua\u0027s_fashion\\MyWPFCRUDApp\\Models\\MPurchaseMaster.cs",
+              "RelativeToolTip": "Models\\MPurchaseMaster.cs",
+              "ViewState": "AgIAAAAAAAAAAAAAAAAAAA8AAABUAAAAAAAAAA==",
+              "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.000738|",
+              "WhenOpened": "2026-03-30T13:48:33.636Z",
+              "EditorCaption": ""
+            },
+            {
+              "$type": "Document",
+              "DocumentIndex": 8,
+              "Title": "PurchaseService.cs",
+              "DocumentMoniker": "E:\\Mohua\u0027s_fashion\\MyWPFCRUDApp\\Services\\PurchaseService.cs",
+              "RelativeDocumentMoniker": "Services\\PurchaseService.cs",
+              "ToolTip": "E:\\Mohua\u0027s_fashion\\MyWPFCRUDApp\\Services\\PurchaseService.cs",
+              "RelativeToolTip": "Services\\PurchaseService.cs",
+              "ViewState": "AgIAAAwBAAAAAAAAAAAcwCgBAAAJAAAAAAAAAA==",
+              "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.000738|",
+              "WhenOpened": "2026-03-30T14:01:52.667Z",
+              "EditorCaption": ""
+            },
+            {
+              "$type": "Document",
+              "DocumentIndex": 9,
+              "Title": "PaymentWindow.xaml",
+              "DocumentMoniker": "E:\\Mohua\u0027s_fashion\\MyWPFCRUDApp\\Views\\PaymentWindow.xaml",
+              "RelativeDocumentMoniker": "Views\\PaymentWindow.xaml",
+              "ToolTip": "E:\\Mohua\u0027s_fashion\\MyWPFCRUDApp\\Views\\PaymentWindow.xaml",
+              "RelativeToolTip": "Views\\PaymentWindow.xaml",
+              "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.003549|",
+              "WhenOpened": "2026-06-14T15:17:48.614Z",
+              "EditorCaption": ""
+            },
+            {
+              "$type": "Document",
               "DocumentIndex": 14,
+              "Title": "BaseEntity.cs",
+              "DocumentMoniker": "E:\\Mohua\u0027s_fashion\\MyWPFCRUDApp\\Models\\BaseEntity.cs",
+              "RelativeDocumentMoniker": "Models\\BaseEntity.cs",
+              "ToolTip": "E:\\Mohua\u0027s_fashion\\MyWPFCRUDApp\\Models\\BaseEntity.cs",
+              "RelativeToolTip": "Models\\BaseEntity.cs",
+              "ViewState": "AgIAAAYAAAAAAAAAAAAAAA8AAAAFAAAAAAAAAA==",
+              "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.000738|",
+              "WhenOpened": "2026-06-14T06:28:15.106Z",
+              "EditorCaption": ""
+            },
+            {
+              "$type": "Document",
+              "DocumentIndex": 10,
+              "Title": "PaymentWindow.xaml.cs",
+              "DocumentMoniker": "E:\\Mohua\u0027s_fashion\\MyWPFCRUDApp\\Views\\PaymentWindow.xaml.cs",
+              "RelativeDocumentMoniker": "Views\\PaymentWindow.xaml.cs",
+              "ToolTip": "E:\\Mohua\u0027s_fashion\\MyWPFCRUDApp\\Views\\PaymentWindow.xaml.cs",
+              "RelativeToolTip": "Views\\PaymentWindow.xaml.cs",
+              "ViewState": "AgIAAAAAAAAAAAAAAAAuwAkAAAAPAAAAAAAAAA==",
+              "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.000738|",
+              "WhenOpened": "2026-06-14T16:00:17.269Z",
+              "EditorCaption": ""
+            },
+            {
+              "$type": "Document",
+              "DocumentIndex": 11,
+              "Title": "PurchaseViews.xaml.cs",
+              "DocumentMoniker": "E:\\Mohua\u0027s_fashion\\MyWPFCRUDApp\\Views\\PurchaseViews.xaml.cs",
+              "RelativeDocumentMoniker": "Views\\PurchaseViews.xaml.cs",
+              "ToolTip": "E:\\Mohua\u0027s_fashion\\MyWPFCRUDApp\\Views\\PurchaseViews.xaml.cs",
+              "RelativeToolTip": "Views\\PurchaseViews.xaml.cs",
+              "ViewState": "AgIAAAAAAAAAAAAAAAAAAGAAAAAAAAAAAAAAAA==",
+              "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.000738|",
+              "WhenOpened": "2026-03-30T16:05:37.791Z",
+              "EditorCaption": ""
+            },
+            {
+              "$type": "Document",
+              "DocumentIndex": 13,
+              "Title": "PurchaseViews.xaml",
+              "DocumentMoniker": "E:\\Mohua\u0027s_fashion\\MyWPFCRUDApp\\Views\\PurchaseViews.xaml",
+              "RelativeDocumentMoniker": "Views\\PurchaseViews.xaml",
+              "ToolTip": "E:\\Mohua\u0027s_fashion\\MyWPFCRUDApp\\Views\\PurchaseViews.xaml",
+              "RelativeToolTip": "Views\\PurchaseViews.xaml",
+              "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.003549|",
+              "WhenOpened": "2026-03-30T15:50:57.345Z",
+              "EditorCaption": ""
+            },
+            {
+              "$type": "Document",
+              "DocumentIndex": 12,
+              "Title": "PaymentService.cs",
+              "DocumentMoniker": "E:\\Mohua\u0027s_fashion\\MyWPFCRUDApp\\Services\\PaymentService.cs",
+              "RelativeDocumentMoniker": "Services\\PaymentService.cs",
+              "ToolTip": "E:\\Mohua\u0027s_fashion\\MyWPFCRUDApp\\Services\\PaymentService.cs",
+              "RelativeToolTip": "Services\\PaymentService.cs",
+              "ViewState": "AgIAADMAAAAAAAAAAAAiwEQAAAABAAAAAAAAAA==",
+              "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.000738|",
+              "WhenOpened": "2026-06-15T03:14:07.568Z",
+              "EditorCaption": ""
+            },
+            {
+              "$type": "Document",
+              "DocumentIndex": 15,
+              "Title": "MPayment.cs",
+              "DocumentMoniker": "E:\\Mohua\u0027s_fashion\\MyWPFCRUDApp\\Models\\MPayment.cs",
+              "RelativeDocumentMoniker": "Models\\MPayment.cs",
+              "ToolTip": "E:\\Mohua\u0027s_fashion\\MyWPFCRUDApp\\Models\\MPayment.cs",
+              "RelativeToolTip": "Models\\MPayment.cs",
+              "ViewState": "AgIAAAAAAAAAAAAAAAAAABIAAAAAAAAAAAAAAA==",
+              "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.000738|",
+              "WhenOpened": "2026-06-14T14:40:46.774Z",
+              "EditorCaption": ""
+            },
+            {
+              "$type": "Document",
+              "DocumentIndex": 16,
+              "Title": "DatabaseInitializer.cs",
+              "DocumentMoniker": "E:\\Mohua\u0027s_fashion\\MyWPFCRUDApp\\Services\\DatabaseInitializer.cs",
+              "RelativeDocumentMoniker": "Services\\DatabaseInitializer.cs",
+              "ToolTip": "E:\\Mohua\u0027s_fashion\\MyWPFCRUDApp\\Services\\DatabaseInitializer.cs",
+              "RelativeToolTip": "Services\\DatabaseInitializer.cs",
+              "ViewState": "AgIAAHgBAAAAAAAAAAAUwI0BAAABAAAAAAAAAA==",
+              "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.000738|",
+              "WhenOpened": "2026-03-30T19:31:55.666Z",
+              "EditorCaption": ""
+            },
+            {
+              "$type": "Document",
+              "DocumentIndex": 20,
+              "Title": "MPaymentMethod.cs",
+              "DocumentMoniker": "E:\\Mohua\u0027s_fashion\\MyWPFCRUDApp\\Models\\MPaymentMethod.cs",
+              "RelativeDocumentMoniker": "Models\\MPaymentMethod.cs",
+              "ToolTip": "E:\\Mohua\u0027s_fashion\\MyWPFCRUDApp\\Models\\MPaymentMethod.cs",
+              "RelativeToolTip": "Models\\MPaymentMethod.cs",
+              "ViewState": "AgIAAAAAAAAAAAAAAAAAAAkAAAAqAAAAAAAAAA==",
+              "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.000738|",
+              "WhenOpened": "2026-06-14T14:13:41.246Z",
+              "EditorCaption": ""
+            },
+            {
+              "$type": "Document",
+              "DocumentIndex": 17,
+              "Title": "MainVIewModel.cs",
+              "DocumentMoniker": "E:\\Mohua\u0027s_fashion\\MyWPFCRUDApp\\ViewModels\\MainVIewModel.cs",
+              "RelativeDocumentMoniker": "ViewModels\\MainVIewModel.cs",
+              "ToolTip": "E:\\Mohua\u0027s_fashion\\MyWPFCRUDApp\\ViewModels\\MainVIewModel.cs",
+              "RelativeToolTip": "ViewModels\\MainVIewModel.cs",
+              "ViewState": "AgIAAM8AAAAAAAAAAAAmwNsAAAA3AAAAAAAAAA==",
+              "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.000738|",
+              "WhenOpened": "2026-06-05T04:44:13.395Z",
+              "EditorCaption": ""
+            },
+            {
+              "$type": "Document",
+              "DocumentIndex": 23,
+              "Title": "BankAccountViews.xaml",
+              "DocumentMoniker": "E:\\Mohua\u0027s_fashion\\MyWPFCRUDApp\\Views\\BankAccountViews.xaml",
+              "RelativeDocumentMoniker": "Views\\BankAccountViews.xaml",
+              "ToolTip": "E:\\Mohua\u0027s_fashion\\MyWPFCRUDApp\\Views\\BankAccountViews.xaml",
+              "RelativeToolTip": "Views\\BankAccountViews.xaml",
+              "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.003549|",
+              "WhenOpened": "2026-06-14T13:52:48.858Z",
+              "EditorCaption": ""
+            },
+            {
+              "$type": "Document",
+              "DocumentIndex": 22,
+              "Title": "PaymentMethodService.cs",
+              "DocumentMoniker": "E:\\Mohua\u0027s_fashion\\MyWPFCRUDApp\\Services\\PaymentMethodService.cs",
+              "RelativeDocumentMoniker": "Services\\PaymentMethodService.cs",
+              "ToolTip": "E:\\Mohua\u0027s_fashion\\MyWPFCRUDApp\\Services\\PaymentMethodService.cs",
+              "RelativeToolTip": "Services\\PaymentMethodService.cs",
+              "ViewState": "AgIAACsAAAAAAAAAAAAiwEIAAAABAAAAAAAAAA==",
+              "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.000738|",
+              "WhenOpened": "2026-06-14T14:17:49.889Z",
+              "EditorCaption": ""
+            },
+            {
+              "$type": "Document",
+              "DocumentIndex": 21,
+              "Title": "PaymentMethodViewModel.cs",
+              "DocumentMoniker": "E:\\Mohua\u0027s_fashion\\MyWPFCRUDApp\\ViewModels\\PaymentMethodViewModel.cs",
+              "RelativeDocumentMoniker": "ViewModels\\PaymentMethodViewModel.cs",
+              "ToolTip": "E:\\Mohua\u0027s_fashion\\MyWPFCRUDApp\\ViewModels\\PaymentMethodViewModel.cs",
+              "RelativeToolTip": "ViewModels\\PaymentMethodViewModel.cs",
+              "ViewState": "AgIAAC4AAAAAAAAAAAAwwF0AAAABAAAAAAAAAA==",
+              "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.000738|",
+              "WhenOpened": "2026-06-14T14:19:03.632Z",
+              "EditorCaption": ""
+            },
+            {
+              "$type": "Document",
+              "DocumentIndex": 18,
+              "Title": "PaymentMethodViews.xaml.cs",
+              "DocumentMoniker": "E:\\Mohua\u0027s_fashion\\MyWPFCRUDApp\\Views\\PaymentMethodViews.xaml.cs",
+              "RelativeDocumentMoniker": "Views\\PaymentMethodViews.xaml.cs",
+              "ToolTip": "E:\\Mohua\u0027s_fashion\\MyWPFCRUDApp\\Views\\PaymentMethodViews.xaml.cs",
+              "RelativeToolTip": "Views\\PaymentMethodViews.xaml.cs",
+              "ViewState": "AgIAAAAAAAAAAAAAAAAAAA0AAAABAAAAAAAAAA==",
+              "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.000738|",
+              "WhenOpened": "2026-06-14T14:21:14.199Z",
+              "EditorCaption": ""
+            },
+            {
+              "$type": "Document",
+              "DocumentIndex": 19,
+              "Title": "PaymentMethodViews.xaml",
+              "DocumentMoniker": "E:\\Mohua\u0027s_fashion\\MyWPFCRUDApp\\Views\\PaymentMethodViews.xaml",
+              "RelativeDocumentMoniker": "Views\\PaymentMethodViews.xaml",
+              "ToolTip": "E:\\Mohua\u0027s_fashion\\MyWPFCRUDApp\\Views\\PaymentMethodViews.xaml",
+              "RelativeToolTip": "Views\\PaymentMethodViews.xaml",
+              "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.003549|",
+              "WhenOpened": "2026-06-14T14:20:50.969Z",
+              "EditorCaption": ""
+            },
+            {
+              "$type": "Document",
+              "DocumentIndex": 27,
+              "Title": "MUnit.cs",
+              "DocumentMoniker": "E:\\Mohua\u0027s_fashion\\MyWPFCRUDApp\\Models\\MUnit.cs",
+              "RelativeDocumentMoniker": "Models\\MUnit.cs",
+              "ToolTip": "E:\\Mohua\u0027s_fashion\\MyWPFCRUDApp\\Models\\MUnit.cs",
+              "RelativeToolTip": "Models\\MUnit.cs",
+              "ViewState": "AgIAAAAAAAAAAAAAAAAAAA0AAABCAAAAAAAAAA==",
+              "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.000738|",
+              "WhenOpened": "2026-06-14T13:15:40.079Z",
+              "EditorCaption": ""
+            },
+            {
+              "$type": "Document",
+              "DocumentIndex": 26,
+              "Title": "MBankAccountMaster.cs",
+              "DocumentMoniker": "E:\\Mohua\u0027s_fashion\\MyWPFCRUDApp\\Models\\MBankAccountMaster.cs",
+              "RelativeDocumentMoniker": "Models\\MBankAccountMaster.cs",
+              "ToolTip": "E:\\Mohua\u0027s_fashion\\MyWPFCRUDApp\\Models\\MBankAccountMaster.cs",
+              "RelativeToolTip": "Models\\MBankAccountMaster.cs",
+              "ViewState": "AgIAAAAAAAAAAAAAAAAAAA0AAAAjAAAAAAAAAA==",
+              "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.000738|",
+              "WhenOpened": "2026-06-14T13:07:11.332Z",
+              "EditorCaption": ""
+            },
+            {
+              "$type": "Document",
+              "DocumentIndex": 25,
+              "Title": "BankAccountService.cs",
+              "DocumentMoniker": "E:\\Mohua\u0027s_fashion\\MyWPFCRUDApp\\Services\\BankAccountService.cs",
+              "RelativeDocumentMoniker": "Services\\BankAccountService.cs",
+              "ToolTip": "E:\\Mohua\u0027s_fashion\\MyWPFCRUDApp\\Services\\BankAccountService.cs",
+              "RelativeToolTip": "Services\\BankAccountService.cs",
+              "ViewState": "AgIAAEAAAAAAAAAAAAAcwFYAAAAAAAAAAAAAAA==",
+              "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.000738|",
+              "WhenOpened": "2026-06-14T13:19:44.932Z",
+              "EditorCaption": ""
+            },
+            {
+              "$type": "Document",
+              "DocumentIndex": 24,
+              "Title": "BankViewModel.cs",
+              "DocumentMoniker": "E:\\Mohua\u0027s_fashion\\MyWPFCRUDApp\\ViewModels\\BankViewModel.cs",
+              "RelativeDocumentMoniker": "ViewModels\\BankViewModel.cs",
+              "ToolTip": "E:\\Mohua\u0027s_fashion\\MyWPFCRUDApp\\ViewModels\\BankViewModel.cs",
+              "RelativeToolTip": "ViewModels\\BankViewModel.cs",
+              "ViewState": "AgIAAFMAAAAAAAAAAAAcwGkAAAABAAAAAAAAAA==",
+              "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.000738|",
+              "WhenOpened": "2026-06-14T13:26:47.322Z",
+              "EditorCaption": ""
+            },
+            {
+              "$type": "Document",
+              "DocumentIndex": 30,
+              "Title": "UnitViews.xaml.cs",
+              "DocumentMoniker": "E:\\Mohua\u0027s_fashion\\MyWPFCRUDApp\\Views\\UnitViews.xaml.cs",
+              "RelativeDocumentMoniker": "Views\\UnitViews.xaml.cs",
+              "ToolTip": "E:\\Mohua\u0027s_fashion\\MyWPFCRUDApp\\Views\\UnitViews.xaml.cs",
+              "RelativeToolTip": "Views\\UnitViews.xaml.cs",
+              "ViewState": "AgIAABIAAAAAAAAAAAAuwBoAAAAzAAAAAAAAAA==",
+              "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.000738|",
+              "WhenOpened": "2026-03-26T15:01:20.264Z",
+              "EditorCaption": ""
+            },
+            {
+              "$type": "Document",
+              "DocumentIndex": 31,
+              "Title": "UnitViewModel.cs",
+              "DocumentMoniker": "E:\\Mohua\u0027s_fashion\\MyWPFCRUDApp\\ViewModels\\UnitViewModel.cs",
+              "RelativeDocumentMoniker": "ViewModels\\UnitViewModel.cs",
+              "ToolTip": "E:\\Mohua\u0027s_fashion\\MyWPFCRUDApp\\ViewModels\\UnitViewModel.cs",
+              "RelativeToolTip": "ViewModels\\UnitViewModel.cs",
+              "ViewState": "AgIAAE0AAAAAAAAAAAAcwGMAAAAAAAAAAAAAAA==",
+              "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.000738|",
+              "WhenOpened": "2026-06-14T13:28:21.623Z",
+              "EditorCaption": ""
+            },
+            {
+              "$type": "Document",
+              "DocumentIndex": 28,
+              "Title": "BankAccountViews.xaml.cs",
+              "DocumentMoniker": "E:\\Mohua\u0027s_fashion\\MyWPFCRUDApp\\Views\\BankAccountViews.xaml.cs",
+              "RelativeDocumentMoniker": "Views\\BankAccountViews.xaml.cs",
+              "ToolTip": "E:\\Mohua\u0027s_fashion\\MyWPFCRUDApp\\Views\\BankAccountViews.xaml.cs",
+              "RelativeToolTip": "Views\\BankAccountViews.xaml.cs",
+              "ViewState": "AgIAAAoAAAAAAAAAAAAiwBcAAAAaAAAAAAAAAA==",
+              "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.000738|",
+              "WhenOpened": "2026-06-14T13:57:30.486Z",
+              "EditorCaption": ""
+            },
+            {
+              "$type": "Document",
+              "DocumentIndex": 29,
+              "Title": "UnitViews.xaml",
+              "DocumentMoniker": "E:\\Mohua\u0027s_fashion\\MyWPFCRUDApp\\Views\\UnitViews.xaml",
+              "RelativeDocumentMoniker": "Views\\UnitViews.xaml",
+              "ToolTip": "E:\\Mohua\u0027s_fashion\\MyWPFCRUDApp\\Views\\UnitViews.xaml",
+              "RelativeToolTip": "Views\\UnitViews.xaml",
+              "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.003549|",
+              "WhenOpened": "2026-06-14T13:53:03.968Z",
+              "EditorCaption": ""
+            },
+            {
+              "$type": "Document",
+              "DocumentIndex": 33,
+              "Title": "CategoryViews.xaml",
+              "DocumentMoniker": "E:\\Mohua\u0027s_fashion\\MyWPFCRUDApp\\Views\\CategoryViews.xaml",
+              "RelativeDocumentMoniker": "Views\\CategoryViews.xaml",
+              "ToolTip": "E:\\Mohua\u0027s_fashion\\MyWPFCRUDApp\\Views\\CategoryViews.xaml",
+              "RelativeToolTip": "Views\\CategoryViews.xaml",
+              "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.003549|",
+              "WhenOpened": "2026-06-14T13:04:18.546Z",
+              "EditorCaption": ""
+            },
+            {
+              "$type": "Document",
+              "DocumentIndex": 32,
+              "Title": "UnitService.cs",
+              "DocumentMoniker": "E:\\Mohua\u0027s_fashion\\MyWPFCRUDApp\\Services\\UnitService.cs",
+              "RelativeDocumentMoniker": "Services\\UnitService.cs",
+              "ToolTip": "E:\\Mohua\u0027s_fashion\\MyWPFCRUDApp\\Services\\UnitService.cs",
+              "RelativeToolTip": "Services\\UnitService.cs",
+              "ViewState": "AgIAAAAAAAAAAAAAAAAAAFMAAAAJAAAAAAAAAA==",
+              "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.000738|",
+              "WhenOpened": "2026-04-04T19:04:32.289Z",
+              "EditorCaption": ""
+            },
+            {
+              "$type": "Document",
+              "DocumentIndex": 35,
+              "Title": "MPurchaseDetail.cs",
+              "DocumentMoniker": "E:\\Mohua\u0027s_fashion\\MyWPFCRUDApp\\Models\\MPurchaseDetail.cs",
+              "RelativeDocumentMoniker": "Models\\MPurchaseDetail.cs",
+              "ToolTip": "E:\\Mohua\u0027s_fashion\\MyWPFCRUDApp\\Models\\MPurchaseDetail.cs",
+              "RelativeToolTip": "Models\\MPurchaseDetail.cs",
+              "ViewState": "AgIAAFIAAAAAAAAAAAA8wFwAAAABAAAAAAAAAA==",
+              "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.000738|",
+              "WhenOpened": "2026-03-30T13:49:19.155Z",
+              "EditorCaption": ""
+            },
+            {
+              "$type": "Document",
+              "DocumentIndex": 34,
+              "Title": "MyWPFCRUDApp.csproj",
+              "DocumentMoniker": "E:\\Mohua\u0027s_fashion\\MyWPFCRUDApp\\MyWPFCRUDApp.csproj",
+              "RelativeDocumentMoniker": "MyWPFCRUDApp.csproj",
+              "ToolTip": "E:\\Mohua\u0027s_fashion\\MyWPFCRUDApp\\MyWPFCRUDApp.csproj",
+              "RelativeToolTip": "MyWPFCRUDApp.csproj",
+              "ViewState": "AgIAAAAAAAAAAAAAAAAAAAsAAAAgAAAAAAAAAA==",
+              "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.000758|",
+              "WhenOpened": "2026-03-30T21:07:41.013Z",
+              "EditorCaption": ""
+            },
+            {
+              "$type": "Document",
+              "DocumentIndex": 36,
+              "Title": "SupplierViews.xaml",
+              "DocumentMoniker": "E:\\Mohua\u0027s_fashion\\MyWPFCRUDApp\\Views\\SupplierViews.xaml",
+              "RelativeDocumentMoniker": "Views\\SupplierViews.xaml",
+              "ToolTip": "E:\\Mohua\u0027s_fashion\\MyWPFCRUDApp\\Views\\SupplierViews.xaml",
+              "RelativeToolTip": "Views\\SupplierViews.xaml",
+              "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.003549|",
+              "WhenOpened": "2026-06-14T05:42:00.981Z",
+              "EditorCaption": ""
+            },
+            {
+              "$type": "Document",
+              "DocumentIndex": 37,
               "Title": "BillScanReviewWindow.xaml.cs",
               "DocumentMoniker": "E:\\Mohua\u0027s_fashion\\MyWPFCRUDApp\\Views\\BillScanReviewWindow.xaml.cs",
               "RelativeDocumentMoniker": "Views\\BillScanReviewWindow.xaml.cs",
@@ -482,7 +852,7 @@
             },
             {
               "$type": "Document",
-              "DocumentIndex": 15,
+              "DocumentIndex": 38,
               "Title": "BillScanReviewWindow.xaml",
               "DocumentMoniker": "E:\\Mohua\u0027s_fashion\\MyWPFCRUDApp\\Views\\BillScanReviewWindow.xaml",
               "RelativeDocumentMoniker": "Views\\BillScanReviewWindow.xaml",
@@ -493,7 +863,7 @@
             },
             {
               "$type": "Document",
-              "DocumentIndex": 17,
+              "DocumentIndex": 40,
               "Title": "UserSettings.cs",
               "DocumentMoniker": "E:\\Mohua\u0027s_fashion\\MyWPFCRUDApp\\Services\\UserSettings.cs",
               "RelativeDocumentMoniker": "Services\\UserSettings.cs",
@@ -505,7 +875,7 @@
             },
             {
               "$type": "Document",
-              "DocumentIndex": 16,
+              "DocumentIndex": 39,
               "Title": "ScannedBillResult.cs",
               "DocumentMoniker": "E:\\Mohua\u0027s_fashion\\MyWPFCRUDApp\\Models\\ScannedBillResult.cs",
               "RelativeDocumentMoniker": "Models\\ScannedBillResult.cs",
@@ -517,7 +887,7 @@
             },
             {
               "$type": "Document",
-              "DocumentIndex": 20,
+              "DocumentIndex": 43,
               "Title": "FolderProfile.pubxml",
               "DocumentMoniker": "E:\\Mohua\u0027s_fashion\\MyWPFCRUDApp\\Properties\\PublishProfiles\\FolderProfile.pubxml",
               "RelativeDocumentMoniker": "Properties\\PublishProfiles\\FolderProfile.pubxml",
@@ -529,7 +899,7 @@
             },
             {
               "$type": "Document",
-              "DocumentIndex": 23,
+              "DocumentIndex": 46,
               "Title": "FolderProfile4.pubxml",
               "DocumentMoniker": "E:\\Mohua\u0027s_fashion\\MyWPFCRUDApp\\Properties\\PublishProfiles\\FolderProfile4.pubxml",
               "RelativeDocumentMoniker": "Properties\\PublishProfiles\\FolderProfile4.pubxml",
@@ -541,7 +911,7 @@
             },
             {
               "$type": "Document",
-              "DocumentIndex": 22,
+              "DocumentIndex": 45,
               "Title": "Microsoft.NET.Publish.targets",
               "DocumentMoniker": "C:\\Program Files\\dotnet\\sdk\\9.0.302\\Sdks\\Microsoft.NET.Sdk\\targets\\Microsoft.NET.Publish.targets",
               "ToolTip": "C:\\Program Files\\dotnet\\sdk\\9.0.302\\Sdks\\Microsoft.NET.Sdk\\targets\\Microsoft.NET.Publish.targets",
@@ -551,7 +921,7 @@
             },
             {
               "$type": "Document",
-              "DocumentIndex": 21,
+              "DocumentIndex": 44,
               "Title": "FolderProfile5.pubxml",
               "DocumentMoniker": "E:\\Mohua\u0027s_fashion\\MyWPFCRUDApp\\Properties\\PublishProfiles\\FolderProfile5.pubxml",
               "RelativeDocumentMoniker": "Properties\\PublishProfiles\\FolderProfile5.pubxml",
@@ -563,7 +933,7 @@
             },
             {
               "$type": "Document",
-              "DocumentIndex": 19,
+              "DocumentIndex": 42,
               "Title": "FolderProfile6.pubxml",
               "DocumentMoniker": "E:\\Mohua\u0027s_fashion\\MyWPFCRUDApp\\Properties\\PublishProfiles\\FolderProfile6.pubxml",
               "RelativeDocumentMoniker": "Properties\\PublishProfiles\\FolderProfile6.pubxml",
@@ -575,7 +945,7 @@
             },
             {
               "$type": "Document",
-              "DocumentIndex": 18,
+              "DocumentIndex": 41,
               "Title": "Student.cs",
               "DocumentMoniker": "E:\\Mohua\u0027s_fashion\\MyWPFCRUDApp\\Models\\Student.cs",
               "RelativeDocumentMoniker": "Models\\Student.cs",
@@ -587,7 +957,7 @@
             },
             {
               "$type": "Document",
-              "DocumentIndex": 26,
+              "DocumentIndex": 49,
               "Title": "PropertyPathWorker.cs",
               "DocumentMoniker": "C:\\Users\\sumit\\AppData\\Local\\Temp\\.vsdbgsrc\\1b77cb146b3dc6f60ca3b7de619b68fc3904b4f03155b255fa425d7d7bd36ae9\\PropertyPathWorker.cs",
               "ToolTip": "C:\\Users\\sumit\\AppData\\Local\\Temp\\.vsdbgsrc\\1b77cb146b3dc6f60ca3b7de619b68fc3904b4f03155b255fa425d7d7bd36ae9\\PropertyPathWorker.cs [Read Only]",
@@ -598,7 +968,7 @@
             },
             {
               "$type": "Document",
-              "DocumentIndex": 27,
+              "DocumentIndex": 50,
               "Title": "SupplierViewModel.cs",
               "DocumentMoniker": "E:\\Mohua\u0027s_fashion\\MyWPFCRUDApp\\ViewModels\\SupplierViewModel.cs",
               "RelativeDocumentMoniker": "ViewModels\\SupplierViewModel.cs",
@@ -610,19 +980,7 @@
             },
             {
               "$type": "Document",
-              "DocumentIndex": 28,
-              "Title": "SupplierService.cs",
-              "DocumentMoniker": "E:\\Mohua\u0027s_fashion\\MyWPFCRUDApp\\Services\\SupplierService.cs",
-              "RelativeDocumentMoniker": "Services\\SupplierService.cs",
-              "ToolTip": "E:\\Mohua\u0027s_fashion\\MyWPFCRUDApp\\Services\\SupplierService.cs",
-              "RelativeToolTip": "Services\\SupplierService.cs",
-              "ViewState": "AgIAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA==",
-              "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.000738|",
-              "WhenOpened": "2026-06-08T14:21:21.23Z"
-            },
-            {
-              "$type": "Document",
-              "DocumentIndex": 32,
+              "DocumentIndex": 54,
               "Title": "TaxContext.cs",
               "DocumentMoniker": "E:\\Mohua\u0027s_fashion\\MyWPFCRUDApp\\Helpers\\TaxContext.cs",
               "RelativeDocumentMoniker": "Helpers\\TaxContext.cs",
@@ -634,7 +992,7 @@
             },
             {
               "$type": "Document",
-              "DocumentIndex": 33,
+              "DocumentIndex": 55,
               "Title": "TaxCategoryViews.xaml.cs",
               "DocumentMoniker": "E:\\Mohua\u0027s_fashion\\MyWPFCRUDApp\\Views\\TaxCategoryViews.xaml.cs",
               "RelativeDocumentMoniker": "Views\\TaxCategoryViews.xaml.cs",
@@ -646,7 +1004,7 @@
             },
             {
               "$type": "Document",
-              "DocumentIndex": 29,
+              "DocumentIndex": 51,
               "Title": "TaxCategoryViews.xaml",
               "DocumentMoniker": "E:\\Mohua\u0027s_fashion\\MyWPFCRUDApp\\Views\\TaxCategoryViews.xaml",
               "RelativeDocumentMoniker": "Views\\TaxCategoryViews.xaml",
@@ -657,7 +1015,7 @@
             },
             {
               "$type": "Document",
-              "DocumentIndex": 30,
+              "DocumentIndex": 52,
               "Title": "TaxViewModel.cs",
               "DocumentMoniker": "E:\\Mohua\u0027s_fashion\\MyWPFCRUDApp\\ViewModels\\TaxViewModel.cs",
               "RelativeDocumentMoniker": "ViewModels\\TaxViewModel.cs",
@@ -669,7 +1027,7 @@
             },
             {
               "$type": "Document",
-              "DocumentIndex": 31,
+              "DocumentIndex": 53,
               "Title": "TaxService.cs",
               "DocumentMoniker": "E:\\Mohua\u0027s_fashion\\MyWPFCRUDApp\\Services\\TaxService.cs",
               "RelativeDocumentMoniker": "Services\\TaxService.cs",
@@ -681,7 +1039,7 @@
             },
             {
               "$type": "Document",
-              "DocumentIndex": 34,
+              "DocumentIndex": 56,
               "Title": "MTaxCategory.cs",
               "DocumentMoniker": "E:\\Mohua\u0027s_fashion\\MyWPFCRUDApp\\Models\\MTaxCategory.cs",
               "RelativeDocumentMoniker": "Models\\MTaxCategory.cs",
@@ -693,7 +1051,7 @@
             },
             {
               "$type": "Document",
-              "DocumentIndex": 43,
+              "DocumentIndex": 63,
               "Title": "WorkInProgressView.xaml.cs",
               "DocumentMoniker": "E:\\Mohua\u0027s_fashion\\MyWPFCRUDApp\\Views\\WorkInProgressView.xaml.cs",
               "RelativeDocumentMoniker": "Views\\WorkInProgressView.xaml.cs",
@@ -705,7 +1063,7 @@
             },
             {
               "$type": "Document",
-              "DocumentIndex": 44,
+              "DocumentIndex": 64,
               "Title": "WorkInProgressView.xaml",
               "DocumentMoniker": "E:\\Mohua\u0027s_fashion\\MyWPFCRUDApp\\Views\\WorkInProgressView.xaml",
               "RelativeDocumentMoniker": "Views\\WorkInProgressView.xaml",
@@ -716,19 +1074,7 @@
             },
             {
               "$type": "Document",
-              "DocumentIndex": 40,
-              "Title": "MainVIewModel.cs",
-              "DocumentMoniker": "E:\\Mohua\u0027s_fashion\\MyWPFCRUDApp\\ViewModels\\MainVIewModel.cs",
-              "RelativeDocumentMoniker": "ViewModels\\MainVIewModel.cs",
-              "ToolTip": "E:\\Mohua\u0027s_fashion\\MyWPFCRUDApp\\ViewModels\\MainVIewModel.cs",
-              "RelativeToolTip": "ViewModels\\MainVIewModel.cs",
-              "ViewState": "AgIAANgAAAAAAAAAAAAmwNwAAAAAAAAAAAAAAA==",
-              "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.000738|",
-              "WhenOpened": "2026-06-05T04:44:13.395Z"
-            },
-            {
-              "$type": "Document",
-              "DocumentIndex": 45,
+              "DocumentIndex": 65,
               "Title": "BaseViewModel.cs",
               "DocumentMoniker": "E:\\Mohua\u0027s_fashion\\MyWPFCRUDApp\\ViewModels\\BaseViewModel.cs",
               "RelativeDocumentMoniker": "ViewModels\\BaseViewModel.cs",
@@ -740,7 +1086,7 @@
             },
             {
               "$type": "Document",
-              "DocumentIndex": 38,
+              "DocumentIndex": 59,
               "Title": "BillScanService.cs",
               "DocumentMoniker": "E:\\Mohua\u0027s_fashion\\MyWPFCRUDApp\\Services\\BillScanService.cs",
               "RelativeDocumentMoniker": "Services\\BillScanService.cs",
@@ -752,7 +1098,7 @@
             },
             {
               "$type": "Document",
-              "DocumentIndex": 46,
+              "DocumentIndex": 66,
               "Title": "AutoUpdater.cs",
               "DocumentMoniker": "E:\\Mohua\u0027s_fashion\\MyWPFCRUDApp\\Services\\AutoUpdater.cs",
               "RelativeDocumentMoniker": "Services\\AutoUpdater.cs",
@@ -764,7 +1110,7 @@
             },
             {
               "$type": "Document",
-              "DocumentIndex": 48,
+              "DocumentIndex": 68,
               "Title": "Application.cs",
               "DocumentMoniker": "C:\\Users\\sumit\\AppData\\Local\\Temp\\.vsdbgsrc\\ced412997d18be4a64e3cfd47a13ade7fb9157a0630c2b5c4f78999459dfbcca\\Application.cs",
               "ToolTip": "C:\\Users\\sumit\\AppData\\Local\\Temp\\.vsdbgsrc\\ced412997d18be4a64e3cfd47a13ade7fb9157a0630c2b5c4f78999459dfbcca\\Application.cs",
@@ -774,7 +1120,7 @@
             },
             {
               "$type": "Document",
-              "DocumentIndex": 47,
+              "DocumentIndex": 67,
               "Title": "App.xaml.cs",
               "DocumentMoniker": "E:\\Mohua\u0027s_fashion\\MyWPFCRUDApp\\App.xaml.cs",
               "RelativeDocumentMoniker": "App.xaml.cs",
@@ -786,7 +1132,7 @@
             },
             {
               "$type": "Document",
-              "DocumentIndex": 50,
+              "DocumentIndex": 70,
               "Title": "CustomerViews.xaml",
               "DocumentMoniker": "E:\\Mohua\u0027s_fashion\\MyWPFCRUDApp\\Views\\CustomerViews.xaml",
               "RelativeDocumentMoniker": "Views\\CustomerViews.xaml",
@@ -797,7 +1143,7 @@
             },
             {
               "$type": "Document",
-              "DocumentIndex": 51,
+              "DocumentIndex": 71,
               "Title": "CorruptDialog.xaml.cs",
               "DocumentMoniker": "E:\\Mohua\u0027s_fashion\\MyWPFCRUDApp\\Views\\CorruptDialog.xaml.cs",
               "RelativeDocumentMoniker": "Views\\CorruptDialog.xaml.cs",
@@ -809,7 +1155,7 @@
             },
             {
               "$type": "Document",
-              "DocumentIndex": 49,
+              "DocumentIndex": 69,
               "Title": "CorruptDialog.xaml",
               "DocumentMoniker": "E:\\Mohua\u0027s_fashion\\MyWPFCRUDApp\\Views\\CorruptDialog.xaml",
               "RelativeDocumentMoniker": "Views\\CorruptDialog.xaml",
@@ -820,7 +1166,7 @@
             },
             {
               "$type": "Document",
-              "DocumentIndex": 53,
+              "DocumentIndex": 73,
               "Title": "ExcelMappingWindow.xaml.cs",
               "DocumentMoniker": "E:\\Mohua\u0027s_fashion\\MyWPFCRUDApp\\Views\\ExcelMappingWindow.xaml.cs",
               "RelativeDocumentMoniker": "Views\\ExcelMappingWindow.xaml.cs",
@@ -832,7 +1178,7 @@
             },
             {
               "$type": "Document",
-              "DocumentIndex": 54,
+              "DocumentIndex": 74,
               "Title": "ExcelMappingWindow.xaml",
               "DocumentMoniker": "E:\\Mohua\u0027s_fashion\\MyWPFCRUDApp\\Views\\ExcelMappingWindow.xaml",
               "RelativeDocumentMoniker": "Views\\ExcelMappingWindow.xaml",
@@ -843,7 +1189,7 @@
             },
             {
               "$type": "Document",
-              "DocumentIndex": 56,
+              "DocumentIndex": 76,
               "Title": "ColumnMapping.cs",
               "DocumentMoniker": "E:\\Mohua\u0027s_fashion\\MyWPFCRUDApp\\ViewModels\\ColumnMapping.cs",
               "RelativeDocumentMoniker": "ViewModels\\ColumnMapping.cs",
@@ -855,7 +1201,7 @@
             },
             {
               "$type": "Document",
-              "DocumentIndex": 55,
+              "DocumentIndex": 75,
               "Title": "ProductColumnOption.cs",
               "DocumentMoniker": "E:\\Mohua\u0027s_fashion\\MyWPFCRUDApp\\ViewModels\\ProductColumnOption.cs",
               "RelativeDocumentMoniker": "ViewModels\\ProductColumnOption.cs",
@@ -867,7 +1213,7 @@
             },
             {
               "$type": "Document",
-              "DocumentIndex": 24,
+              "DocumentIndex": 47,
               "Title": "MainWindow.xaml.cs",
               "DocumentMoniker": "E:\\Mohua\u0027s_fashion\\MyWPFCRUDApp\\Views\\MainWindow.xaml.cs",
               "RelativeDocumentMoniker": "Views\\MainWindow.xaml.cs",
@@ -879,7 +1225,7 @@
             },
             {
               "$type": "Document",
-              "DocumentIndex": 25,
+              "DocumentIndex": 48,
               "Title": "MainWindow.xaml",
               "DocumentMoniker": "E:\\Mohua\u0027s_fashion\\MyWPFCRUDApp\\Views\\MainWindow.xaml",
               "RelativeDocumentMoniker": "Views\\MainWindow.xaml",
@@ -890,7 +1236,7 @@
             },
             {
               "$type": "Document",
-              "DocumentIndex": 35,
+              "DocumentIndex": 57,
               "Title": "ProductViews.xaml",
               "DocumentMoniker": "E:\\Mohua\u0027s_fashion\\MyWPFCRUDApp\\Views\\ProductViews.xaml",
               "RelativeDocumentMoniker": "Views\\ProductViews.xaml",
@@ -901,19 +1247,7 @@
             },
             {
               "$type": "Document",
-              "DocumentIndex": 37,
-              "Title": "ProductViewModel.cs",
-              "DocumentMoniker": "E:\\Mohua\u0027s_fashion\\MyWPFCRUDApp\\ViewModels\\ProductViewModel.cs",
-              "RelativeDocumentMoniker": "ViewModels\\ProductViewModel.cs",
-              "ToolTip": "E:\\Mohua\u0027s_fashion\\MyWPFCRUDApp\\ViewModels\\ProductViewModel.cs",
-              "RelativeToolTip": "ViewModels\\ProductViewModel.cs",
-              "ViewState": "AgIAAGYCAAAAAAAAAAAgwHYCAAABAAAAAAAAAA==",
-              "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.000738|",
-              "WhenOpened": "2026-03-30T19:58:34.853Z"
-            },
-            {
-              "$type": "Document",
-              "DocumentIndex": 39,
+              "DocumentIndex": 60,
               "Title": "AddProductWindow.xaml.cs",
               "DocumentMoniker": "E:\\Mohua\u0027s_fashion\\MyWPFCRUDApp\\Views\\AddProductWindow.xaml.cs",
               "RelativeDocumentMoniker": "Views\\AddProductWindow.xaml.cs",
@@ -925,7 +1259,7 @@
             },
             {
               "$type": "Document",
-              "DocumentIndex": 36,
+              "DocumentIndex": 58,
               "Title": "AddProductWindow.xaml",
               "DocumentMoniker": "E:\\Mohua\u0027s_fashion\\MyWPFCRUDApp\\Views\\AddProductWindow.xaml",
               "RelativeDocumentMoniker": "Views\\AddProductWindow.xaml",
@@ -936,7 +1270,7 @@
             },
             {
               "$type": "Document",
-              "DocumentIndex": 57,
+              "DocumentIndex": 77,
               "Title": "AddSupplierWindow.xaml.cs",
               "DocumentMoniker": "E:\\Mohua\u0027s_fashion\\MyWPFCRUDApp\\Views\\AddSupplierWindow.xaml.cs",
               "RelativeDocumentMoniker": "Views\\AddSupplierWindow.xaml.cs",
@@ -948,7 +1282,7 @@
             },
             {
               "$type": "Document",
-              "DocumentIndex": 58,
+              "DocumentIndex": 78,
               "Title": "AddSupplierWindow.xaml",
               "DocumentMoniker": "E:\\Mohua\u0027s_fashion\\MyWPFCRUDApp\\Views\\AddSupplierWindow.xaml",
               "RelativeDocumentMoniker": "Views\\AddSupplierWindow.xaml",
@@ -959,7 +1293,7 @@
             },
             {
               "$type": "Document",
-              "DocumentIndex": 52,
+              "DocumentIndex": 72,
               "Title": "ProductViews.xaml.cs",
               "DocumentMoniker": "E:\\Mohua\u0027s_fashion\\MyWPFCRUDApp\\Views\\ProductViews.xaml.cs",
               "RelativeDocumentMoniker": "Views\\ProductViews.xaml.cs",
@@ -971,7 +1305,7 @@
             },
             {
               "$type": "Document",
-              "DocumentIndex": 41,
+              "DocumentIndex": 61,
               "Title": "ProductService.cs",
               "DocumentMoniker": "E:\\Mohua\u0027s_fashion\\MyWPFCRUDApp\\Services\\ProductService.cs",
               "RelativeDocumentMoniker": "Services\\ProductService.cs",
@@ -983,7 +1317,7 @@
             },
             {
               "$type": "Document",
-              "DocumentIndex": 42,
+              "DocumentIndex": 62,
               "Title": "MProducts.cs",
               "DocumentMoniker": "E:\\Mohua\u0027s_fashion\\MyWPFCRUDApp\\Models\\MProducts.cs",
               "RelativeDocumentMoniker": "Models\\MProducts.cs",
@@ -995,19 +1329,7 @@
             },
             {
               "$type": "Document",
-              "DocumentIndex": 61,
-              "Title": "UnitViews.xaml.cs",
-              "DocumentMoniker": "E:\\Mohua\u0027s_fashion\\MyWPFCRUDApp\\Views\\UnitViews.xaml.cs",
-              "RelativeDocumentMoniker": "Views\\UnitViews.xaml.cs",
-              "ToolTip": "E:\\Mohua\u0027s_fashion\\MyWPFCRUDApp\\Views\\UnitViews.xaml.cs",
-              "RelativeToolTip": "Views\\UnitViews.xaml.cs",
-              "ViewState": "AgIAABIAAAAAAAAAAIBJwBoAAAAzAAAAAAAAAA==",
-              "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.000738|",
-              "WhenOpened": "2026-03-26T15:01:20.264Z"
-            },
-            {
-              "$type": "Document",
-              "DocumentIndex": 59,
+              "DocumentIndex": 79,
               "Title": "MCategory.cs",
               "DocumentMoniker": "E:\\Mohua\u0027s_fashion\\MyWPFCRUDApp\\Models\\MCategory.cs",
               "RelativeDocumentMoniker": "Models\\MCategory.cs",
@@ -1019,7 +1341,7 @@
             },
             {
               "$type": "Document",
-              "DocumentIndex": 60,
+              "DocumentIndex": 80,
               "Title": "Customer.cs",
               "DocumentMoniker": "E:\\Mohua\u0027s_fashion\\MyWPFCRUDApp\\Models\\Customer.cs",
               "RelativeDocumentMoniker": "Models\\Customer.cs",

@@ -22,40 +22,75 @@
                     <DataTemplate>
                         <Expander Margin="0,0,0,6" Background="White">
                             <Expander.Header>
-                                <Grid Width="620">
+                                <Grid Width="640">
                                     <Grid.ColumnDefinitions>
                                         <ColumnDefinition Width="*"/>
                                         <ColumnDefinition Width="Auto"/>
                                         <ColumnDefinition Width="Auto"/>
                                         <ColumnDefinition Width="Auto"/>
                                         <ColumnDefinition Width="Auto"/>
+                                        <ColumnDefinition Width="Auto"/>
+                                        <ColumnDefinition Width="Auto"/>
                                     </Grid.ColumnDefinitions>
+
+                                    <!-- Invoice + Date -->
                                     <StackPanel Grid.Column="0">
                                         <TextBlock Text="{Binding InvoiceNumber}"
-                                                   FontWeight="Bold" FontSize="13" Foreground="#212529"/>
+                                                   FontWeight="Bold" FontSize="13"
+                                                   Foreground="#212529"/>
                                         <TextBlock Text="{Binding PurchaseDate, StringFormat={}{0:dd MMM yyyy}}"
                                                    FontSize="11" Foreground="#868E96"/>
                                     </StackPanel>
-                                    <TextBlock Grid.Column="1" Margin="0,0,20,0"
+
+                                    <!-- Payment Mode -->
+                                    <TextBlock Grid.Column="1" Margin="0,0,16,0"
                                                Text="{Binding PaymentMode}" FontSize="11"
                                                Foreground="#495057" VerticalAlignment="Center"/>
-                                    <TextBlock Grid.Column="2" Margin="0,0,20,0"
+
+                                    <!-- Discount -->
+                                    <TextBlock Grid.Column="2" Margin="0,0,16,0"
                                                Text="{Binding Discount, StringFormat=Disc: ₹{0:N2}}"
-                                               FontSize="11" Foreground="#868E96" VerticalAlignment="Center"/>
-                                    <TextBlock Grid.Column="3"
-                                               Text="{Binding TotalAmount, StringFormat=₹{0:N2}}"
-                                               FontWeight="Bold" FontSize="13"
-                                               Foreground="#2F9E44" VerticalAlignment="Center"/>
-                                    <Button Grid.Column="4"
-                    Content="Open"
-                    Command="{Binding DataContext.LoadHistoryInvoiceCommand,
-                              RelativeSource={RelativeSource AncestorType=Window}}"
-                    CommandParameter="{Binding}"
-                    Click="OpenInvoice_Click"
-                    Width="60" Height="26"
-                    Background="#1971C2" Foreground="White"
-                    FontWeight="SemiBold" Cursor="Hand"
-                    BorderThickness="0" Margin="0,0,4,0">
+                                               FontSize="11" Foreground="#868E96"
+                                               VerticalAlignment="Center"/>
+
+                                    <!-- Total Amount -->
+                                    <StackPanel Grid.Column="3" Margin="0,0,16,0"
+                                                VerticalAlignment="Center">
+                                        <TextBlock Text="Total" FontSize="10" Foreground="#868E96"/>
+                                        <TextBlock Text="{Binding TotalAmount, StringFormat=₹{0:N2}}"
+                                                   FontWeight="Bold" FontSize="12"
+                                                   Foreground="#2F9E44"/>
+                                    </StackPanel>
+
+                                    <!-- Total Paid -->
+                                    <StackPanel Grid.Column="4" Margin="0,0,16,0"
+                                                VerticalAlignment="Center">
+                                        <TextBlock Text="Paid" FontSize="10" Foreground="#868E96"/>
+                                        <TextBlock Text="{Binding TotalPaid, StringFormat=₹{0:N2}}"
+                                                   FontWeight="Bold" FontSize="12"
+                                                   Foreground="#1971C2"/>
+                                    </StackPanel>
+
+                                    <!-- Remaining -->
+                                    <StackPanel Grid.Column="5" Margin="0,0,16,0"
+                                                VerticalAlignment="Center">
+                                        <TextBlock Text="Remaining" FontSize="10" Foreground="#868E96"/>
+                                        <TextBlock Text="{Binding RemainingAmount, StringFormat=₹{0:N2}}"
+                                                   FontWeight="Bold" FontSize="12"
+                                                   Foreground="{Binding RemainingColor}"/>
+                                    </StackPanel>
+
+                                    <!-- Open button -->
+                                    <Button Grid.Column="6"
+                                            Content="Open"
+                                            Command="{Binding DataContext.LoadHistoryInvoiceCommand,
+                                                      RelativeSource={RelativeSource AncestorType=Window}}"
+                                            CommandParameter="{Binding}"
+                                            Click="OpenInvoice_Click"
+                                            Width="60" Height="26"
+                                            Background="#1971C2" Foreground="White"
+                                            FontWeight="SemiBold" Cursor="Hand"
+                                            BorderThickness="0" Margin="0,0,4,0">
                                         <Button.Resources>
                                             <Style TargetType="Border">
                                                 <Setter Property="CornerRadius" Value="4"/>
@@ -78,14 +113,22 @@
                                           BorderThickness="0"
                                           HeadersVisibility="Column">
                                     <DataGrid.Columns>
-                                        <DataGridTextColumn Header="Barcode"   Binding="{Binding Barcode}"        Width="110"/>
-                                        <DataGridTextColumn Header="Product"   Binding="{Binding ProductName}"    Width="*"/>
-                                        <DataGridTextColumn Header="Qty"       Binding="{Binding Quantity}"       Width="55"/>
-                                        <DataGridTextColumn Header="Purchase"  Binding="{Binding PurchasePrice, StringFormat=₹{0:N2}}" Width="90"/>
-                                        <DataGridTextColumn Header="Wholesale" Binding="{Binding WholesalePrice, StringFormat=₹{0:N2}}" Width="90"/>
-                                        <DataGridTextColumn Header="Retail"    Binding="{Binding Retail, StringFormat=₹{0:N2}}"        Width="80"/>
-                                        <DataGridTextColumn Header="MRP"       Binding="{Binding MRP, StringFormat=₹{0:N2}}"           Width="80"/>
-                                        <DataGridTextColumn Header="Amount"    Binding="{Binding AfterTaxation, StringFormat=₹{0:N2}}" Width="90"/>
+                                        <DataGridTextColumn Header="Barcode"
+                                            Binding="{Binding Barcode}" Width="110"/>
+                                        <DataGridTextColumn Header="Product"
+                                            Binding="{Binding ProductName}" Width="*"/>
+                                        <DataGridTextColumn Header="Qty"
+                                            Binding="{Binding Quantity}" Width="55"/>
+                                        <DataGridTextColumn Header="Purchase"
+                                            Binding="{Binding PurchasePrice, StringFormat=₹{0:N2}}" Width="90"/>
+                                        <DataGridTextColumn Header="Wholesale"
+                                            Binding="{Binding WholesalePrice, StringFormat=₹{0:N2}}" Width="90"/>
+                                        <DataGridTextColumn Header="Retail"
+                                            Binding="{Binding Retail, StringFormat=₹{0:N2}}" Width="80"/>
+                                        <DataGridTextColumn Header="MRP"
+                                            Binding="{Binding MRP, StringFormat=₹{0:N2}}" Width="80"/>
+                                        <DataGridTextColumn Header="Amount"
+                                            Binding="{Binding AfterTaxation, StringFormat=₹{0:N2}}" Width="90"/>
                                     </DataGrid.Columns>
                                 </DataGrid>
                             </Border>

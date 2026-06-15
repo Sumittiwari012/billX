@@ -316,36 +316,10 @@
 
                         <Separator Margin="0,8"/>
 
-                        <DockPanel Margin="0,3">
-                            <TextBlock Text="Payment Method" FontSize="12" FontWeight="SemiBold" Foreground="#495057" VerticalAlignment="Center"/>
-                            <ComboBox Width="110"
-          Height="26"
-          SelectedValue="{Binding PaymentMethod}"
-          SelectedValuePath="Content">
-                                <ComboBoxItem Content="Cash" IsSelected="True"/>
-                                <ComboBoxItem Content="UPI"/>
-                                <ComboBoxItem Content="NetBanking"/>
-                                <ComboBoxItem Content="Card"/>
-                                <ComboBoxItem Content="Cheque"/>
-                            </ComboBox>
-                        </DockPanel>
+                        
 
-                        <DockPanel Margin="0,3">
-                            <TextBlock Text="Amount Paid" FontSize="12" FontWeight="SemiBold" Foreground="#495057" VerticalAlignment="Center"/>
-                            <TextBox Width="110" Height="26" TextAlignment="Right" HorizontalAlignment="Right" 
-                                     Text="{Binding AmountPaid, UpdateSourceTrigger=PropertyChanged}" VerticalContentAlignment="Center"/>
-                        </DockPanel>
-                        <DockPanel Margin="0,3">
-                            <TextBlock Text="Balance" FontSize="12" FontWeight="SemiBold" Foreground="#495057" VerticalAlignment="Center"/>
-                            <TextBox Width="110"
-         Height="26"
-         IsReadOnly="True"
-         TextAlignment="Right"
-         Foreground="{Binding BalanceBrush}"
-         Text="{Binding BalanceAmount,
-                        Mode=OneWay,
-                        StringFormat={}{0:N2}}"/>
-                        </DockPanel>
+                        
+                        
                         <Button Content="SAVE INVOICE"
                                 Command="{Binding PurchaseSaveCommand}"
                                 Height="40"
@@ -355,6 +329,21 @@
                                 FontSize="14"
                                 FontWeight="Bold"
                                 Cursor="Hand">
+                            <Button.Resources>
+                                <Style TargetType="Border">
+                                    <Setter Property="CornerRadius" Value="6"/>
+                                </Style>
+                            </Button.Resources>
+                        </Button>
+                        <Button Content="Payment"
+        Click="PaymentButton_Click"
+        Height="40"
+        Margin="0,15,0,0"
+        Background="#E1AD01"
+        Foreground="White"
+        FontSize="14"
+        FontWeight="Bold"
+        Cursor="Hand">
                             <Button.Resources>
                                 <Style TargetType="Border">
                                     <Setter Property="CornerRadius" Value="6"/>

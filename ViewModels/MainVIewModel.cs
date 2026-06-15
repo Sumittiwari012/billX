@@ -213,7 +213,12 @@ namespace MyWPFCRUDApp.ViewModels
                     case "Purchase Entry":
                         viewType = typeof(PurchaseViews);
                         break;
-
+                    case "Bank Master":
+                        viewType = typeof(BankAccountViews);
+                        break;
+                    case "Payment Setting":
+                        viewType = typeof(PaymentMethodViews);
+                        break;
                     default:
                         CurrentView = new WorkInProgressView();
                         return;

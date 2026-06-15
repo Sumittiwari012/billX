@@ -216,12 +216,17 @@ namespace MyWPFCRUDApp.Services
                 using var conn = new MySqlConnection(Con);
                 conn.Open();
 
-                // Step 1: Fetch all purchase masters for supplier
-                var masterSql = @"SELECT Id, InvoiceNumber, SupplierId, PurchaseDate, 
-                          TotalAmount, Discount, PaymentMode, Remarks
-                   FROM MPurchaseMaster 
-                   WHERE SupplierId = @SupplierId 
-                   ORDER BY PurchaseDate DESC";
+                var masterSql = @"SELECT 
+                            m.Id, m.InvoiceNumber, m.SupplierId, m.PurchaseDate, 
+                            m.TotalAmount, m.Discount, m.PaymentMode, m.Remarks,
+                            COALESCE(SUM(p.AmountPaid), 0) AS TotalPaid
+                          FROM MPurchaseMaster m
+                          LEFT JOIN MPayment p ON p.InvoiceNumber = m.InvoiceNumber 
+                                               AND p.SupplierId = m.SupplierId
+                          WHERE m.SupplierId = @SupplierId
+                          GROUP BY m.Id, m.InvoiceNumber, m.SupplierId, m.PurchaseDate,
+                                   m.TotalAmount, m.Discount, m.PaymentMode, m.Remarks
+                          ORDER BY m.PurchaseDate DESC";
 
                 using var cmdMaster = new MySqlCommand(masterSql, conn);
                 cmdMaster.Parameters.AddWithValue("@SupplierId", supplierId);
@@ -231,16 +236,21 @@ namespace MyWPFCRUDApp.Services
                 {
                     while (reader.Read())
                     {
+                        decimal totalAmount = reader["TotalAmount"] == DBNull.Value ? 0m : reader.GetDecimal("TotalAmount");
+                        decimal totalPaid = reader["TotalPaid"] == DBNull.Value ? 0m : reader.GetDecimal("TotalPaid");
+
                         var master = new MPurchaseMaster
                         {
                             Id = reader.GetInt64("Id"),
                             InvoiceNumber = reader["InvoiceNumber"] == DBNull.Value ? "" : reader.GetString("InvoiceNumber"),
                             SupplierId = reader.GetInt64("SupplierId"),
                             PurchaseDate = reader["PurchaseDate"] == DBNull.Value ? DateTime.MinValue : reader.GetDateTime("PurchaseDate"),
-                            TotalAmount = reader["TotalAmount"] == DBNull.Value ? 0m : reader.GetDecimal("TotalAmount"),
+                            TotalAmount = totalAmount,
                             Discount = reader["Discount"] == DBNull.Value ? 0m : reader.GetDecimal("Discount"),
                             PaymentMode = reader["PaymentMode"] == DBNull.Value ? null : reader.GetString("PaymentMode"),
                             Remarks = reader["Remarks"] == DBNull.Value ? null : reader.GetString("Remarks"),
+                            TotalPaid = totalPaid,
+                            RemainingAmount = totalAmount - totalPaid
                         };
                         long masterId = reader.GetInt64("Id");
                         masterIds.Add((masterId, master));
@@ -248,7 +258,6 @@ namespace MyWPFCRUDApp.Services
                     }
                 }
 
-                // Step 2: Fetch details for each master
                 foreach (var (masterId, master) in masterIds)
                 {
                     var detailSql = @"SELECT d.ProductId, d.Quantity, d.PurchasePrice,

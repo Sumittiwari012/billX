@@ -276,8 +276,48 @@ namespace MyWPFCRUDApp.Services
     -- Tax Details
     CategoryName VARCHAR(100) NOT NULL UNIQUE,
     TaxPercentage INT NOT NULL
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;"
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;",
 
+@"CREATE TABLE IF NOT EXISTS MBankAccountMaster (
+    -- BaseEntity Columns
+    Id BIGINT AUTO_INCREMENT PRIMARY KEY,
+    CreatedBy VARCHAR(100) DEFAULT 'System',
+    CreatedDate DATETIME DEFAULT CURRENT_TIMESTAMP,
+    ModifiedBy VARCHAR(100) DEFAULT 'System',
+    ModifiedDate DATETIME DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+
+    -- Account Number
+    AccountNumber VARCHAR(20)NOT NULL UNIQUE
+    
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;",
+@"CREATE TABLE IF NOT EXISTS MPaymentMethod (
+    -- BaseEntity Columns
+    Id BIGINT AUTO_INCREMENT PRIMARY KEY,
+    CreatedBy VARCHAR(100) DEFAULT 'System',
+    CreatedDate DATETIME DEFAULT CURRENT_TIMESTAMP,
+    ModifiedBy VARCHAR(100) DEFAULT 'System',
+    ModifiedDate DATETIME DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+
+    -- Account Number
+    PaymentMethod VARCHAR(20)NOT NULL UNIQUE
+    
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;",
+@"CREATE TABLE IF NOT EXISTS MPayment (
+    -- BaseEntity Columns
+    Id BIGINT AUTO_INCREMENT PRIMARY KEY,
+    CreatedBy VARCHAR(100) DEFAULT 'System',
+    CreatedDate DATETIME DEFAULT CURRENT_TIMESTAMP,
+    ModifiedBy VARCHAR(100) DEFAULT 'System',
+    ModifiedDate DATETIME DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+
+    -- Account Number
+    SupplierId BIGINT NOT NULL,
+    InvoiceNumber VARCHAR(100) NOT NULL,
+    PaymentMethod varchar(50) NOT NULL,
+    BankAccountNumber VARCHAR(50),
+    AmountPaid DECIMAL(18,2) NOT NULL DEFAULT 0.00
+    
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;"
 
                 
 

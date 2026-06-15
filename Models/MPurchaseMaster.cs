@@ -12,6 +12,13 @@ namespace MyWPFCRUDApp.Models
 {
     public class MPurchaseMaster:BaseEntity
     {
+        [NotMapped]
+        public string RemainingColor => RemainingAmount > 0 ? "#E03131" : "#2B8A3E";
+        [NotMapped]
+        public decimal TotalPaid { get; set; }
+
+        [NotMapped]
+        public decimal RemainingAmount { get; set; }
         public string InvoiceNumber { get; set; } // The Bill No. from the supplier
         public long SupplierId { get; set; }
         public DateTime PurchaseDate { get; set; }

@@ -904,23 +904,16 @@ namespace MyWPFCRUDApp.ViewModels
             else
             {
                 // INSERT new invoice + adjust supplier balance
-                decimal bal = BalanceAmount;
-                if (bal > 0) SelectedSupplier.CurrentBalance -= bal;
-                else if (bal < 0) SelectedSupplier.CurrentBalance += Math.Abs(bal);
-                _supplierService.UpdateSupplier(SelectedSupplier);
+                
 
                 success = _purchaseService.AddPurchase(PurchaseMaster);
             }
 
             if (success)
             {
-                var updatedSupplier = _supplierService.GetAllSuppliers()
-                                        .FirstOrDefault(x => x.Id == SelectedSupplier.Id);
-                if (updatedSupplier != null)
-                {
-                    SelectedSupplier = updatedSupplier;
-                    SupplierBalance = updatedSupplier.CurrentBalance;
-                }
+                decimal newBalance = _supplierService.RecalculateAndUpdateSupplierBalance(SelectedSupplier.Id);
+                SupplierBalance = newBalance;
+                SelectedSupplier.CurrentBalance = newBalance;
 
                 string msg = _editingMasterId > 0
                     ? "✔ Invoice updated successfully!"
