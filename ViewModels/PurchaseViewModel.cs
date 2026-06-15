@@ -108,6 +108,7 @@ namespace MyWPFCRUDApp.ViewModels
                         SupplierBalance = value.CurrentBalance;
 
                         LoadSupplierHistory(value.Id);
+                        
                     }
                     else
                     {
@@ -925,7 +926,7 @@ namespace MyWPFCRUDApp.ViewModels
                         : "✔ Purchase recorded and stock updated!";
 
                 MessageBox.Show(msg, "Saved", MessageBoxButton.OK, MessageBoxImage.Information);
-                ResetForm();
+                //ResetForm();
             }
             else
             {
