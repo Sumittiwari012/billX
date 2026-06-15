@@ -70,7 +70,12 @@ namespace MyWPFCRUDApp.ViewModels
                 }
             }
         }
-
+        private string _vendorInvoiceNumber = string.Empty;
+        public string VendorInvoiceNumber
+        {
+            get => _vendorInvoiceNumber;
+            set => SetProperty(ref _vendorInvoiceNumber, value);
+        }
         // ── Form models ────────────────────────────────────────────────────────
         private MPurchaseMaster _purchaseMaster;
         public MPurchaseMaster PurchaseMaster
@@ -432,11 +437,15 @@ namespace MyWPFCRUDApp.ViewModels
         {
             if (master == null) return;
 
-            _editingMasterId = master.Id;   // ← key fix
+            _editingMasterId = master.Id;
             PurchaseMaster.InvoiceNumber = master.InvoiceNumber;
+            PurchaseMaster.VendorInvoiceNumber = master.VendorInvoiceNumber; // ← new
             PurchaseMaster.PurchaseDate = master.PurchaseDate;
             PurchaseMaster.Discount = master.Discount;
             Discount = master.Discount;
+
+            VendorInvoiceNumber = master.VendorInvoiceNumber ?? string.Empty;  // ← update VM property
+
             OnPropertyChanged(nameof(PurchaseMaster));
 
             PurchaseItems.Clear();
@@ -731,10 +740,12 @@ namespace MyWPFCRUDApp.ViewModels
         private void InitializeData()
         {
             string nextInvoice = "";
+            string nextVendorInvoice = "";          // ← NEW
             try
             {
                 long count = _purchaseService.GetPurchaseCount();
-                nextInvoice = (count + 1).ToString();
+                nextInvoice = $"MS{count + 1}";   // ← CHANGED (was just count+1)
+                nextVendorInvoice = $"M{count + 1}";    // ← NEW
             }
             catch { }
 
@@ -742,45 +753,37 @@ namespace MyWPFCRUDApp.ViewModels
             {
                 PurchaseDate = DateTime.Now,
                 InvoiceNumber = nextInvoice,
+                VendorInvoiceNumber = nextVendorInvoice, // ← NEW
                 Discount = 0
             };
-            // Add this line inside InitializeData(), alongside the other collection initializations:
+
+            VendorInvoiceNumber = nextVendorInvoice;     // ← NEW (updates VM property for binding)
+
+            // unchanged lines below ──────────────────────────────────────────────
             SupplierHistory = new ObservableCollection<MPurchaseMaster>();
             Discount = PurchaseMaster.Discount;
-            NewItem       = new MPurchaseDetail();
+            NewItem = new MPurchaseDetail();
             PurchaseItems = new ObservableCollection<MPurchaseDetail>();
-            Suppliers     = new ObservableCollection<MSupplier>(_supplierService.GetAllSuppliers());
-            Products      = new ObservableCollection<MProducts>(_productService.GetProducts());
-            
-            
-            // ── Load company GST (the "My" side of DetermineApplicableTaxes) ──
+            Suppliers = new ObservableCollection<MSupplier>(_supplierService.GetAllSuppliers());
+            Products = new ObservableCollection<MProducts>(_productService.GetProducts());
+
             try
             {
                 var companyService = new CompanyService();
-                var company = companyService.GetCompanyInfo();
                 var companies = companyService.GetCompanyInfo();
-
                 _myGSTNumber = companies.FirstOrDefault()?.GSTNumber ?? string.Empty;
             }
             catch { _myGSTNumber = string.Empty; }
 
-            // ── Load tax percentages from Tax Section (MTaxCategory table) ────
-            // Convention: CategoryName contains "CGST", "SGST", or "IGST"
-            // (case-insensitive).  The first matching record for each type wins.
-            // Backing fields are set directly here to avoid three separate
-            // RecalculateTotal() calls during initialisation.
             try
             {
-                // Load all tax configurations for dropdown
                 TaxCategories = new ObservableCollection<MTaxCategory>(
                     _taxService.GetTaxCategory());
 
-                // Restore previously selected tax configuration
                 SelectedTaxCategory =
                     TaxContext.SelectedTax ??
                     TaxCategories.FirstOrDefault();
 
-                // Ensure global context is initialized
                 TaxContext.SelectedTax = SelectedTaxCategory;
 
                 if (SelectedTaxCategory != null)
@@ -808,8 +811,6 @@ namespace MyWPFCRUDApp.ViewModels
                 _igstPercent = 0;
             }
 
-            // ── Run DetermineApplicableTaxes() once so flags and totals are
-            //    correct from the moment the form opens ─────────────────────────
             DetermineApplicableTaxes();
         }
 
@@ -893,6 +894,8 @@ namespace MyWPFCRUDApp.ViewModels
             PurchaseMaster.AmountPaid = AmountPaid;
             PurchaseMaster.SupplierId = SelectedSupplier.Id;
             PurchaseMaster.MPurchaseDetail = PurchaseItems.ToList();
+            PurchaseMaster.VendorInvoiceNumber = VendorInvoiceNumber; // ← new: carry into model
+
 
             bool success;
 

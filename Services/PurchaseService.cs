@@ -25,18 +25,21 @@ namespace MyWPFCRUDApp.Services
             try
             {
                 // 1. Insert Purchase Master
+                // Replace the AddPurchase master INSERT block:
+
                 var masterSql = @"INSERT INTO MPurchaseMaster (
-                    InvoiceNumber, SupplierId, PurchaseDate, TotalAmount,
-                    Discount, PaymentMode,AmountPaid, Remarks, CreatedBy, CreatedDate
-                ) VALUES (
-                    @InvoiceNumber, @SupplierId, @PurchaseDate, @TotalAmount,
-                    @Discount, @PaymentMode,@AmountPaid, @Remarks, @CreatedBy, @CreatedDate
-                ); SELECT LAST_INSERT_ID();";
+    InvoiceNumber, VendorInvoiceNumber, SupplierId, PurchaseDate, TotalAmount,
+    Discount, PaymentMode, AmountPaid, Remarks, CreatedBy, CreatedDate
+) VALUES (
+    @InvoiceNumber, @VendorInvoiceNumber, @SupplierId, @PurchaseDate, @TotalAmount,
+    @Discount, @PaymentMode, @AmountPaid, @Remarks, @CreatedBy, @CreatedDate
+); SELECT LAST_INSERT_ID();";
 
                 long masterId;
                 using (var cmdMaster = new MySqlCommand(masterSql, conn, trans))
                 {
                     cmdMaster.Parameters.AddWithValue("@InvoiceNumber", purchase.InvoiceNumber);
+                    cmdMaster.Parameters.AddWithValue("@VendorInvoiceNumber", purchase.VendorInvoiceNumber); // ← new
                     cmdMaster.Parameters.AddWithValue("@SupplierId", purchase.SupplierId);
                     cmdMaster.Parameters.AddWithValue("@PurchaseDate", purchase.PurchaseDate);
                     cmdMaster.Parameters.AddWithValue("@TotalAmount", purchase.TotalAmount);
@@ -217,16 +220,16 @@ namespace MyWPFCRUDApp.Services
                 conn.Open();
 
                 var masterSql = @"SELECT 
-                            m.Id, m.InvoiceNumber, m.SupplierId, m.PurchaseDate, 
-                            m.TotalAmount, m.Discount, m.PaymentMode, m.Remarks,
-                            COALESCE(SUM(p.AmountPaid), 0) AS TotalPaid
-                          FROM MPurchaseMaster m
-                          LEFT JOIN MPayment p ON p.InvoiceNumber = m.InvoiceNumber 
-                                               AND p.SupplierId = m.SupplierId
-                          WHERE m.SupplierId = @SupplierId
-                          GROUP BY m.Id, m.InvoiceNumber, m.SupplierId, m.PurchaseDate,
-                                   m.TotalAmount, m.Discount, m.PaymentMode, m.Remarks
-                          ORDER BY m.PurchaseDate DESC";
+    m.Id, m.InvoiceNumber, m.VendorInvoiceNumber, m.SupplierId, m.PurchaseDate, 
+    m.TotalAmount, m.Discount, m.PaymentMode, m.Remarks,
+    COALESCE(SUM(p.AmountPaid), 0) AS TotalPaid
+  FROM MPurchaseMaster m
+  LEFT JOIN MPayment p ON p.InvoiceNumber = m.InvoiceNumber 
+                       AND p.SupplierId = m.SupplierId
+  WHERE m.SupplierId = @SupplierId
+  GROUP BY m.Id, m.InvoiceNumber, m.VendorInvoiceNumber, m.SupplierId, m.PurchaseDate,
+           m.TotalAmount, m.Discount, m.PaymentMode, m.Remarks
+  ORDER BY m.PurchaseDate DESC";
 
                 using var cmdMaster = new MySqlCommand(masterSql, conn);
                 cmdMaster.Parameters.AddWithValue("@SupplierId", supplierId);
@@ -241,6 +244,8 @@ namespace MyWPFCRUDApp.Services
 
                         var master = new MPurchaseMaster
                         {
+                            VendorInvoiceNumber = reader["VendorInvoiceNumber"] == DBNull.Value
+                          ? "" : reader.GetString("VendorInvoiceNumber"),
                             Id = reader.GetInt64("Id"),
                             InvoiceNumber = reader["InvoiceNumber"] == DBNull.Value ? "" : reader.GetString("InvoiceNumber"),
                             SupplierId = reader.GetInt64("SupplierId"),

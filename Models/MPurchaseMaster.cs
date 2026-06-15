@@ -7,6 +7,7 @@ using System.Text.Json.Serialization;
 using System.Threading.Tasks;
 using WPFCRUDApp.Models;
 using System.ComponentModel;
+using DocumentFormat.OpenXml.Presentation;
 
 namespace MyWPFCRUDApp.Models
 {
@@ -17,7 +18,9 @@ namespace MyWPFCRUDApp.Models
         [NotMapped]
         public decimal TotalPaid { get; set; }
 
-        [NotMapped]
+        
+
+        public string VendorInvoiceNumber { get; set; }
         public decimal RemainingAmount { get; set; }
         public string InvoiceNumber { get; set; } // The Bill No. from the supplier
         public long SupplierId { get; set; }

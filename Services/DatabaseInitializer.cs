@@ -353,7 +353,8 @@ namespace MyWPFCRUDApp.Services
                 {"remove_two_columns_from_tax","ALTER TABLE MTaxCategory DROP COLUMN CategoryName,DROP COLUMN TaxPercentage;"},
 { "Add_IGST_To_MProducts", "ALTER TABLE MProducts ADD COLUMN IGST DOUBLE DEFAULT 0.0 AFTER SGST;" },
                 { "AmtPaid_column_Added_in_PurchaseMasterTable","ALTER TABLE MPurchaseMaster ADD COLUMN AmountPaid DOUBLE NOT NULL DEFAULT 0.0;"},
-                { "retail sectiton added","ALTER TABLE MPurchaseDetail ADD COLUMN RetailPrice DOUBLE NOT NULL DEFAULT 0.0;"}
+                { "retail sectiton added","ALTER TABLE MPurchaseDetail ADD COLUMN RetailPrice DOUBLE NOT NULL DEFAULT 0.0;"},
+                { "purchase_master static column addition","ALTER TABLE MPurchaseMaster ADD VendorInvoiceNumber VARCHAR(10) NULL"}
         
         // Future changes go here:
         // { "Remove_OldColumn", "ALTER TABLE MProducts DROP COLUMN OldColumn;" }
