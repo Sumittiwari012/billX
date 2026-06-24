@@ -300,6 +300,123 @@ namespace MyWPFCRUDApp.Services
 
             return list;
         }
+        public List<MPurchaseMaster> GetFilteredPurchases(
+    long? supplierId = null,
+    string invoiceNumber = null,
+    DateTime? fromDate = null,
+    DateTime? toDate = null)
+        {
+            var list = new List<MPurchaseMaster>();
+            try
+            {
+                using var conn = new MySqlConnection(Con);
+                conn.Open();
+
+                var whereClauses = new List<string>();
+                if (supplierId.HasValue)
+                    whereClauses.Add("m.SupplierId = @SupplierId");
+                if (!string.IsNullOrWhiteSpace(invoiceNumber))
+                    whereClauses.Add("m.InvoiceNumber LIKE @InvoiceNumber");
+                if (fromDate.HasValue)
+                    whereClauses.Add("m.PurchaseDate >= @FromDate");
+                if (toDate.HasValue)
+                    whereClauses.Add("m.PurchaseDate <= @ToDate");
+
+                string whereStr = whereClauses.Any()
+                    ? "WHERE " + string.Join(" AND ", whereClauses)
+                    : string.Empty;
+
+                var masterSql = $@"SELECT 
+            m.Id, m.InvoiceNumber, m.VendorInvoiceNumber, m.SupplierId, 
+            m.PurchaseDate, m.TotalAmount, m.Discount, m.PaymentMode, m.Remarks,
+            s.SupplierName,
+            COALESCE(SUM(p.AmountPaid), 0) AS TotalPaid
+          FROM MPurchaseMaster m
+          LEFT JOIN MPayment p   ON p.InvoiceNumber = m.InvoiceNumber 
+                                 AND p.SupplierId   = m.SupplierId
+          LEFT JOIN MSupplier s  ON s.Id = m.SupplierId
+          {whereStr}
+          GROUP BY m.Id, m.InvoiceNumber, m.VendorInvoiceNumber, m.SupplierId,
+                   m.PurchaseDate, m.TotalAmount, m.Discount, m.PaymentMode, 
+                   m.Remarks, s.SupplierName
+          ORDER BY m.PurchaseDate DESC";
+
+                using var cmdMaster = new MySqlCommand(masterSql, conn);
+                if (supplierId.HasValue)
+                    cmdMaster.Parameters.AddWithValue("@SupplierId", supplierId.Value);
+                if (!string.IsNullOrWhiteSpace(invoiceNumber))
+                    cmdMaster.Parameters.AddWithValue("@InvoiceNumber", $"%{invoiceNumber}%");
+                if (fromDate.HasValue)
+                    cmdMaster.Parameters.AddWithValue("@FromDate", fromDate.Value.Date);
+                if (toDate.HasValue)
+                    cmdMaster.Parameters.AddWithValue("@ToDate", toDate.Value.Date.AddDays(1).AddSeconds(-1));
+
+                var masterIds = new List<(long Id, MPurchaseMaster Master)>();
+                using (var reader = cmdMaster.ExecuteReader())
+                {
+                    while (reader.Read())
+                    {
+                        decimal totalAmount = reader["TotalAmount"] == DBNull.Value ? 0m : reader.GetDecimal("TotalAmount");
+                        decimal totalPaid = reader["TotalPaid"] == DBNull.Value ? 0m : reader.GetDecimal("TotalPaid");
+
+                        var master = new MPurchaseMaster
+                        {
+                            Id = reader.GetInt64("Id"),
+                            InvoiceNumber = reader["InvoiceNumber"] == DBNull.Value ? "" : reader.GetString("InvoiceNumber"),
+                            VendorInvoiceNumber = reader["VendorInvoiceNumber"] == DBNull.Value ? "" : reader.GetString("VendorInvoiceNumber"),
+                            SupplierId = reader.GetInt64("SupplierId"),
+                            SupplierName = reader["SupplierName"] == DBNull.Value ? "" : reader.GetString("SupplierName"),
+                            PurchaseDate = reader["PurchaseDate"] == DBNull.Value ? DateTime.MinValue : reader.GetDateTime("PurchaseDate"),
+                            TotalAmount = totalAmount,
+                            Discount = reader["Discount"] == DBNull.Value ? 0m : reader.GetDecimal("Discount"),
+                            PaymentMode = reader["PaymentMode"] == DBNull.Value ? null : reader.GetString("PaymentMode"),
+                            Remarks = reader["Remarks"] == DBNull.Value ? null : reader.GetString("Remarks"),
+                            TotalPaid = totalPaid,
+                            RemainingAmount = totalAmount - totalPaid
+                        };
+
+                        long masterId = reader.GetInt64("Id");
+                        masterIds.Add((masterId, master));
+                        list.Add(master);
+                    }
+                }
+
+                foreach (var (masterId, master) in masterIds)
+                {
+                    var detailSql = @"SELECT d.ProductId, d.Quantity, d.PurchasePrice,
+                                     d.WholesalePrice, d.MRP, d.RetailPrice, d.AfterTaxation,
+                                     p.ProductName, p.Barcode
+                              FROM MPurchaseDetail d
+                              LEFT JOIN MProducts p ON p.Id = d.ProductId
+                              WHERE d.PurchaseMasterId = @MasterId";
+
+                    using var cmdDetail = new MySqlCommand(detailSql, conn);
+                    cmdDetail.Parameters.AddWithValue("@MasterId", masterId);
+
+                    using var dr = cmdDetail.ExecuteReader();
+                    while (dr.Read())
+                    {
+                        master.Details.Add(new MPurchaseDetail
+                        {
+                            ProductId = dr.GetInt64("ProductId"),
+                            ProductName = dr["ProductName"] == DBNull.Value ? "" : dr.GetString("ProductName"),
+                            Barcode = dr["Barcode"] == DBNull.Value ? "" : dr.GetString("Barcode"),
+                            Quantity = dr.GetDouble("Quantity"),
+                            PurchasePrice = dr.GetDecimal("PurchasePrice"),
+                            WholesalePrice = dr.GetDecimal("WholesalePrice"),
+                            MRP = dr.GetDecimal("MRP"),
+                            Retail = dr["RetailPrice"] == DBNull.Value ? 0m : dr.GetDecimal("RetailPrice"),
+                            AfterTaxation = dr.GetDecimal("AfterTaxation"),
+                        });
+                    }
+                }
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine($"[GetFilteredPurchases] EXCEPTION: {ex.Message}\n{ex.StackTrace}");
+            }
+            return list;
+        }
         public bool UpdatePurchase(long masterId, MPurchaseMaster purchase)
         {
             if (purchase == null || purchase.MPurchaseDetail == null) return false;

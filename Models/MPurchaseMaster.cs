@@ -18,7 +18,8 @@ namespace MyWPFCRUDApp.Models
         [NotMapped]
         public decimal TotalPaid { get; set; }
 
-        
+        [NotMapped]
+        public string SupplierName { get; set; }
 
         public string VendorInvoiceNumber { get; set; }
         public decimal RemainingAmount { get; set; }

@@ -55,19 +55,12 @@ namespace MyWPFCRUDApp.Views
                 vm.RemoveItem(item);
             }
         }
-       
+
         private void HistoryButton_Click(object sender, RoutedEventArgs e)
         {
             if (DataContext is PurchaseViewModel vm)
             {
-                if (vm.SelectedSupplier == null)
-                {
-                    MessageBox.Show("Please select a supplier first to view purchase history.",
-                        "No Supplier", MessageBoxButton.OK, MessageBoxImage.Information);
-                    return;
-                }
-
-                var historyWin = new SupplierHistoryWindow(vm.SupplierHistory, vm)
+                var historyWin = new SupplierHistoryWindow(vm)
                 {
                     Owner = Window.GetWindow(this)
                 };

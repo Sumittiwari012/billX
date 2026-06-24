@@ -35,6 +35,7 @@ namespace MyWPFCRUDApp.ViewModels
         public ICommand LoadHistoryInvoiceCommand { get; }
 
         // ── Collections ────────────────────────────────────────────────────────
+
         public ObservableCollection<MSupplier> Suppliers { get; set; }
 
         private ObservableCollection<MPurchaseMaster> _supplierHistory;
@@ -107,7 +108,7 @@ namespace MyWPFCRUDApp.ViewModels
                         // Load supplier balance
                         SupplierBalance = value.CurrentBalance;
 
-                        LoadSupplierHistory(value.Id);
+                        LoadSupplierHistory();
                         
                     }
                     else
@@ -440,12 +441,24 @@ namespace MyWPFCRUDApp.ViewModels
 
             _editingMasterId = master.Id;
             PurchaseMaster.InvoiceNumber = master.InvoiceNumber;
-            PurchaseMaster.VendorInvoiceNumber = master.VendorInvoiceNumber; // ← new
+            PurchaseMaster.VendorInvoiceNumber = master.VendorInvoiceNumber;
             PurchaseMaster.PurchaseDate = master.PurchaseDate;
             PurchaseMaster.Discount = master.Discount;
             Discount = master.Discount;
+            VendorInvoiceNumber = master.VendorInvoiceNumber ?? string.Empty;
 
-            VendorInvoiceNumber = master.VendorInvoiceNumber ?? string.Empty;  // ← update VM property
+            // ── Set supplier from the invoice's SupplierId ────────────────────────
+            var matchedSupplier = Suppliers.FirstOrDefault(s => s.Id == master.SupplierId);
+            if (matchedSupplier != null)
+            {
+                // Set backing field directly to avoid triggering ResetInvoice in the setter
+                _selectedSupplier = matchedSupplier;
+                PurchaseMaster.SupplierId = matchedSupplier.Id;
+                SupplierBalance = _supplierService.RecalculateAndUpdateSupplierBalance(matchedSupplier.Id);
+                OnPropertyChanged(nameof(SelectedSupplier));
+                OnPropertyChanged(nameof(ScanHintText));
+                OnPropertyChanged(nameof(ScanHintVisibility));
+            }
 
             OnPropertyChanged(nameof(PurchaseMaster));
 
@@ -538,15 +551,32 @@ namespace MyWPFCRUDApp.ViewModels
                     null, System.Globalization.DateTimeStyles.None, out DateTime d))
                 PurchaseMaster.PurchaseDate = d;
 
-            long existingCount = _productService.GetProductCount();
+            // ── Determine next barcode by reading the LAST product's barcode and
+            //    incrementing its numeric suffix — not by counting total products,
+            //    which breaks if any product was ever deleted or barcodes don't
+            //    start at 1. e.g. last barcode "M10" → next items get M11, M12, ...
+            string lastBarcode = _productService.GetLastBarcode();
+            string prefix = "M";
+            long nextNumber = 1;
+
+            if (!string.IsNullOrWhiteSpace(lastBarcode))
+            {
+                var match = System.Text.RegularExpressions.Regex.Match(lastBarcode, @"^(.*?)(\d+)$");
+                if (match.Success)
+                {
+                    prefix = match.Groups[1].Value;
+                    nextNumber = long.Parse(match.Groups[2].Value) + 1;
+                }
+            }
+
             int added = 0;
 
             foreach (var item in approved.Items)
             {
-                double qty   = item.Quantity > 0 ? item.Quantity : 1;
-                decimal price  = item.PurchasePrice;
+                double qty = item.Quantity > 0 ? item.Quantity : 1;
+                decimal price = item.PurchasePrice;
                 decimal netAmt = (decimal)qty * price;
-                string barcode = $"M{existingCount + added + 1}";
+                string barcode = $"{prefix}{nextNumber + added}";
 
                 PurchaseItems.Add(new MPurchaseDetail
                 {
@@ -557,7 +587,7 @@ namespace MyWPFCRUDApp.ViewModels
                     PurchasePrice = price,
                     WholesalePrice = item.WholesalePrice,
                     MRP = item.MRP,
-                    Retail = item.RetailPrice,   // ← add this
+                    Retail = item.RetailPrice,
                     AfterTaxation = netAmt
                 });
                 added++;
@@ -695,23 +725,20 @@ namespace MyWPFCRUDApp.ViewModels
             }
 
             Console.WriteLine($"[ToggleHistory] Loading history for SupplierId={SelectedSupplier.Id}");
-            LoadSupplierHistory(SelectedSupplier.Id);
+            LoadSupplierHistory();
 
             IsHistoryOpen = !IsHistoryOpen;
             Console.WriteLine($"[ToggleHistory] IsHistoryOpen is now {IsHistoryOpen}. " +
                               $"SupplierHistory count={SupplierHistory?.Count ?? -1}");
         }
 
-        private void LoadSupplierHistory(long supplierId)
+        private void LoadSupplierHistory()
         {
-            Console.WriteLine($"[LoadSupplierHistory] Fetching for SupplierId={supplierId}");
             try
             {
-                var records = _purchaseService.GetPurchasesBySupplier(supplierId);
-                Console.WriteLine($"[LoadSupplierHistory] Got {records.Count} records from DB.");
+                var records = _purchaseService.GetFilteredPurchases();
                 SupplierHistory = new ObservableCollection<MPurchaseMaster>(
                     records.OrderByDescending(r => r.PurchaseDate));
-                Console.WriteLine($"[LoadSupplierHistory] SupplierHistory set with {SupplierHistory.Count} items.");
             }
             catch (Exception ex)
             {

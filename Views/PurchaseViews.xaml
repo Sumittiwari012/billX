@@ -160,7 +160,7 @@
 
                         <DataGridTextColumn Header="Barcode"
                                             Binding="{Binding Barcode}"
-                                            Width="120" IsReadOnly="True">
+                                            Width="120" >
                             <DataGridTextColumn.ElementStyle>
                                 <Style TargetType="TextBlock">
                                     <Setter Property="FontFamily" Value="Consolas"/>

@@ -486,5 +486,16 @@ namespace MyWPFCRUDApp.Services
                 return (false, 0, ex.Message);
             }
         }
+        public string? GetLastBarcode()
+        {
+            using var conn = new MySqlConnection(Con);
+            conn.Open();
+
+            using var cmd = new MySqlCommand(
+                "SELECT Barcode FROM MProducts ORDER BY Id DESC LIMIT 1", conn);
+
+            var result = cmd.ExecuteScalar();
+            return (result == null || result == DBNull.Value) ? null : result.ToString();
+        }
     }
 }

@@ -339,8 +339,21 @@ namespace MyWPFCRUDApp.ViewModels
         {
             try
             {
-                long next = _productService.GetProductCount() + 1;
-                MProduct.Barcode = $"M{next}";
+                string lastBarcode = _productService.GetLastBarcode();
+                string prefix = "M";
+                long nextNumber = 1;
+
+                if (!string.IsNullOrWhiteSpace(lastBarcode))
+                {
+                    var match = System.Text.RegularExpressions.Regex.Match(lastBarcode, @"^(.*?)(\d+)$");
+                    if (match.Success)
+                    {
+                        prefix = match.Groups[1].Value;
+                        nextNumber = long.Parse(match.Groups[2].Value) + 1;
+                    }
+                }
+                
+                MProduct.Barcode = $"{prefix}{nextNumber}";
                 // Notify the UI that MProduct changed so the TextBox refreshes
                 OnPropertyChanged(nameof(MProduct));
             }
