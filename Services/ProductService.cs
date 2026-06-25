@@ -30,6 +30,9 @@ namespace MyWPFCRUDApp.Services
             public long UnitId { get; set; }
             public string UnitName { get; set; }
 
+            // Stock
+            public long Quantity { get; set; }   // ← NEW: from ProductQuantity table
+
             // Pricing
             public decimal PurchasePrice { get; set; }
             public decimal RetailSalePrice { get; set; }
@@ -82,14 +85,16 @@ namespace MyWPFCRUDApp.Services
             using var conn = new MySqlConnection(Con);
             conn.Open();
             var sql = @"SELECT p.*, 
-                    c.CategoryName, 
-                    sc.SubCategoryName, 
-                    u.UnitName
-                FROM MProducts p
-                LEFT JOIN MCategory c    ON p.CategoryId    = c.Id
-                LEFT JOIN MSubCategory sc ON p.SubCategoryId = sc.Id
-                LEFT JOIN MUnit u         ON p.UnitId        = u.Id
-                ORDER BY p.createdDate";
+            c.CategoryName, 
+            sc.SubCategoryName, 
+            u.UnitName,
+            pq.Quantity
+        FROM MProducts p
+        LEFT JOIN MCategory c        ON p.CategoryId    = c.Id
+        LEFT JOIN MSubCategory sc    ON p.SubCategoryId = sc.Id
+        LEFT JOIN MUnit u            ON p.UnitId        = u.Id
+        LEFT JOIN ProductQuantity pq ON p.Barcode        = pq.Barcode
+        ORDER BY p.createdDate";
             var cmd = new MySqlCommand(sql, conn);
             using var reader = cmd.ExecuteReader();
             while (reader.Read())
@@ -106,6 +111,7 @@ namespace MyWPFCRUDApp.Services
                     SubCategoryName = reader["SubCategoryName"] == DBNull.Value ? "N/A" : reader.GetString("SubCategoryName"),
                     UnitId = reader.GetInt64("UnitId"),
                     UnitName = reader["UnitName"] == DBNull.Value ? "N/A" : reader.GetString("UnitName"),
+                    Quantity = reader["Quantity"] == DBNull.Value ? 0 : Convert.ToInt64(reader["Quantity"]),
                     PurchasePrice = reader.GetDecimal("PurchasePrice"),
                     RetailSalePrice = reader.GetDecimal("RetailSalePrice"),
                     WholesalePrice = reader.GetDecimal("WholesalePrice"),

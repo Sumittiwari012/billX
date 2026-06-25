@@ -104,12 +104,28 @@ namespace MyWPFCRUDApp.Services
                         cmdProd.Parameters.AddWithValue("@ProductId", detail.ProductId);
                         cmdProd.ExecuteNonQuery();
                     }
+                    if (!string.IsNullOrWhiteSpace(detail.Barcode))
+                    {
+                        var increaseStockSql = @"UPDATE ProductQuantity SET
+        Quantity     = Quantity + @Qty,
+        ModifiedBy   = 'WPFUser',
+        ModifiedDate = @Now
+        WHERE Barcode = @Barcode";
 
-                   
-                   
+                        using (var cmdQty = new MySqlCommand(increaseStockSql, conn, trans))
+                        {
+                            cmdQty.Parameters.AddWithValue("@Qty", detail.Quantity);
+                            cmdQty.Parameters.AddWithValue("@Now", DateTime.Now);
+                            cmdQty.Parameters.AddWithValue("@Barcode", detail.Barcode);
+                            cmdQty.ExecuteNonQuery();
+                        }
+                    }
+
+
                 }
 
                 trans.Commit();
+
                 return true;
             }
             catch (Exception ex)
@@ -464,7 +480,7 @@ namespace MyWPFCRUDApp.Services
                     cmd.ExecuteNonQuery();
                 }
 
-                // 3. Insert updated lines + update product prices
+                // 3. Insert updated lines + update product prices + add to stock
                 foreach (var detail in purchase.MPurchaseDetail)
                 {
                     if (detail.ProductId == 0)
@@ -511,6 +527,26 @@ namespace MyWPFCRUDApp.Services
                         cmd.Parameters.AddWithValue("@ProductId", detail.ProductId);
                         cmd.ExecuteNonQuery();
                     }
+
+                    // ── Add purchased quantity onto existing stock ─────────────────────
+                    // Looks up the row by Barcode and adds the new quantity to whatever
+                    // is already there — same pattern as AddPurchase, no reversal.
+                    if (!string.IsNullOrWhiteSpace(detail.Barcode))
+                    {
+                        var increaseStockSql = @"UPDATE ProductQuantity SET
+                    Quantity     = Quantity + @Qty,
+                    ModifiedBy   = 'WPFUser',
+                    ModifiedDate = @Now
+                    WHERE Barcode = @Barcode";
+
+                        using (var cmdQty = new MySqlCommand(increaseStockSql, conn, trans))
+                        {
+                            cmdQty.Parameters.AddWithValue("@Qty", detail.Quantity);
+                            cmdQty.Parameters.AddWithValue("@Now", DateTime.Now);
+                            cmdQty.Parameters.AddWithValue("@Barcode", detail.Barcode);
+                            cmdQty.ExecuteNonQuery();
+                        }
+                    }
                 }
 
                 trans.Commit();
@@ -521,6 +557,84 @@ namespace MyWPFCRUDApp.Services
                 trans.Rollback();
                 Console.WriteLine($"[UpdatePurchase] EXCEPTION: {ex.Message}\n{ex.StackTrace}");
                 throw;
+            }
+        }
+        // ─── DELETE PURCHASE ───────────────────────────────────────────────────
+        /// <summary>
+        /// Deletes a purchase invoice and its detail lines.
+        /// For every distinct product that appeared in this invoice's details,
+        /// looks up its Barcode and sets ProductQuantity.Quantity to 0.
+        /// </summary>
+        public bool DeletePurchase(long masterId)
+        {
+            using var conn = new MySqlConnection(Con);
+            conn.Open();
+            using var trans = conn.BeginTransaction();
+            try
+            {
+                // 1. Get distinct ProductIds referenced by this invoice's detail lines
+                var productIds = new List<long>();
+                using (var cmd = new MySqlCommand(
+                    "SELECT DISTINCT ProductId FROM MPurchaseDetail WHERE PurchaseMasterId = @MasterId",
+                    conn, trans))
+                {
+                    cmd.Parameters.AddWithValue("@MasterId", masterId);
+                    using var rdr = cmd.ExecuteReader();
+                    while (rdr.Read())
+                        productIds.Add(rdr.GetInt64("ProductId"));
+                }
+
+                // 2. Resolve their barcodes from MProducts
+                var barcodes = new List<string>();
+                foreach (var productId in productIds)
+                {
+                    using var cmd = new MySqlCommand(
+                        "SELECT Barcode FROM MProducts WHERE Id = @ProductId", conn, trans);
+                    cmd.Parameters.AddWithValue("@ProductId", productId);
+                    var result = cmd.ExecuteScalar();
+                    if (result != null && result != DBNull.Value)
+                        barcodes.Add(result.ToString());
+                }
+
+                // 3. Delete the detail lines
+                using (var cmd = new MySqlCommand(
+                    "DELETE FROM MPurchaseDetail WHERE PurchaseMasterId = @MasterId", conn, trans))
+                {
+                    cmd.Parameters.AddWithValue("@MasterId", masterId);
+                    cmd.ExecuteNonQuery();
+                }
+
+                // 4. Delete the master row
+                int rowsDeleted;
+                using (var cmd = new MySqlCommand(
+                    "DELETE FROM MPurchaseMaster WHERE Id = @MasterId", conn, trans))
+                {
+                    cmd.Parameters.AddWithValue("@MasterId", masterId);
+                    rowsDeleted = cmd.ExecuteNonQuery();
+                }
+
+                // 5. Set quantity to 0 for every barcode that was in this invoice
+                foreach (var barcode in barcodes)
+                {
+                    using var cmd = new MySqlCommand(@"
+                UPDATE ProductQuantity SET
+                    Quantity     = 0,
+                    ModifiedBy   = 'WPFUser',
+                    ModifiedDate = @Now
+                WHERE Barcode = @Barcode", conn, trans);
+                    cmd.Parameters.AddWithValue("@Now", DateTime.Now);
+                    cmd.Parameters.AddWithValue("@Barcode", barcode);
+                    cmd.ExecuteNonQuery();
+                }
+
+                trans.Commit();
+                return rowsDeleted > 0;
+            }
+            catch (Exception ex)
+            {
+                trans.Rollback();
+                Console.WriteLine($"[DeletePurchase] EXCEPTION: {ex.Message}\n{ex.StackTrace}");
+                return false;
             }
         }
     }

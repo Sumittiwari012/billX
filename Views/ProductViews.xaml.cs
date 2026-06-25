@@ -22,35 +22,31 @@ namespace MyWPFCRUDApp.Views
         // ── Column visibility ──────────────────────────────────────────────────
         private void BindColumnVisibility()
         {
-            // Map column keys to named DataGrid columns
             var map = new Dictionary<string, DataGridColumn>
-            {
-                { "Barcode",         ColBarcode },
-                { "ProductCode",     ColCode },
-                { "ProductName",     ColName },
-                { "CategoryName",    ColCategory },
-                { "SubCategoryName", ColSubCategory },
-                { "PurchasePrice",   ColPurchase },
-                { "RetailSalePrice", ColSale },
-                { "MRP",             ColMRP },
-                { "CGST",            ColCGST },
-                { "SGST",            ColSGST },
-                { "IGST",            ColIGST },
-                { "UnitName",        ColUnit },
-                { "Size",            ColSize },
-                { "Colour",          ColColour },
-                { "Rack",            ColRack },
-                { "HSNCode",         ColHSN },
-            };
-
+    {
+        { "Barcode",         ColBarcode },
+        { "ProductCode",     ColCode },
+        { "ProductName",     ColName },
+        { "CategoryName",    ColCategory },
+        { "SubCategoryName", ColSubCategory },
+        { "Quantity",        ColQuantity },   // ← NEW
+        { "PurchasePrice",   ColPurchase },
+        { "RetailSalePrice", ColSale },
+        { "MRP",             ColMRP },
+        { "CGST",            ColCGST },
+        { "SGST",            ColSGST },
+        { "IGST",            ColIGST },
+        { "UnitName",        ColUnit },
+        { "Size",            ColSize },
+        { "Colour",          ColColour },
+        { "Rack",            ColRack },
+        { "HSNCode",         ColHSN },
+    };
             foreach (var col in _vm.ProductColumns)
             {
                 if (map.TryGetValue(col.Key, out var dgCol))
                 {
-                    // Initial sync
                     dgCol.Visibility = col.IsVisible ? Visibility.Visible : Visibility.Collapsed;
-
-                    // Subscribe to future changes
                     col.PropertyChanged += (s, e) =>
                     {
                         if (e.PropertyName == nameof(ProductColumnOption.IsVisible))

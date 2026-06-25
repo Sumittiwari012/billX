@@ -83,23 +83,24 @@ namespace MyWPFCRUDApp.ViewModels
         {
             var cols = new[]
             {
-                ("Barcode",         "Barcode"),
-                ("ProductCode",     "Product Code"),
-                ("ProductName",     "Product Name"),
-                ("CategoryName",    "Category"),
-                ("SubCategoryName", "SubCategory"),
-                ("PurchasePrice",   "Purchase"),
-                ("RetailSalePrice", "Sale"),
-                ("MRP",             "MRP"),
-                ("CGST",            "CGST"),
-                ("SGST",            "SGST"),
-                ("IGST",            "IGST"),
-                ("UnitName",        "Unit"),
-                ("Size",            "Size"),
-                ("Colour",          "Colour"),
-                ("Rack",            "Rack"),
-                ("HSNCode",         "HSN"),
-            };
+        ("Barcode",         "Barcode"),
+        ("ProductCode",     "Product Code"),
+        ("ProductName",     "Product Name"),
+        ("CategoryName",    "Category"),
+        ("SubCategoryName", "SubCategory"),
+        ("Quantity",        "Quantity"),     // ← NEW
+        ("PurchasePrice",   "Purchase"),
+        ("RetailSalePrice", "Sale"),
+        ("MRP",             "MRP"),
+        ("CGST",            "CGST"),
+        ("SGST",            "SGST"),
+        ("IGST",            "IGST"),
+        ("UnitName",        "Unit"),
+        ("Size",            "Size"),
+        ("Colour",          "Colour"),
+        ("Rack",            "Rack"),
+        ("HSNCode",         "HSN"),
+    };
 
             foreach (var (key, header) in cols)
                 ProductColumns.Add(new ProductColumnOption { Key = key, Header = header, IsVisible = true });

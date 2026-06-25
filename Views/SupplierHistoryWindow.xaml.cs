@@ -7,7 +7,7 @@ using System.Collections.ObjectModel;
 using System.Linq;
 using System.Windows;
 using WPFCRUDApp.Models;
-
+using System.Windows.Controls;
 namespace MyWPFCRUDApp.Views
 {
     public partial class SupplierHistoryWindow : Window
@@ -38,7 +38,33 @@ namespace MyWPFCRUDApp.Views
 
             LoadHistory();
         }
+        private void DeleteInvoice_Click(object sender, RoutedEventArgs e)
+        {
+            if (sender is not Button btn || btn.DataContext is not MPurchaseMaster master)
+                return;
 
+            var result = MessageBox.Show(
+                $"Delete invoice '{master.InvoiceNumber}'?\n\n" +
+                "This will also reset the stock quantity of every product in this " +
+                "invoice to 0. This cannot be undone.",
+                "Confirm Delete",
+                MessageBoxButton.YesNo,
+                MessageBoxImage.Warning);
+
+            if (result != MessageBoxResult.Yes) return;
+
+            if (_purchaseService.DeletePurchase(master.Id))
+            {
+                MessageBox.Show("Invoice deleted and stock reset.", "Deleted",
+                    MessageBoxButton.OK, MessageBoxImage.Information);
+                LoadHistory();
+            }
+            else
+            {
+                MessageBox.Show("Failed to delete invoice.", "Error",
+                    MessageBoxButton.OK, MessageBoxImage.Error);
+            }
+        }
         private void LoadHistory()
         {
             string supplierIdText = SupplierIdBox.Text.Trim();

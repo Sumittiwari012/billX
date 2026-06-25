@@ -202,6 +202,7 @@
                 <DataGridTextColumn x:Name="ColName"        Header="Product Name" Binding="{Binding ProductName}"      Width="200"/>
                 <DataGridTextColumn x:Name="ColCategory"    Header="Category"     Binding="{Binding CategoryName}"     Width="150"/>
                 <DataGridTextColumn x:Name="ColSubCategory" Header="SubCategory"  Binding="{Binding SubCategoryName}"  Width="150"/>
+                <DataGridTextColumn x:Name="ColQuantity"    Header="Quantity"     Binding="{Binding Quantity}"         Width="90"/>
                 <DataGridTextColumn x:Name="ColPurchase"    Header="Purchase"     Binding="{Binding PurchasePrice}"    Width="100"/>
                 <DataGridTextColumn x:Name="ColSale"        Header="Sale"         Binding="{Binding RetailSalePrice}"  Width="100"/>
                 <DataGridTextColumn x:Name="ColMRP"         Header="MRP"          Binding="{Binding MRP}"              Width="100"/>
