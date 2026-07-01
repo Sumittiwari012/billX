@@ -5,13 +5,15 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
+using System.ComponentModel;
+using System.Runtime.CompilerServices;
 
 namespace MyWPFCRUDApp.Services
 {
     public class ProductService
     {
         private string Con => DatabaseHelper.ConnectionString;
-        public class ProductDisplayModel
+        public class ProductDisplayModel : INotifyPropertyChanged
         {
             public long Id { get; set; }
             public string? ProductCode { get; set; }
@@ -31,7 +33,7 @@ namespace MyWPFCRUDApp.Services
             public string UnitName { get; set; }
 
             // Stock
-            public long Quantity { get; set; }   // ← NEW: from ProductQuantity table
+            public long Quantity { get; set; }
 
             // Pricing
             public decimal PurchasePrice { get; set; }
@@ -61,6 +63,25 @@ namespace MyWPFCRUDApp.Services
             public string? Colour { get; set; }
             public string? IMEI1 { get; set; }
             public string? IMEI2 { get; set; }
+
+            // ── Multi-select checkbox state ──────────────────────────────────────
+            private bool _isSelected;
+            public bool IsSelected
+            {
+                get => _isSelected;
+                set
+                {
+                    if (_isSelected != value)
+                    {
+                        _isSelected = value;
+                        OnPropertyChanged();
+                    }
+                }
+            }
+
+            public event PropertyChangedEventHandler? PropertyChanged;
+            protected void OnPropertyChanged([CallerMemberName] string? propertyName = null)
+                => PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(propertyName));
         }
 
         // ─── GET PRODUCT COUNT ─────────────────────────────────────────────────

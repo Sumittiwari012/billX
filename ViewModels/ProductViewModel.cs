@@ -26,6 +26,13 @@ namespace MyWPFCRUDApp.ViewModels
         public ICommand ExportExcelCommand => new RelayCommand(_ => ExportToExcel());
         public ICommand DeleteSelectedCommand => new RelayCommand(_ => DeleteSelected(), _ => CheckedProducts.Any());
         public ICommand ClearSelectionCommand => new RelayCommand(_ => ClearSelection());
+        // Master, unfiltered list — the source of truth for the live barcode filter.
+        // Products is always derived from this, never edited directly.
+        private List<ProductDisplayModel> _allProducts = new();
+
+        // The barcode auto-generated for the next new product. Restored into
+        // BarcodeInput whenever the user clears the textbox entirely.
+        private string _lastGeneratedBarcode = string.Empty;
 
         // ─── Services ──────────────────────────────────────────────────────────
         private readonly ProductService _productService;
@@ -62,6 +69,7 @@ namespace MyWPFCRUDApp.ViewModels
             _checkedProducts.Count > 1 ? Visibility.Visible : Visibility.Collapsed;
 
         // "Select All" header checkbox support
+        // "Select All" header checkbox support
         private bool? _allSelected = false;
         public bool? AllSelected
         {
@@ -70,10 +78,56 @@ namespace MyWPFCRUDApp.ViewModels
             {
                 if (SetProperty(ref _allSelected, value))
                 {
-                    // Handled by code-behind DataGrid selection; this property
-                    // triggers a SelectAll / UnselectAll via the DataGrid binding.
+                    bool select = value.GetValueOrDefault();
+                    if (Products != null)
+                    {
+                        foreach (var p in Products)
+                            p.IsSelected = select;
+                    }
                 }
             }
+        }
+        // ─── Barcode entry — drives the live filter as the user types ─────────
+        private string _barcodeInput = string.Empty;
+        public string BarcodeInput
+        {
+            get => _barcodeInput;
+            set
+            {
+                if (SetProperty(ref _barcodeInput, value))
+                {
+                    MProduct.Barcode = value;
+                    FilterProductsByBarcode(value);
+                }
+            }
+        }
+
+        private void FilterProductsByBarcode(string barcodeText)
+        {
+            if (_allProducts == null) return;
+
+            if (string.IsNullOrWhiteSpace(barcodeText))
+            {
+                // Box was cleared — show every product, and bring back whatever
+                // barcode was waiting before the user started typing.
+                Products = new ObservableCollection<ProductDisplayModel>(_allProducts);
+
+                if (!string.IsNullOrWhiteSpace(_lastGeneratedBarcode))
+                    BarcodeInput = _lastGeneratedBarcode;   // re-enters setter once; non-empty, so no further recursion
+                return;
+            }
+
+            var matches = _allProducts
+                .Where(p => !string.IsNullOrEmpty(p.Barcode) &&
+                            p.Barcode.IndexOf(barcodeText, StringComparison.OrdinalIgnoreCase) >= 0)
+                .ToList();
+
+            // Found something → narrow the grid. Found nothing → this is a brand
+            // new barcode, so show everything as-is and let the user fill in the
+            // rest of the form to add it as a new product.
+            Products = matches.Any()
+                ? new ObservableCollection<ProductDisplayModel>(matches)
+                : new ObservableCollection<ProductDisplayModel>(_allProducts);
         }
 
         // ─── Column Visibility ─────────────────────────────────────────────────
@@ -156,6 +210,12 @@ namespace MyWPFCRUDApp.ViewModels
                         IMEI1 = value.IMEI1,
                         IMEI2 = value.IMEI2,
                     };
+
+                    // Reflect the barcode in the textbox WITHOUT re-triggering the
+                    // live filter — otherwise clicking a row would narrow the grid
+                    // down to just that single product.
+                    _barcodeInput = value.Barcode ?? string.Empty;
+                    OnPropertyChanged(nameof(BarcodeInput));
 
                     SelectedCategory = Categories.FirstOrDefault(c => c.Id == value.CategoryId);
                     SelectedSubCategory = FilteredSubCategories.FirstOrDefault(s => s.Id == value.SubCategoryId);
@@ -324,10 +384,33 @@ namespace MyWPFCRUDApp.ViewModels
         }
 
         // ─── LoadData ──────────────────────────────────────────────────────────
+        // ─── LoadData ──────────────────────────────────────────────────────────
         public void LoadData()
         {
-            var data = _productService.GetProductDisplay();
-            Products = new ObservableCollection<ProductDisplayModel>(data);
+            if (_allProducts != null)
+            {
+                foreach (var p in _allProducts)
+                    p.PropertyChanged -= Product_PropertyChanged;
+            }
+
+            _allProducts = _productService.GetProductDisplay();
+            Products = new ObservableCollection<ProductDisplayModel>(_allProducts);
+
+            foreach (var p in _allProducts)
+                p.PropertyChanged += Product_PropertyChanged;
+
+            _checkedProducts.Clear();
+            OnPropertyChanged(nameof(SelectedCountText));
+            OnPropertyChanged(nameof(MultiSelectBarVisibility));
+        }
+        // ─── Selection tracking — driven by each row's checkbox ────────────────
+        private void Product_PropertyChanged(object? sender, System.ComponentModel.PropertyChangedEventArgs e)
+        {
+            if (e.PropertyName != nameof(ProductDisplayModel.IsSelected)) return;
+
+            _checkedProducts = _allProducts.Where(p => p.IsSelected).ToList();
+            OnPropertyChanged(nameof(SelectedCountText));
+            OnPropertyChanged(nameof(MultiSelectBarVisibility));
         }
 
         // ─── GenerateNextBarcode ────────────────────────────────────────────────
@@ -353,10 +436,10 @@ namespace MyWPFCRUDApp.ViewModels
                         nextNumber = long.Parse(match.Groups[2].Value) + 1;
                     }
                 }
-                
-                MProduct.Barcode = $"{prefix}{nextNumber}";
-                // Notify the UI that MProduct changed so the TextBox refreshes
-                OnPropertyChanged(nameof(MProduct));
+
+                string generated = $"{prefix}{nextNumber}";
+                _lastGeneratedBarcode = generated;
+                BarcodeInput = generated;   // updates MProduct.Barcode + re-runs the filter (harmless: it won't match anything)
             }
             catch { /* DB unavailable – leave blank */ }
         }
@@ -387,13 +470,39 @@ namespace MyWPFCRUDApp.ViewModels
         }
 
         // ─── Delete single ─────────────────────────────────────────────────────
+        // ─── Delete (single OR multiple, depending on checkbox state) ──────────
         private void Delete()
         {
-            var result = MessageBox.Show(
+            // If any rows are checked via the checkbox column, treat this as a
+            // bulk delete and ignore whichever single row happens to be selected.
+            if (_checkedProducts.Any())
+            {
+                var result = MessageBox.Show(
+                    $"Delete {_checkedProducts.Count} selected product(s)? This cannot be undone.",
+                    "Confirm Bulk Delete", MessageBoxButton.YesNo, MessageBoxImage.Warning);
+
+                if (result != MessageBoxResult.Yes) return;
+
+                int deleted = 0;
+                foreach (var p in _checkedProducts.ToList())
+                {
+                    if (_productService.DeleteProduct(p.Id)) deleted++;
+                }
+
+                MessageBox.Show($"{deleted} product(s) deleted.");
+                LoadData();   // also clears _checkedProducts internally
+                Reset();
+                return;
+            }
+
+            // No checkboxes ticked — fall back to single-row delete
+            if (SelectedProduct == null) return;
+
+            var singleResult = MessageBox.Show(
                 "Are you sure you want to delete this product?",
                 "Confirm Delete", MessageBoxButton.YesNo);
 
-            if (result == MessageBoxResult.Yes)
+            if (singleResult == MessageBoxResult.Yes)
             {
                 if (_productService.DeleteProduct(SelectedProduct.Id))
                 { LoadData(); Reset(); }

@@ -3,6 +3,26 @@
   "WorkspaceRootPath": "E:\\Mohua\u0027s_fashion\\MyWPFCRUDApp\\",
   "Documents": [
     {
+      "AbsoluteMoniker": "D:0:0:{63FD5C72-1F5C-48F0-8CE4-22CDA6BF3658}|MyWPFCRUDApp.csproj|e:\\mohua\u0027s_fashion\\mywpfcrudapp\\views\\productviews.xaml||{F11ACC28-31D1-4C80-A34B-F4E09D3D753C}",
+      "RelativeMoniker": "D:0:0:{63FD5C72-1F5C-48F0-8CE4-22CDA6BF3658}|MyWPFCRUDApp.csproj|solutionrelative:views\\productviews.xaml||{F11ACC28-31D1-4C80-A34B-F4E09D3D753C}"
+    },
+    {
+      "AbsoluteMoniker": "D:0:0:{63FD5C72-1F5C-48F0-8CE4-22CDA6BF3658}|MyWPFCRUDApp.csproj|e:\\mohua\u0027s_fashion\\mywpfcrudapp\\viewmodels\\productviewmodel.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}",
+      "RelativeMoniker": "D:0:0:{63FD5C72-1F5C-48F0-8CE4-22CDA6BF3658}|MyWPFCRUDApp.csproj|solutionrelative:viewmodels\\productviewmodel.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}"
+    },
+    {
+      "AbsoluteMoniker": "D:0:0:{63FD5C72-1F5C-48F0-8CE4-22CDA6BF3658}|MyWPFCRUDApp.csproj|e:\\mohua\u0027s_fashion\\mywpfcrudapp\\services\\productservice.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}",
+      "RelativeMoniker": "D:0:0:{63FD5C72-1F5C-48F0-8CE4-22CDA6BF3658}|MyWPFCRUDApp.csproj|solutionrelative:services\\productservice.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}"
+    },
+    {
+      "AbsoluteMoniker": "D:0:0:{63FD5C72-1F5C-48F0-8CE4-22CDA6BF3658}|MyWPFCRUDApp.csproj|e:\\mohua\u0027s_fashion\\mywpfcrudapp\\views\\productviews.xaml.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}",
+      "RelativeMoniker": "D:0:0:{63FD5C72-1F5C-48F0-8CE4-22CDA6BF3658}|MyWPFCRUDApp.csproj|solutionrelative:views\\productviews.xaml.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}"
+    },
+    {
+      "AbsoluteMoniker": "D:0:0:{63FD5C72-1F5C-48F0-8CE4-22CDA6BF3658}|MyWPFCRUDApp.csproj|e:\\mohua\u0027s_fashion\\mywpfcrudapp\\mywpfcrudapp.csproj||{FA3CD31E-987B-443A-9B81-186104E8DAC1}|",
+      "RelativeMoniker": "D:0:0:{63FD5C72-1F5C-48F0-8CE4-22CDA6BF3658}|MyWPFCRUDApp.csproj|solutionrelative:mywpfcrudapp.csproj||{FA3CD31E-987B-443A-9B81-186104E8DAC1}|"
+    },
+    {
       "AbsoluteMoniker": "D:0:0:{63FD5C72-1F5C-48F0-8CE4-22CDA6BF3658}|MyWPFCRUDApp.csproj|e:\\mohua\u0027s_fashion\\mywpfcrudapp\\views\\supplierhistorywindow.xaml.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}",
       "RelativeMoniker": "D:0:0:{63FD5C72-1F5C-48F0-8CE4-22CDA6BF3658}|MyWPFCRUDApp.csproj|solutionrelative:views\\supplierhistorywindow.xaml.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}"
     },
@@ -19,32 +39,12 @@
       "RelativeMoniker": "D:0:0:{63FD5C72-1F5C-48F0-8CE4-22CDA6BF3658}|MyWPFCRUDApp.csproj|solutionrelative:viewmodels\\purchaseviewmodel.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}"
     },
     {
-      "AbsoluteMoniker": "D:0:0:{63FD5C72-1F5C-48F0-8CE4-22CDA6BF3658}|MyWPFCRUDApp.csproj|e:\\mohua\u0027s_fashion\\mywpfcrudapp\\viewmodels\\productviewmodel.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}",
-      "RelativeMoniker": "D:0:0:{63FD5C72-1F5C-48F0-8CE4-22CDA6BF3658}|MyWPFCRUDApp.csproj|solutionrelative:viewmodels\\productviewmodel.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}"
-    },
-    {
-      "AbsoluteMoniker": "D:0:0:{63FD5C72-1F5C-48F0-8CE4-22CDA6BF3658}|MyWPFCRUDApp.csproj|e:\\mohua\u0027s_fashion\\mywpfcrudapp\\services\\productservice.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}",
-      "RelativeMoniker": "D:0:0:{63FD5C72-1F5C-48F0-8CE4-22CDA6BF3658}|MyWPFCRUDApp.csproj|solutionrelative:services\\productservice.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}"
-    },
-    {
-      "AbsoluteMoniker": "D:0:0:{63FD5C72-1F5C-48F0-8CE4-22CDA6BF3658}|MyWPFCRUDApp.csproj|e:\\mohua\u0027s_fashion\\mywpfcrudapp\\views\\productviews.xaml.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}",
-      "RelativeMoniker": "D:0:0:{63FD5C72-1F5C-48F0-8CE4-22CDA6BF3658}|MyWPFCRUDApp.csproj|solutionrelative:views\\productviews.xaml.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}"
-    },
-    {
-      "AbsoluteMoniker": "D:0:0:{63FD5C72-1F5C-48F0-8CE4-22CDA6BF3658}|MyWPFCRUDApp.csproj|e:\\mohua\u0027s_fashion\\mywpfcrudapp\\views\\productviews.xaml||{F11ACC28-31D1-4C80-A34B-F4E09D3D753C}",
-      "RelativeMoniker": "D:0:0:{63FD5C72-1F5C-48F0-8CE4-22CDA6BF3658}|MyWPFCRUDApp.csproj|solutionrelative:views\\productviews.xaml||{F11ACC28-31D1-4C80-A34B-F4E09D3D753C}"
-    },
-    {
       "AbsoluteMoniker": "D:0:0:{63FD5C72-1F5C-48F0-8CE4-22CDA6BF3658}|MyWPFCRUDApp.csproj|e:\\mohua\u0027s_fashion\\mywpfcrudapp\\services\\databaseinitializer.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}",
       "RelativeMoniker": "D:0:0:{63FD5C72-1F5C-48F0-8CE4-22CDA6BF3658}|MyWPFCRUDApp.csproj|solutionrelative:services\\databaseinitializer.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}"
     },
     {
       "AbsoluteMoniker": "D:0:0:{63FD5C72-1F5C-48F0-8CE4-22CDA6BF3658}|MyWPFCRUDApp.csproj|e:\\mohua\u0027s_fashion\\mywpfcrudapp\\services\\billscanservice.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}",
       "RelativeMoniker": "D:0:0:{63FD5C72-1F5C-48F0-8CE4-22CDA6BF3658}|MyWPFCRUDApp.csproj|solutionrelative:services\\billscanservice.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}"
-    },
-    {
-      "AbsoluteMoniker": "D:0:0:{63FD5C72-1F5C-48F0-8CE4-22CDA6BF3658}|MyWPFCRUDApp.csproj|e:\\mohua\u0027s_fashion\\mywpfcrudapp\\mywpfcrudapp.csproj||{FA3CD31E-987B-443A-9B81-186104E8DAC1}|",
-      "RelativeMoniker": "D:0:0:{63FD5C72-1F5C-48F0-8CE4-22CDA6BF3658}|MyWPFCRUDApp.csproj|solutionrelative:mywpfcrudapp.csproj||{FA3CD31E-987B-443A-9B81-186104E8DAC1}|"
     },
     {
       "AbsoluteMoniker": "D:0:0:{63FD5C72-1F5C-48F0-8CE4-22CDA6BF3658}|MyWPFCRUDApp.csproj|e:\\mohua\u0027s_fashion\\mywpfcrudapp\\views\\purchaseviews.xaml||{F11ACC28-31D1-4C80-A34B-F4E09D3D753C}",
@@ -331,7 +331,7 @@
       "DocumentGroups": [
         {
           "DockedWidth": 200,
-          "SelectedChildIndex": 13,
+          "SelectedChildIndex": 12,
           "Children": [
             {
               "$type": "Bookmark",
@@ -367,20 +367,92 @@
             },
             {
               "$type": "Document",
-              "DocumentIndex": 3,
-              "Title": "PurchaseViewModel.cs",
-              "DocumentMoniker": "E:\\Mohua\u0027s_fashion\\MyWPFCRUDApp\\ViewModels\\PurchaseViewModel.cs",
-              "RelativeDocumentMoniker": "ViewModels\\PurchaseViewModel.cs",
-              "ToolTip": "E:\\Mohua\u0027s_fashion\\MyWPFCRUDApp\\ViewModels\\PurchaseViewModel.cs",
-              "RelativeToolTip": "ViewModels\\PurchaseViewModel.cs",
-              "ViewState": "AgIAALkDAAAAAAAAAAAcwM8DAAAAAAAAAAAAAA==",
+              "DocumentIndex": 2,
+              "Title": "ProductService.cs",
+              "DocumentMoniker": "E:\\Mohua\u0027s_fashion\\MyWPFCRUDApp\\Services\\ProductService.cs",
+              "RelativeDocumentMoniker": "Services\\ProductService.cs",
+              "ToolTip": "E:\\Mohua\u0027s_fashion\\MyWPFCRUDApp\\Services\\ProductService.cs",
+              "RelativeToolTip": "Services\\ProductService.cs",
+              "ViewState": "AgIAAPgBAAAAAAAAAAAcwA8CAAABAAAAAAAAAA==",
               "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.000738|",
-              "WhenOpened": "2026-03-30T14:37:49.859Z",
+              "WhenOpened": "2026-03-30T14:01:14.616Z",
               "EditorCaption": ""
             },
             {
               "$type": "Document",
-              "DocumentIndex": 2,
+              "DocumentIndex": 1,
+              "Title": "ProductViewModel.cs",
+              "DocumentMoniker": "E:\\Mohua\u0027s_fashion\\MyWPFCRUDApp\\ViewModels\\ProductViewModel.cs",
+              "RelativeDocumentMoniker": "ViewModels\\ProductViewModel.cs",
+              "ToolTip": "E:\\Mohua\u0027s_fashion\\MyWPFCRUDApp\\ViewModels\\ProductViewModel.cs*",
+              "RelativeToolTip": "ViewModels\\ProductViewModel.cs*",
+              "ViewState": "AgIAAKcAAAAAAAAAAAAUwOAAAAAJAAAAAAAAAA==",
+              "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.000738|",
+              "WhenOpened": "2026-03-30T19:58:34.853Z",
+              "EditorCaption": ""
+            },
+            {
+              "$type": "Document",
+              "DocumentIndex": 5,
+              "Title": "SupplierHistoryWindow.xaml.cs",
+              "DocumentMoniker": "E:\\Mohua\u0027s_fashion\\MyWPFCRUDApp\\Views\\SupplierHistoryWindow.xaml.cs",
+              "RelativeDocumentMoniker": "Views\\SupplierHistoryWindow.xaml.cs",
+              "ToolTip": "E:\\Mohua\u0027s_fashion\\MyWPFCRUDApp\\Views\\SupplierHistoryWindow.xaml.cs",
+              "RelativeToolTip": "Views\\SupplierHistoryWindow.xaml.cs",
+              "ViewState": "AgIAAAAAAAAAAAAAAAAAAAkAAAAeAAAAAAAAAA==",
+              "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.000738|",
+              "WhenOpened": "2026-06-14T05:56:53.105Z"
+            },
+            {
+              "$type": "Document",
+              "DocumentIndex": 4,
+              "Title": "MyWPFCRUDApp.csproj",
+              "DocumentMoniker": "E:\\Mohua\u0027s_fashion\\MyWPFCRUDApp\\MyWPFCRUDApp.csproj",
+              "RelativeDocumentMoniker": "MyWPFCRUDApp.csproj",
+              "ToolTip": "E:\\Mohua\u0027s_fashion\\MyWPFCRUDApp\\MyWPFCRUDApp.csproj",
+              "RelativeToolTip": "MyWPFCRUDApp.csproj",
+              "ViewState": "AgIAAAMAAAAAAAAAAAAAAAsAAAAVAAAAAAAAAA==",
+              "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.000758|",
+              "WhenOpened": "2026-03-30T21:07:41.013Z"
+            },
+            {
+              "$type": "Document",
+              "DocumentIndex": 0,
+              "Title": "ProductViews.xaml",
+              "DocumentMoniker": "E:\\Mohua\u0027s_fashion\\MyWPFCRUDApp\\Views\\ProductViews.xaml",
+              "RelativeDocumentMoniker": "Views\\ProductViews.xaml",
+              "ToolTip": "E:\\Mohua\u0027s_fashion\\MyWPFCRUDApp\\Views\\ProductViews.xaml*",
+              "RelativeToolTip": "Views\\ProductViews.xaml*",
+              "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.003549|",
+              "WhenOpened": "2026-03-30T19:59:10.522Z",
+              "EditorCaption": ""
+            },
+            {
+              "$type": "Document",
+              "DocumentIndex": 3,
+              "Title": "ProductViews.xaml.cs",
+              "DocumentMoniker": "E:\\Mohua\u0027s_fashion\\MyWPFCRUDApp\\Views\\ProductViews.xaml.cs",
+              "RelativeDocumentMoniker": "Views\\ProductViews.xaml.cs",
+              "ToolTip": "E:\\Mohua\u0027s_fashion\\MyWPFCRUDApp\\Views\\ProductViews.xaml.cs",
+              "RelativeToolTip": "Views\\ProductViews.xaml.cs",
+              "ViewState": "AgIAACsAAAAAAAAAAAAiwD8AAAABAAAAAAAAAA==",
+              "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.000738|",
+              "WhenOpened": "2026-03-30T16:05:47.08Z"
+            },
+            {
+              "$type": "Document",
+              "DocumentIndex": 6,
+              "Title": "SupplierHistoryWindow.xaml",
+              "DocumentMoniker": "E:\\Mohua\u0027s_fashion\\MyWPFCRUDApp\\Views\\SupplierHistoryWindow.xaml",
+              "RelativeDocumentMoniker": "Views\\SupplierHistoryWindow.xaml",
+              "ToolTip": "E:\\Mohua\u0027s_fashion\\MyWPFCRUDApp\\Views\\SupplierHistoryWindow.xaml",
+              "RelativeToolTip": "Views\\SupplierHistoryWindow.xaml",
+              "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.003549|",
+              "WhenOpened": "2026-06-14T03:28:21.515Z"
+            },
+            {
+              "$type": "Document",
+              "DocumentIndex": 7,
               "Title": "PurchaseService.cs",
               "DocumentMoniker": "E:\\Mohua\u0027s_fashion\\MyWPFCRUDApp\\Services\\PurchaseService.cs",
               "RelativeDocumentMoniker": "Services\\PurchaseService.cs",
@@ -388,63 +460,23 @@
               "RelativeToolTip": "Services\\PurchaseService.cs",
               "ViewState": "AgIAAGcCAAAAAAAAAAAiwH4CAAAJAAAAAAAAAA==",
               "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.000738|",
-              "WhenOpened": "2026-03-30T14:01:52.667Z",
-              "EditorCaption": ""
-            },
-            {
-              "$type": "Document",
-              "DocumentIndex": 1,
-              "Title": "SupplierHistoryWindow.xaml",
-              "DocumentMoniker": "E:\\Mohua\u0027s_fashion\\MyWPFCRUDApp\\Views\\SupplierHistoryWindow.xaml",
-              "RelativeDocumentMoniker": "Views\\SupplierHistoryWindow.xaml",
-              "ToolTip": "E:\\Mohua\u0027s_fashion\\MyWPFCRUDApp\\Views\\SupplierHistoryWindow.xaml",
-              "RelativeToolTip": "Views\\SupplierHistoryWindow.xaml",
-              "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.003549|",
-              "WhenOpened": "2026-06-14T03:28:21.515Z",
-              "EditorCaption": ""
-            },
-            {
-              "$type": "Document",
-              "DocumentIndex": 5,
-              "Title": "ProductService.cs",
-              "DocumentMoniker": "E:\\Mohua\u0027s_fashion\\MyWPFCRUDApp\\Services\\ProductService.cs",
-              "RelativeDocumentMoniker": "Services\\ProductService.cs",
-              "ToolTip": "E:\\Mohua\u0027s_fashion\\MyWPFCRUDApp\\Services\\ProductService.cs",
-              "RelativeToolTip": "Services\\ProductService.cs",
-              "ViewState": "AgIAAOQBAAAAAAAAAAAcwPoBAAABAAAAAAAAAA==",
-              "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.000738|",
-              "WhenOpened": "2026-03-30T14:01:14.616Z",
-              "EditorCaption": ""
-            },
-            {
-              "$type": "Document",
-              "DocumentIndex": 4,
-              "Title": "ProductViewModel.cs",
-              "DocumentMoniker": "E:\\Mohua\u0027s_fashion\\MyWPFCRUDApp\\ViewModels\\ProductViewModel.cs",
-              "RelativeDocumentMoniker": "ViewModels\\ProductViewModel.cs",
-              "ToolTip": "E:\\Mohua\u0027s_fashion\\MyWPFCRUDApp\\ViewModels\\ProductViewModel.cs",
-              "RelativeToolTip": "ViewModels\\ProductViewModel.cs",
-              "ViewState": "AgIAAG0CAAAAAAAAAAAiwIQCAAABAAAAAAAAAA==",
-              "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.000738|",
-              "WhenOpened": "2026-03-30T19:58:34.853Z",
-              "EditorCaption": ""
-            },
-            {
-              "$type": "Document",
-              "DocumentIndex": 0,
-              "Title": "SupplierHistoryWindow.xaml.cs",
-              "DocumentMoniker": "E:\\Mohua\u0027s_fashion\\MyWPFCRUDApp\\Views\\SupplierHistoryWindow.xaml.cs",
-              "RelativeDocumentMoniker": "Views\\SupplierHistoryWindow.xaml.cs",
-              "ToolTip": "E:\\Mohua\u0027s_fashion\\MyWPFCRUDApp\\Views\\SupplierHistoryWindow.xaml.cs*",
-              "RelativeToolTip": "Views\\SupplierHistoryWindow.xaml.cs*",
-              "ViewState": "AgIAAAAAAAAAAAAAAAAAAAkAAAAeAAAAAAAAAA==",
-              "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.000738|",
-              "WhenOpened": "2026-06-14T05:56:53.105Z",
-              "EditorCaption": ""
+              "WhenOpened": "2026-03-30T14:01:52.667Z"
             },
             {
               "$type": "Document",
               "DocumentIndex": 8,
+              "Title": "PurchaseViewModel.cs",
+              "DocumentMoniker": "E:\\Mohua\u0027s_fashion\\MyWPFCRUDApp\\ViewModels\\PurchaseViewModel.cs",
+              "RelativeDocumentMoniker": "ViewModels\\PurchaseViewModel.cs",
+              "ToolTip": "E:\\Mohua\u0027s_fashion\\MyWPFCRUDApp\\ViewModels\\PurchaseViewModel.cs",
+              "RelativeToolTip": "ViewModels\\PurchaseViewModel.cs",
+              "ViewState": "AgIAALkDAAAAAAAAAAAcwM8DAAAAAAAAAAAAAA==",
+              "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.000738|",
+              "WhenOpened": "2026-03-30T14:37:49.859Z"
+            },
+            {
+              "$type": "Document",
+              "DocumentIndex": 9,
               "Title": "DatabaseInitializer.cs",
               "DocumentMoniker": "E:\\Mohua\u0027s_fashion\\MyWPFCRUDApp\\Services\\DatabaseInitializer.cs",
               "RelativeDocumentMoniker": "Services\\DatabaseInitializer.cs",
@@ -452,33 +484,7 @@
               "RelativeToolTip": "Services\\DatabaseInitializer.cs",
               "ViewState": "AgIAAHsBAAAAAAAAAAAUwJABAAABAAAAAAAAAA==",
               "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.000738|",
-              "WhenOpened": "2026-03-30T19:31:55.666Z",
-              "EditorCaption": ""
-            },
-            {
-              "$type": "Document",
-              "DocumentIndex": 6,
-              "Title": "ProductViews.xaml.cs",
-              "DocumentMoniker": "E:\\Mohua\u0027s_fashion\\MyWPFCRUDApp\\Views\\ProductViews.xaml.cs",
-              "RelativeDocumentMoniker": "Views\\ProductViews.xaml.cs",
-              "ToolTip": "E:\\Mohua\u0027s_fashion\\MyWPFCRUDApp\\Views\\ProductViews.xaml.cs",
-              "RelativeToolTip": "Views\\ProductViews.xaml.cs",
-              "ViewState": "AgIAAA0AAAAAAAAAAAAcwDgAAAAJAAAAAAAAAA==",
-              "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.000738|",
-              "WhenOpened": "2026-03-30T16:05:47.08Z",
-              "EditorCaption": ""
-            },
-            {
-              "$type": "Document",
-              "DocumentIndex": 7,
-              "Title": "ProductViews.xaml",
-              "DocumentMoniker": "E:\\Mohua\u0027s_fashion\\MyWPFCRUDApp\\Views\\ProductViews.xaml",
-              "RelativeDocumentMoniker": "Views\\ProductViews.xaml",
-              "ToolTip": "E:\\Mohua\u0027s_fashion\\MyWPFCRUDApp\\Views\\ProductViews.xaml",
-              "RelativeToolTip": "Views\\ProductViews.xaml",
-              "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.003549|",
-              "WhenOpened": "2026-03-30T19:59:10.522Z",
-              "EditorCaption": ""
+              "WhenOpened": "2026-03-30T19:31:55.666Z"
             },
             {
               "$type": "Document",
@@ -490,12 +496,11 @@
               "RelativeToolTip": "Services\\SupplierService.cs",
               "ViewState": "AgIAAKYAAAAAAAAAAAAcwLAAAAAAAAAAAAAAAA==",
               "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.000738|",
-              "WhenOpened": "2026-06-08T14:21:21.23Z",
-              "EditorCaption": ""
+              "WhenOpened": "2026-06-08T14:21:21.23Z"
             },
             {
               "$type": "Document",
-              "DocumentIndex": 9,
+              "DocumentIndex": 10,
               "Title": "BillScanService.cs",
               "DocumentMoniker": "E:\\Mohua\u0027s_fashion\\MyWPFCRUDApp\\Services\\BillScanService.cs",
               "RelativeDocumentMoniker": "Services\\BillScanService.cs",
@@ -503,21 +508,7 @@
               "RelativeToolTip": "Services\\BillScanService.cs",
               "ViewState": "AgIAAA0AAAAAAAAAAAAmwDYAAAAtAAAAAAAAAA==",
               "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.000738|",
-              "WhenOpened": "2026-05-31T14:22:59.26Z",
-              "EditorCaption": ""
-            },
-            {
-              "$type": "Document",
-              "DocumentIndex": 10,
-              "Title": "MyWPFCRUDApp.csproj",
-              "DocumentMoniker": "E:\\Mohua\u0027s_fashion\\MyWPFCRUDApp\\MyWPFCRUDApp.csproj",
-              "RelativeDocumentMoniker": "MyWPFCRUDApp.csproj",
-              "ToolTip": "E:\\Mohua\u0027s_fashion\\MyWPFCRUDApp\\MyWPFCRUDApp.csproj",
-              "RelativeToolTip": "MyWPFCRUDApp.csproj",
-              "ViewState": "AgIAAAMAAAAAAAAAAAAAAAsAAAAVAAAAAAAAAA==",
-              "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.000758|",
-              "WhenOpened": "2026-03-30T21:07:41.013Z",
-              "EditorCaption": ""
+              "WhenOpened": "2026-05-31T14:22:59.26Z"
             },
             {
               "$type": "Document",
@@ -528,8 +519,7 @@
               "ToolTip": "E:\\Mohua\u0027s_fashion\\MyWPFCRUDApp\\Views\\PurchaseViews.xaml",
               "RelativeToolTip": "Views\\PurchaseViews.xaml",
               "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.003549|",
-              "WhenOpened": "2026-03-30T15:50:57.345Z",
-              "EditorCaption": ""
+              "WhenOpened": "2026-03-30T15:50:57.345Z"
             },
             {
               "$type": "Document",
@@ -541,8 +531,7 @@
               "RelativeToolTip": "Views\\SupplierViews.xaml.cs",
               "ViewState": "AgIAAAAAAAAAAAAAAAAAABcAAAA3AAAAAAAAAA==",
               "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.000738|",
-              "WhenOpened": "2026-06-14T03:29:09.637Z",
-              "EditorCaption": ""
+              "WhenOpened": "2026-06-14T03:29:09.637Z"
             },
             {
               "$type": "Document",
@@ -554,8 +543,7 @@
               "RelativeToolTip": "Views\\PurchaseViews.xaml.cs",
               "ViewState": "AgIAADkAAAAAAAAAAAAUwEQAAAAJAAAAAAAAAA==",
               "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.000738|",
-              "WhenOpened": "2026-03-30T16:05:37.791Z",
-              "EditorCaption": ""
+              "WhenOpened": "2026-03-30T16:05:37.791Z"
             },
             {
               "$type": "Document",
@@ -567,8 +555,7 @@
               "RelativeToolTip": "Models\\MPurchaseMaster.cs",
               "ViewState": "AgIAAAwAAAAAAAAAAAAwwBUAAAAwAAAAAAAAAA==",
               "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.000738|",
-              "WhenOpened": "2026-03-30T13:48:33.636Z",
-              "EditorCaption": ""
+              "WhenOpened": "2026-03-30T13:48:33.636Z"
             },
             {
               "$type": "Document",
@@ -580,8 +567,7 @@
               "RelativeToolTip": "ViewModels\\SupplierViewModel.cs",
               "ViewState": "AgIAAFgAAAAAAAAAAAAAAGMAAAABAAAAAAAAAA==",
               "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.000738|",
-              "WhenOpened": "2026-06-08T19:06:51.503Z",
-              "EditorCaption": ""
+              "WhenOpened": "2026-06-08T19:06:51.503Z"
             },
             {
               "$type": "Document",

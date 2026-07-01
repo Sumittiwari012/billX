@@ -77,7 +77,7 @@
                     </StackPanel>
                     <!-- Entry Controls Row -->
                     <StackPanel Orientation="Horizontal">
-                        <TextBox Width="120" Margin="5" Text="{Binding MProduct.Barcode,    UpdateSourceTrigger=PropertyChanged}"/>
+                        <TextBox Width="120" Margin="5" Text="{Binding BarcodeInput, UpdateSourceTrigger=PropertyChanged}"/>
                         <TextBox Width="120" Margin="5" Text="{Binding MProduct.ProductCode, UpdateSourceTrigger=PropertyChanged}"/>
                         <TextBox Width="180" Margin="5" Text="{Binding MProduct.ProductName, UpdateSourceTrigger=PropertyChanged}"/>
                         <ComboBox Width="150" Margin="5" ItemsSource="{Binding Categories}"          SelectedItem="{Binding SelectedCategory}"    DisplayMemberPath="CategoryName"/>
@@ -112,30 +112,26 @@
         <!-- ═══════════════════════════════════════════════
              ROW 2 · Multi-select delete notice bar
         ═══════════════════════════════════════════════ -->
+        <!-- ═══════════════════════════════════════════════
+     ROW 2 · Multi-select notice bar
+═══════════════════════════════════════════════ -->
         <Border Grid.Row="5"
-                Background="#FFFFEEBA"
-                BorderBrush="#FFC8A400"
-                BorderThickness="1"
-                CornerRadius="6"
-                Padding="8,4"
-                Margin="0,0,0,6"
-                Visibility="{Binding MultiSelectBarVisibility}">
+        Background="#FFFFEEBA"
+        BorderBrush="#FFC8A400"
+        BorderThickness="1"
+        CornerRadius="6"
+        Padding="8,4"
+        Margin="0,0,0,6"
+        Visibility="{Binding MultiSelectBarVisibility}">
             <StackPanel Orientation="Horizontal" VerticalAlignment="Center">
                 <TextBlock Text="{Binding SelectedCountText}"
-                           FontWeight="SemiBold"
-                           VerticalAlignment="Center"
-                           Margin="0,0,12,0"/>
-                <Button Content="🗑 Delete Selected"
-                        Command="{Binding DeleteSelectedCommand}"
-                        Background="#FFFFE5E5"
-                        Foreground="DarkRed"
-                        FontWeight="Bold"
-                        Padding="10,3"
-                        Margin="0,0,8,0"/>
+                   FontWeight="SemiBold"
+                   VerticalAlignment="Center"
+                   Margin="0,0,12,0"/>
                 <Button Content="✖ Clear Selection"
-                        Command="{Binding ClearSelectionCommand}"
-                        Background="#FFEEEEEE"
-                        Padding="8,3"/>
+                Command="{Binding ClearSelectionCommand}"
+                Background="#FFEEEEEE"
+                Padding="8,3"/>
             </StackPanel>
         </Border>
 
@@ -143,20 +139,19 @@
              ROW 3 · Products DataGrid
         ═══════════════════════════════════════════════ -->
         <DataGrid x:Name="ProductDataGrid"
-                  Grid.Row="3"
-                  ItemsSource="{Binding Products}"
-                  SelectedItem="{Binding SelectedProduct}"
-                  AutoGenerateColumns="False"
-                  HeadersVisibility="Column"
-                  CanUserAddRows="False"
-                  IsReadOnly="True"
-                  SelectionMode="Extended"
-                  AlternatingRowBackground="#FFF8F4EE"
-                  RowBackground="White"
-                  GridLinesVisibility="Horizontal"
-                  BorderBrush="#FFE0D5C4"
-                  BorderThickness="1"
-                  SelectionChanged="ProductDataGrid_SelectionChanged">
+          Grid.Row="3"
+          ItemsSource="{Binding Products}"
+          SelectedItem="{Binding SelectedProduct}"
+          AutoGenerateColumns="False"
+          HeadersVisibility="Column"
+          CanUserAddRows="False"
+          IsReadOnly="True"
+          SelectionMode="Extended"
+          AlternatingRowBackground="#FFF8F4EE"
+          RowBackground="White"
+          GridLinesVisibility="Horizontal"
+          BorderBrush="#FFE0D5C4"
+          BorderThickness="1">
 
             <DataGrid.Columns>
 
