@@ -26,6 +26,19 @@ namespace MyWPFCRUDApp.ViewModels
         public ICommand ExportExcelCommand => new RelayCommand(_ => ExportToExcel());
         public ICommand DeleteSelectedCommand => new RelayCommand(_ => DeleteSelected(), _ => CheckedProducts.Any());
         public ICommand ClearSelectionCommand => new RelayCommand(_ => ClearSelection());
+        private long _quantity;
+        public long Quantity
+        {
+            get => _quantity;
+            set
+            {
+                if (_quantity != value)
+                {
+                    _quantity = value;
+                    OnPropertyChanged();
+                }
+            }
+        }
         // Master, unfiltered list — the source of truth for the live barcode filter.
         // Products is always derived from this, never edited directly.
         private List<ProductDisplayModel> _allProducts = new();
@@ -33,6 +46,12 @@ namespace MyWPFCRUDApp.ViewModels
         // The barcode auto-generated for the next new product. Restored into
         // BarcodeInput whenever the user clears the textbox entirely.
         private string _lastGeneratedBarcode = string.Empty;
+        private long _quantityInput;
+        public long QuantityInput
+        {
+            get => _quantityInput;
+            set => SetProperty(ref _quantityInput, value);
+        }
 
         // ─── Services ──────────────────────────────────────────────────────────
         private readonly ProductService _productService;
@@ -220,6 +239,9 @@ namespace MyWPFCRUDApp.ViewModels
                     SelectedCategory = Categories.FirstOrDefault(c => c.Id == value.CategoryId);
                     SelectedSubCategory = FilteredSubCategories.FirstOrDefault(s => s.Id == value.SubCategoryId);
                     SelectedUnit = Units.FirstOrDefault(u => u.Id == value.UnitId);
+
+                    _quantityInput = value.Quantity;                 // NEW — avoid re-triggering setter logic
+                    OnPropertyChanged(nameof(QuantityInput));
                 }
             }
         }
@@ -413,12 +435,7 @@ namespace MyWPFCRUDApp.ViewModels
             OnPropertyChanged(nameof(MultiSelectBarVisibility));
         }
 
-        // ─── GenerateNextBarcode ────────────────────────────────────────────────
-        /// <summary>
-        /// Sets MProduct.Barcode to M{productCount + 1}.
-        /// Called on first load and after every save/reset so the field
-        /// is never empty when the user wants to add a new product.
-        /// </summary>
+        
         private void GenerateNextBarcode()
         {
             try
@@ -447,11 +464,17 @@ namespace MyWPFCRUDApp.ViewModels
         // ─── Save ──────────────────────────────────────────────────────────────
         private void Save()
         {
-            if (string.IsNullOrWhiteSpace(MProduct.ProductName)) { MessageBox.Show("Product Name is required!"); return; }
-
-            // Auto-generate barcode if blank
             if (string.IsNullOrWhiteSpace(MProduct.Barcode))
                 MProduct.Barcode = $"M{_productService.GetProductCount() + 1}";
+
+            // Never insert a second row for a barcode that already exists —
+            // if one is found, treat this Save as an update to that record.
+            if (MProduct.Id <= 0)
+            {
+                var existing = _productService.GetByBarcode(MProduct.Barcode);
+                if (existing != null)
+                    MProduct.Id = existing.Id;
+            }
 
             // Default Category/SubCategory/Unit to first available if not selected
             if (MProduct.CategoryId <= 0)
@@ -465,10 +488,31 @@ namespace MyWPFCRUDApp.ViewModels
                 ? _productService.InsertProduct(MProduct)
                 : _productService.UpdateProduct(MProduct);
 
-            if (success) { LoadData(); Reset(); }
+            if (success)
+            {
+                bool qtyOk = _productService.SetProductQuantity(MProduct.Barcode, QuantityInput);
+                if (!qtyOk)
+                    MessageBox.Show("Product saved, but quantity update failed.", "Warning",
+                        MessageBoxButton.OK, MessageBoxImage.Warning);
+
+                LoadData();
+                Reset();
+            }
             else MessageBox.Show("Failed to save. Barcode may already exist.");
         }
+        public ICommand UpdateQuantityCommand => new RelayCommand(p => UpdateQuantity(p as ProductDisplayModel));
 
+        private void UpdateQuantity(ProductDisplayModel row)
+        {
+            if (row == null) return;
+
+            bool ok = _productService.SetProductQuantity(row.Barcode, row.Quantity);
+            if (ok)
+                LoadData();   // refresh so the grid reflects the persisted value
+            else
+                MessageBox.Show($"Failed to update quantity for '{row.ProductName}'.",
+                    "Error", MessageBoxButton.OK, MessageBoxImage.Error);
+        }
         // ─── Delete single ─────────────────────────────────────────────────────
         // ─── Delete (single OR multiple, depending on checkbox state) ──────────
         private void Delete()
@@ -550,8 +594,9 @@ namespace MyWPFCRUDApp.ViewModels
             SelectedCategory = null;
             SelectedSubCategory = null;
             SelectedUnit = null;
+            QuantityInput = 0;                            // NEW
             FilteredSubCategories = new ObservableCollection<MSubCategory>();
-            GenerateNextBarcode();   // always show the next available barcode
+            GenerateNextBarcode();
         }
 
         // ─── Export to Excel ───────────────────────────────────────────────────

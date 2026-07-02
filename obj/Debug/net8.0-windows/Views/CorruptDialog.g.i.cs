@@ -52,7 +52,7 @@ namespace MyWPFCRUDApp.Views {
                 return;
             }
             _contentLoaded = true;
-            System.Uri resourceLocater = new System.Uri("/MyWPFCRUDApp;V1.2.41.0;component/views/corruptdialog.xaml", System.UriKind.Relative);
+            System.Uri resourceLocater = new System.Uri("/MyWPFCRUDApp;V1.2.42.0;component/views/corruptdialog.xaml", System.UriKind.Relative);
             
             #line 1 "..\..\..\..\Views\CorruptDialog.xaml"
             System.Windows.Application.LoadComponent(this, resourceLocater);

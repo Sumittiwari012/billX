@@ -513,6 +513,31 @@ namespace MyWPFCRUDApp.Services
                 return (false, 0, ex.Message);
             }
         }
+        // ─── SET QUANTITY (absolute set, used by the edit form) ───────────────────
+        public bool SetProductQuantity(string barcode, long quantity)
+        {
+            if (string.IsNullOrWhiteSpace(barcode) || quantity < 0) return false;
+
+            using var conn = new MySqlConnection(Con);
+            conn.Open();
+
+            using var cmd = new MySqlCommand(@"
+        INSERT INTO ProductQuantity
+            (Barcode, Quantity, MinimumSellingQuantity, createdDate, createdBy, ModifiedDate, ModifiedBy)
+        VALUES
+            (@Barcode, @Quantity, 1, @Now, @User, @Now, @User)
+        ON DUPLICATE KEY UPDATE
+            Quantity     = @Quantity,
+            ModifiedDate = @Now,
+            ModifiedBy   = @User", conn);
+
+            cmd.Parameters.AddWithValue("@Barcode", barcode);
+            cmd.Parameters.AddWithValue("@Quantity", quantity);
+            cmd.Parameters.AddWithValue("@Now", DateTime.Now);
+            cmd.Parameters.AddWithValue("@User", "ADMIN");
+
+            return cmd.ExecuteNonQuery() > 0;
+        }
         public string? GetLastBarcode()
         {
             using var conn = new MySqlConnection(Con);

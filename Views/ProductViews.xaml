@@ -71,9 +71,8 @@
                         <TextBlock Text="IGST"         Width="80"  Margin="5" FontWeight="Bold"/>
                         <TextBlock Text="Unit"         Width="120" Margin="5" FontWeight="Bold"/>
                         <TextBlock Text="Size"         Width="80"  Margin="5" FontWeight="Bold"/>
+                        <TextBlock Text="Quantity"     Width="90"  Margin="5" FontWeight="Bold"/>
                         <TextBlock Text="Colour"       Width="100" Margin="5" FontWeight="Bold"/>
-                        <TextBlock Text="Rack"         Width="100" Margin="5" FontWeight="Bold"/>
-                        <TextBlock Text="HSN"          Width="100" Margin="5" FontWeight="Bold"/>
                     </StackPanel>
                     <!-- Entry Controls Row -->
                     <StackPanel Orientation="Horizontal">
@@ -90,6 +89,7 @@
                         <TextBox Width="80"  Margin="5" Text="{Binding MProduct.IGST}"/>
                         <ComboBox Width="120" Margin="5" ItemsSource="{Binding Units}" SelectedItem="{Binding SelectedUnit}" DisplayMemberPath="UnitName"/>
                         <TextBox Width="80"  Margin="5" Text="{Binding MProduct.Size}"/>
+                        <TextBox Width="90"  Margin="5" Text="{Binding QuantityInput, UpdateSourceTrigger=PropertyChanged}"/>
                         <TextBox Width="100" Margin="5" Text="{Binding MProduct.Colour}"/>
                         <TextBox Width="100" Margin="5" Text="{Binding MProduct.Rack}"/>
                         <TextBox Width="100" Margin="5" Text="{Binding MProduct.HSNCode}"/>
@@ -197,7 +197,22 @@
                 <DataGridTextColumn x:Name="ColName"        Header="Product Name" Binding="{Binding ProductName}"      Width="200"/>
                 <DataGridTextColumn x:Name="ColCategory"    Header="Category"     Binding="{Binding CategoryName}"     Width="150"/>
                 <DataGridTextColumn x:Name="ColSubCategory" Header="SubCategory"  Binding="{Binding SubCategoryName}"  Width="150"/>
-                <DataGridTextColumn x:Name="ColQuantity"    Header="Quantity"     Binding="{Binding Quantity}"         Width="90"/>
+                <DataGridTemplateColumn x:Name="ColQuantity" Header="Quantity" Width="140">
+                    <DataGridTemplateColumn.CellTemplate>
+                        <DataTemplate>
+                            <StackPanel Orientation="Horizontal">
+                                <TextBox Width="60" Margin="0,0,4,0"
+                         Text="{Binding Quantity, UpdateSourceTrigger=PropertyChanged}"/>
+                                <Button Content="✔"
+                        Width="26" Height="24"
+                        Command="{Binding DataContext.UpdateQuantityCommand,
+                                  RelativeSource={RelativeSource AncestorType=DataGrid}}"
+                        CommandParameter="{Binding}"
+                        ToolTip="Save this quantity"/>
+                            </StackPanel>
+                        </DataTemplate>
+                    </DataGridTemplateColumn.CellTemplate>
+                </DataGridTemplateColumn>
                 <DataGridTextColumn x:Name="ColPurchase"    Header="Purchase"     Binding="{Binding PurchasePrice}"    Width="100"/>
                 <DataGridTextColumn x:Name="ColSale"        Header="Sale"         Binding="{Binding RetailSalePrice}"  Width="100"/>
                 <DataGridTextColumn x:Name="ColMRP"         Header="MRP"          Binding="{Binding MRP}"              Width="100"/>

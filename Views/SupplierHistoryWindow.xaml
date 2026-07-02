@@ -47,23 +47,28 @@
                     </Grid.ColumnDefinitions>
 
                     <!-- Supplier Name -->
+                    <!-- Supplier Name -->
                     <StackPanel Grid.Column="0">
-    <TextBlock Text="Supplier Name" FontSize="11" Foreground="#868E96" Margin="0,0,0,4"/>
-    <TextBox x:Name="SupplierNameBox"
-             Height="30"/>
-</StackPanel>
+                        <TextBlock Text="Supplier Name" FontSize="11" Foreground="#868E96" Margin="0,0,0,4"/>
+                        <TextBox x:Name="SupplierNameBox"
+             Height="30"
+             TextChanged="FilterBox_TextChanged"/>
+                    </StackPanel>
 
-<!-- Supplier ID -->
-<StackPanel Grid.Column="2">
-    <TextBlock Text="Supplier ID" FontSize="11" Foreground="#868E96" Margin="0,0,0,4"/>
-    <TextBox x:Name="SupplierIdBox"
-             Height="30"/>
-</StackPanel>
+                    <!-- Supplier ID -->
+                    <StackPanel Grid.Column="2">
+                        <TextBlock Text="Supplier ID" FontSize="11" Foreground="#868E96" Margin="0,0,0,4"/>
+                        <TextBox x:Name="SupplierIdBox"
+             Height="30"
+             TextChanged="FilterBox_TextChanged"/>
+                    </StackPanel>
+
                     <!-- Invoice Number -->
                     <StackPanel Grid.Column="4">
                         <TextBlock Text="Invoice Number" FontSize="11" Foreground="#868E96" Margin="0,0,0,4"/>
                         <TextBox x:Name="InvoiceNumberBox"
-                 Height="30"/>
+             Height="30"
+             TextChanged="FilterBox_TextChanged"/>
                     </StackPanel>
 
                     <!-- From Date -->
@@ -227,7 +232,7 @@
                                     Command="{Binding DataContext.LoadHistoryInvoiceCommand,
                                               RelativeSource={RelativeSource AncestorType=Window}}"
                                     CommandParameter="{Binding}"
-                                    Click="DeleteInvoice_Click"
+                                    Click="OpenInvoice_Click"
                                     Width="70" Height="32"
                                     HorizontalAlignment="Center"
                                     VerticalAlignment="Center"

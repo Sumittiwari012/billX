@@ -154,5 +154,13 @@ namespace MyWPFCRUDApp.Views
 
             LoadHistory();
         }
+        private void FilterBox_TextChanged(object sender, TextChangedEventArgs e)
+        {
+            // Guard: boxes may fire TextChanged during InitializeComponent before
+            // the window is fully loaded and the date pickers exist — skip if so.
+            if (!IsLoaded) return;
+
+            LoadHistory();
+        }
     }
 }

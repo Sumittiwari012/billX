@@ -356,7 +356,10 @@ namespace MyWPFCRUDApp.Services
                 { "retail sectiton added","ALTER TABLE MPurchaseDetail ADD COLUMN RetailPrice DOUBLE NOT NULL DEFAULT 0.0;"},
                 { "purchase_master static column addition","ALTER TABLE MPurchaseMaster ADD VendorInvoiceNumber VARCHAR(10) NULL"},
                 { "wholesalepriceAdded table","ALTER TABLE MPurchaseDetail ADD COLUMN WholesalePrice DOUBLE NOT NULL DEFAULT 0.0;"},
-                { "mrpcolumnadded in the table","ALTER TABLE MPurchaseDetail ADD COLUMN MRP DOUBLE NOT NULL DEFAULT 0.0;"}
+                { "mrpcolumnadded in the table","ALTER TABLE MPurchaseDetail ADD COLUMN MRP DOUBLE NOT NULL DEFAULT 0.0;"},
+                { "make_productname_nullable","ALTER TABLE MProducts MODIFY ProductName VARCHAR(200) NULL;" },
+                { "make_productquantity_productcode_nullable","ALTER TABLE ProductQuantity MODIFY ProductCode VARCHAR(50) NULL;" },
+                { "enforce_unique_barcode_on_productquantity","ALTER TABLE ProductQuantity ADD UNIQUE KEY UQ_ProductQuantity_Barcode (Barcode);" }
         
         // Future changes go here:
         // { "Remove_OldColumn", "ALTER TABLE MProducts DROP COLUMN OldColumn;" }
