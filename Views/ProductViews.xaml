@@ -203,12 +203,7 @@
                             <StackPanel Orientation="Horizontal">
                                 <TextBox Width="60" Margin="0,0,4,0"
                          Text="{Binding Quantity, UpdateSourceTrigger=PropertyChanged}"/>
-                                <Button Content="✔"
-                        Width="26" Height="24"
-                        Command="{Binding DataContext.UpdateQuantityCommand,
-                                  RelativeSource={RelativeSource AncestorType=DataGrid}}"
-                        CommandParameter="{Binding}"
-                        ToolTip="Save this quantity"/>
+                                
                             </StackPanel>
                         </DataTemplate>
                     </DataGridTemplateColumn.CellTemplate>

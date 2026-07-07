@@ -51,10 +51,11 @@ namespace MyWPFCRUDApp.Views
                 MessageBoxButton.YesNo,
                 MessageBoxImage.Warning);
 
-            if (result != MessageBoxResult.Yes) return;
+            var (success, supplierId) = _purchaseService.DeletePurchase(master.Id);
 
-            if (_purchaseService.DeletePurchase(master.Id))
+            if (success)
             {
+                new SupplierService().RecalculateAndUpdateSupplierBalance(supplierId);   // NEW
                 MessageBox.Show("Invoice deleted and stock reset.", "Deleted",
                     MessageBoxButton.OK, MessageBoxImage.Information);
                 LoadHistory();

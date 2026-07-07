@@ -5,6 +5,9 @@ using System.Windows.Controls;
 using System.Windows.Media;
 using System.Windows.Shapes;
 using static MyWPFCRUDApp.Services.ProductService;
+using ZXing;
+using ZXing.Common;
+using System.Windows.Media.Imaging;
 
 namespace MyWPFCRUDApp.Views
 {
@@ -24,6 +27,7 @@ namespace MyWPFCRUDApp.Views
         {
             TbProductName.Text = _product.ProductName;
             TbBarcode.Text     = _product.Barcode;
+            pdtdetail.Text        = _product.ProductCode+_product.MRP.ToString("N2")+_product.Barcode;
             TbMRP.Text         = _product.MRP.ToString("N2");
             TbSale.Text        = _product.RetailSalePrice.ToString("N2");
             TbCategory.Text    = _product.CategoryName;
@@ -36,35 +40,45 @@ namespace MyWPFCRUDApp.Views
         // ── Simple Code-39 style barcode renderer ─────────────────────────────
         // Draws vertical bars representing the barcode digits.
         // For production, swap with a proper barcode library (e.g. ZXing.Net).
+        // ── Simple Code-39 style barcode renderer ─────────────────────────────
+        // Draws vertical bars representing the barcode digits, stretched to
+        // fill the full width of BarcodeCanvas regardless of barcode length.
+        // ── Simple barcode-style renderer ───────────────────────────────────────
+        // Expands each character into 8 bit-elements (its ASCII code) so the
+        // pattern has enough stripes to actually resemble a barcode instead of
+        // a handful of wide fence posts. 1-bits render as white bars; 0-bits are
+        // left blank so the black canvas background shows through as the gap —
+        // consecutive 1-bits merge into one wider bar for visual variety.
         private void DrawBarcode(string barcode)
         {
-            BarcodeCanvas.Children.Clear();
+            BarcodeImage.Source = null;
             if (string.IsNullOrWhiteSpace(barcode)) return;
 
-            double canvasWidth  = 200;
-            double canvasHeight = 50;
-            double narrowBar    = 1.8;
-            double wideBar      = 3.6;
-            double gap          = 1.2;
-            double x            = 0;
-
-            foreach (char ch in barcode)
+            var writer = new BarcodeWriterPixelData
             {
-                // Alternate wide/narrow based on character value parity (visual approximation)
-                bool wide = (ch % 2 == 0);
-                var rect = new Rectangle
+                Format = BarcodeFormat.CODE_128,
+                Options = new EncodingOptions
                 {
-                    Width  = wide ? wideBar : narrowBar,
-                    Height = canvasHeight,
-                    Fill   = Brushes.White
-                };
-                Canvas.SetLeft(rect, x);
-                Canvas.SetTop(rect, 0);
-                BarcodeCanvas.Children.Add(rect);
-                x += (wide ? wideBar : narrowBar) + gap;
+                    Height = 120,
+                    Width = 400,
+                    Margin = 10,
+                    PureBarcode = true   // don't draw the text under the bars — TbBarcode already shows it
+                }
+            };
 
-                if (x > canvasWidth) break;
-            }
+            var pixelData = writer.Write(barcode);
+
+            var bitmap = BitmapSource.Create(
+                pixelData.Width,
+                pixelData.Height,
+                96, 96,
+                PixelFormats.Bgra32,
+                null,
+                pixelData.Pixels,
+                pixelData.Width * 4);
+
+            bitmap.Freeze();
+            BarcodeImage.Source = bitmap;
         }
 
         // ── Print ──────────────────────────────────────────────────────────────

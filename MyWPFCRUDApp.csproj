@@ -7,9 +7,9 @@
 		<UseWPF>true</UseWPF>
 
 		<!-- Auto-updater reads this to compare against GitHub release tag -->
-		<Version>1.2.42</Version>
-		<AssemblyVersion>1.2.42.0</AssemblyVersion>
-		<FileVersion>1.2.42.0</FileVersion>
+		<Version>1.2.44</Version>
+		<AssemblyVersion>1.2.44.0</AssemblyVersion>
+		<FileVersion>1.2.44.0</FileVersion>
 
 		<!-- Shown in Windows Add/Remove Programs -->
 		<Product>BillX</Product>
@@ -32,6 +32,7 @@
 		<PackageReference Include="ClosedXML" Version="0.102.2" />
 		<PackageReference Include="ExcelDataReader.DataSet" Version="3.8.0" />
 		<PackageReference Include="MySql.Data" Version="8.4.0" />
+		<PackageReference Include="ZXing.Net" Version="0.16.11" />
 	</ItemGroup>
 
 	<!-- Copy MySQL ZIP to output folder so GetBundledZip() finds it next to .exe -->

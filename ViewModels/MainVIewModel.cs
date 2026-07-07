@@ -171,6 +171,7 @@ namespace MyWPFCRUDApp.ViewModels
         private void SelectOption(SubOption option)
         {
             if (option == null) return;
+            System.Diagnostics.Debug.WriteLine($"[SelectOption] Called for {option.Name}, CurrentView is currently: {CurrentView?.GetType().Name ?? "null"}");
 
             try
             {
@@ -224,6 +225,7 @@ namespace MyWPFCRUDApp.ViewModels
                         return;
                 }
 
+
                 // Toggle close if already open
                 if (CurrentView != null && CurrentView.GetType() == viewType)
                 {
@@ -233,8 +235,11 @@ namespace MyWPFCRUDApp.ViewModels
 
                 CurrentView = Activator.CreateInstance(viewType);
             }
-            catch (Exception)
+            catch (Exception ex)
             {
+                System.Diagnostics.Debug.WriteLine($"[SelectOption] Failed to load {option.Name}: {ex}");
+                MessageBox.Show($"Failed to load {option.Name}:\n\n{ex.Message}\n\n{ex.InnerException?.Message}",
+                    "Load Error", MessageBoxButton.OK, MessageBoxImage.Error);
                 CurrentView = new WorkInProgressView();
             }
         }

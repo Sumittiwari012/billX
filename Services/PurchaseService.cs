@@ -565,13 +565,30 @@ namespace MyWPFCRUDApp.Services
         /// For every distinct product that appeared in this invoice's details,
         /// looks up its Barcode and sets ProductQuantity.Quantity to 0.
         /// </summary>
-        public bool DeletePurchase(long masterId)
+        public (bool Success, long SupplierId) DeletePurchase(long masterId)
         {
             using var conn = new MySqlConnection(Con);
             conn.Open();
             using var trans = conn.BeginTransaction();
             try
             {
+                // 0. Grab InvoiceNumber + SupplierId BEFORE deleting the master row —
+                //    needed to clean up matching MPayment rows and to recalc the balance.
+                string invoiceNumber = null;
+                long supplierId = 0;
+                using (var cmd = new MySqlCommand(
+                    "SELECT InvoiceNumber, SupplierId FROM MPurchaseMaster WHERE Id = @MasterId",
+                    conn, trans))
+                {
+                    cmd.Parameters.AddWithValue("@MasterId", masterId);
+                    using var rdr = cmd.ExecuteReader();
+                    if (rdr.Read())
+                    {
+                        invoiceNumber = rdr.GetString("InvoiceNumber");
+                        supplierId = rdr.GetInt64("SupplierId");
+                    }
+                }
+
                 // 1. Get distinct ProductIds referenced by this invoice's detail lines
                 var productIds = new List<long>();
                 using (var cmd = new MySqlCommand(
@@ -604,6 +621,18 @@ namespace MyWPFCRUDApp.Services
                     cmd.ExecuteNonQuery();
                 }
 
+                // 3b. Delete orphaned payments tied to this invoice — otherwise they keep
+                //     counting toward the supplier's balance after the invoice is gone.
+                if (!string.IsNullOrWhiteSpace(invoiceNumber))
+                {
+                    using var cmd = new MySqlCommand(
+                        "DELETE FROM MPayment WHERE InvoiceNumber = @InvoiceNumber AND SupplierId = @SupplierId",
+                        conn, trans);
+                    cmd.Parameters.AddWithValue("@InvoiceNumber", invoiceNumber);
+                    cmd.Parameters.AddWithValue("@SupplierId", supplierId);
+                    cmd.ExecuteNonQuery();
+                }
+
                 // 4. Delete the master row
                 int rowsDeleted;
                 using (var cmd = new MySqlCommand(
@@ -628,13 +657,13 @@ namespace MyWPFCRUDApp.Services
                 }
 
                 trans.Commit();
-                return rowsDeleted > 0;
+                return (rowsDeleted > 0, supplierId);
             }
             catch (Exception ex)
             {
                 trans.Rollback();
                 Console.WriteLine($"[DeletePurchase] EXCEPTION: {ex.Message}\n{ex.StackTrace}");
-                return false;
+                return (false, 0);
             }
         }
     }

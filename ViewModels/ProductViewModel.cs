@@ -77,6 +77,7 @@ namespace MyWPFCRUDApp.ViewModels
             _checkedProducts = selected;
             OnPropertyChanged(nameof(SelectedCountText));
             OnPropertyChanged(nameof(MultiSelectBarVisibility));
+            CommandManager.InvalidateRequerySuggested();   // NEW — re-check ProductDeleteCommand.CanExecute
         }
 
         public string SelectedCountText =>
@@ -388,7 +389,7 @@ namespace MyWPFCRUDApp.ViewModels
             FilteredSubCategories = new ObservableCollection<MSubCategory>();
 
             ProductSaveCommand = new RelayCommand(_ => Save());
-            ProductDeleteCommand = new RelayCommand(_ => Delete(), _ => SelectedProduct != null);
+            ProductDeleteCommand = new RelayCommand(_ => Delete(), _ => SelectedProduct != null || CheckedProducts.Any());
             ProductResetCommand = new RelayCommand(_ => Reset());
 
             InitProductColumns();
@@ -433,9 +434,10 @@ namespace MyWPFCRUDApp.ViewModels
             _checkedProducts = _allProducts.Where(p => p.IsSelected).ToList();
             OnPropertyChanged(nameof(SelectedCountText));
             OnPropertyChanged(nameof(MultiSelectBarVisibility));
+            CommandManager.InvalidateRequerySuggested();   // NEW
         }
 
-        
+
         private void GenerateNextBarcode()
         {
             try
@@ -652,6 +654,7 @@ namespace MyWPFCRUDApp.ViewModels
                             "ProductName" => p.ProductName,
                             "CategoryName" => p.CategoryName,
                             "SubCategoryName" => p.SubCategoryName,
+                            "Quantity" => p.Quantity,          // ← NEW
                             "PurchasePrice" => p.PurchasePrice,
                             "RetailSalePrice" => p.RetailSalePrice,
                             "MRP" => p.MRP,
@@ -795,5 +798,6 @@ namespace MyWPFCRUDApp.ViewModels
             MessageBox.Show($"{successCount} products imported successfully.");
             LoadData();
         }
+
     }
 }

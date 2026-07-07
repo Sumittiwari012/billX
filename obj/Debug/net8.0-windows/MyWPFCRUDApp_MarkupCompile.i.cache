@@ -1,5 +1,5 @@
 ﻿MyWPFCRUDApp
-1.2.42.0
+1.2.44.0
 
 winexe
 C#
@@ -13,7 +13,7 @@ E:\Mohua's_fashion\MyWPFCRUDApp\App.xaml
 241697440705
 
 851509485915
-2141131086870
+215578632632
 Views\AddProductWindow.xaml;Views\AddSupplierWindow.xaml;Views\ApiKeySetupWindow.xaml;Views\BankAccountViews.xaml;Views\BillScanReviewWindow.xaml;Views\CategoryViews.xaml;Views\CompanyInfoViews.xaml;Views\CorruptDialog.xaml;Views\CustomerViews.xaml;Views\ExcelMappingWindow.xaml;Views\MainWindow.xaml;Views\PasswordInputDialog.xaml;Views\PaymentMethodViews.xaml;Views\PaymentWindow.xaml;Views\ProductLabelPrintWindow.xaml;Views\ProductViews.xaml;Views\PurchaseViews.xaml;Views\SetupProgressWindow.xaml;Views\SubCategoryViews.xaml;Views\SupplierHistoryWindow.xaml;Views\SupplierViews.xaml;Views\TaxCategoryViews.xaml;Views\UnitViews.xaml;Views\WorkInProgressView.xaml;
 
 False

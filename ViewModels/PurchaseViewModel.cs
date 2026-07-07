@@ -105,11 +105,14 @@ namespace MyWPFCRUDApp.ViewModels
                     {
                         PurchaseMaster.SupplierId = value.Id;
 
-                        // Load supplier balance
-                        SupplierBalance = value.CurrentBalance;
+                        // Recalculate from DB instead of trusting the cached
+                        // CurrentBalance from the Suppliers list, which may be
+                        // stale if the balance changed since it was last loaded.
+                        decimal freshBalance = _supplierService.RecalculateAndUpdateSupplierBalance(value.Id);
+                        SupplierBalance = freshBalance;
+                        value.CurrentBalance = freshBalance;   // keep the cached list in sync too
 
                         LoadSupplierHistory();
-                        
                     }
                     else
                     {

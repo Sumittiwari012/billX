@@ -5,7 +5,7 @@
   },
   "projects": {
     "E:\\Mohua's_fashion\\MyWPFCRUDApp\\MyWPFCRUDApp.csproj": {
-      "version": "1.2.42",
+      "version": "1.2.44",
       "restore": {
         "projectUniqueName": "E:\\Mohua's_fashion\\MyWPFCRUDApp\\MyWPFCRUDApp.csproj",
         "projectName": "MyWPFCRUDApp",
@@ -61,6 +61,10 @@
             "MySql.Data": {
               "target": "Package",
               "version": "[8.4.0, )"
+            },
+            "ZXing.Net": {
+              "target": "Package",
+              "version": "[0.16.11, )"
             }
           },
           "imports": [

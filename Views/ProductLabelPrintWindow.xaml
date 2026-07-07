@@ -43,13 +43,14 @@
                            Margin="0,0,0,6"/>
 
                 <!-- Barcode (Code 39 font or image generated in code-behind) -->
-                <Border Background="#FF222222"
-                        Padding="6,4"
-                        HorizontalAlignment="Center"
-                        Margin="0,0,0,4">
-                    <!-- Barcode rendered as a Canvas of bars in code-behind -->
-                    <Canvas x:Name="BarcodeCanvas"
-                            Width="200" Height="50"/>
+                <Border Background="White"
+        Padding="6,4"
+        HorizontalAlignment="Center"
+        Margin="0,0,0,4">
+                    <!-- Real Code128 barcode rendered via ZXing.Net -->
+                    <Image x:Name="BarcodeImage"
+           Width="200" Height="60"
+           Stretch="Fill"/>
                 </Border>
 
                 <!-- Barcode number -->
@@ -58,6 +59,11 @@
                            HorizontalAlignment="Center"
                            FontFamily="Courier New"
                            Margin="0,0,0,6"/>
+                <TextBlock x:Name="pdtdetail"
+           FontSize="11"
+           HorizontalAlignment="Center"
+           FontFamily="Courier New"
+           Margin="0,0,0,6"/>
 
                 <!-- Price row -->
                 <StackPanel Orientation="Horizontal" HorizontalAlignment="Center">
