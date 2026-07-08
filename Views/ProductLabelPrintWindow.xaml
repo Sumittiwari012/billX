@@ -23,17 +23,17 @@
             <Grid>
                 <Grid.RowDefinitions>
                     <RowDefinition Height="34"/>
-                    <RowDefinition Height="36"/>
-                    <RowDefinition Height="30"/>
+                    <RowDefinition Height="53"/>
+                    <RowDefinition Height="33"/>
                     <RowDefinition Height="34"/>
-                    <RowDefinition Height="80"/>
+                    <RowDefinition Height="81"/>
                     <RowDefinition Height="50"/>
-                    <RowDefinition Height="*"/>
+                    <RowDefinition/>
                 </Grid.RowDefinitions>
 
                 <Border Grid.Row="1" Grid.RowSpan="6" Width="160" HorizontalAlignment="Center"
-                        BorderBrush="Black" BorderThickness="1" Margin="0,0,0,10">
-                    <Grid Margin="0,18,0,9">
+                        BorderBrush="Black" BorderThickness="1" Margin="0,10,0,28">
+                    <Grid Margin="0,1,0,9">
                         <Grid.RowDefinitions>
                             <RowDefinition Height="36"/>
                             <RowDefinition Height="30"/>
@@ -59,8 +59,8 @@
                             <Border Grid.ColumnSpan="3" Grid.Row="0" BorderBrush="Black" BorderThickness="0,0,0,1"/>
                             <Border Grid.ColumnSpan="3" Grid.Row="1" BorderBrush="Black" BorderThickness="0,0,0,1"/>
 
-                            <TextBlock Grid.Row="0" Grid.Column="0" Text="Desc" FontWeight="Bold" FontSize="12"
-           HorizontalAlignment="Center" VerticalAlignment="Center"/>
+                            <TextBlock Grid.Column="0" Text="Desc" FontWeight="Bold" FontSize="12"
+           HorizontalAlignment="Left" VerticalAlignment="Center" Margin="13,0,0,0"/>
                             <TextBlock Grid.Row="0" Grid.Column="1" Text="Net Qty" FontWeight="Bold" FontSize="11"
            HorizontalAlignment="Center" VerticalAlignment="Center"/>
                             <TextBlock Grid.Row="0" Grid.Column="2" Text="Size" FontWeight="Bold" FontSize="12"
