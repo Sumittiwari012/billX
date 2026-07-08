@@ -792,7 +792,17 @@ namespace MyWPFCRUDApp.ViewModels
                 if (p.UnitId == 0) p.UnitId = Units.FirstOrDefault()?.Id ?? 0;
 
                 if (!string.IsNullOrEmpty(p.ProductName) && !string.IsNullOrEmpty(p.Barcode))
-                    if (_productService.InsertProduct(p)) successCount++;
+                {
+                    if (_productService.InsertProduct(p))
+                    {
+                        successCount++;
+
+                        // NEW — Quantity isn't persisted by InsertProduct itself,
+                        // so push it through the same path the manual Save() uses.
+                        if (p.Quantity > 0)
+                            _productService.SetProductQuantity(p.Barcode, (long)p.Quantity);
+                    }
+                }
             }
 
             MessageBox.Show($"{successCount} products imported successfully.");

@@ -74,5 +74,7 @@ namespace MyWPFCRUDApp.Models
         public long UnitId { get; set; }
         [ForeignKey(nameof(UnitId))]
         public MUnit MUnit { get; set; }
+
+        public double Quantity { get; set; }
     }
 }

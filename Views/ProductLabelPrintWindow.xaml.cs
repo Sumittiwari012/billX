@@ -68,19 +68,26 @@ namespace MyWPFCRUDApp.Views
         private void PrintButton_Click(object sender, RoutedEventArgs e)
         {
             var pd = new PrintDialog();
+
+            // Pre-fill copies with the product's quantity
+            int copies = (int)_product.Quantity;
+            pd.PrintTicket.CopyCount = copies > 0 ? copies : 1;
+
             if (pd.ShowDialog() != true) return;
 
             // Matches the 4.61cm x 8.38cm label size from Photoshop
             double labelWidth = MmToPx(50);
             double labelHeight = MmToPx(100);
-
             pd.PrintTicket.PageMediaSize = new PageMediaSize(labelWidth, labelHeight);
 
             PrintArea.Measure(new Size(labelWidth, labelHeight));
             PrintArea.Arrange(new Rect(0, 0, labelWidth, labelHeight));
             PrintArea.UpdateLayout();
 
-            pd.PrintVisual(PrintArea, $"Product Label – {_product.ProductName} [{_product.Barcode}]");
+            for (int i = 0; i < copies; i++)
+            {
+                pd.PrintVisual(PrintArea, $"Product Label – {_product.ProductName} [{_product.Barcode}]");
+            }
 
             MessageBox.Show("Label sent to printer.", "Print", MessageBoxButton.OK, MessageBoxImage.Information);
         }
