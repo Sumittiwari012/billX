@@ -18,9 +18,8 @@
                 Grid.Row="0"
                 Width="189" Height="378"
                 Background="White"
-                
                 HorizontalAlignment="Center" VerticalAlignment="Top"
-                Margin="0,0,-5,12">
+                Margin="0,20,-10,12">
             <Grid>
                 <Grid.RowDefinitions>
                     <RowDefinition Height="34"/>
@@ -34,7 +33,7 @@
 
                 <Border Grid.Row="1" Grid.RowSpan="6" Width="160" HorizontalAlignment="Center"
                         BorderBrush="Black" BorderThickness="1">
-                    <Grid>
+                    <Grid Margin="0,0,0,-1">
                         <Grid.RowDefinitions>
                             <RowDefinition Height="36"/>
                             <RowDefinition Height="30"/>
@@ -57,6 +56,7 @@
 
                             <Border Grid.Column="0" Grid.RowSpan="2" BorderBrush="Black" BorderThickness="0,0,1,0"/>
                             <Border Grid.Column="1" Grid.RowSpan="2" BorderBrush="Black" BorderThickness="0,0,1,0"/>
+                            <Border Grid.ColumnSpan="3" Grid.Row="0" BorderBrush="Black" BorderThickness="0,0,0,1"/>
                             <Border Grid.ColumnSpan="3" Grid.Row="1" BorderBrush="Black" BorderThickness="0,0,0,1"/>
 
                             <TextBlock Grid.Row="0" Grid.Column="0" Text="Desc" FontWeight="Bold" FontSize="12"
