@@ -75,8 +75,13 @@
                         </Grid>
 
                         <Border Grid.Row="2" BorderBrush="Black" BorderThickness="0,0,0,1">
-                            <TextBlock x:Name="TbCategoryBig" FontSize="13" FontWeight="Bold"
-                                       HorizontalAlignment="Center" VerticalAlignment="Center"/>
+                            <Grid>
+                                <TextBlock x:Name="TbCategoryBig" FontSize="13" FontWeight="Bold"
+                                           HorizontalAlignment="Center" VerticalAlignment="Center"/>
+
+                                <TextBlock x:Name="TbProductCode" FontSize="7"
+                                           HorizontalAlignment="Right" VerticalAlignment="Center" Margin="0,0,6,0"/>
+                            </Grid>
                         </Border>
 
                         <StackPanel Grid.Row="3" HorizontalAlignment="Center" VerticalAlignment="Center">
@@ -120,5 +125,16 @@
                     Width="80" Height="34"
                     Background="#FFEEEEEE"/>
         </StackPanel>
+        <TextBlock Grid.Column="0" Text="Desc" FontWeight="Bold" FontSize="12"
+HorizontalAlignment="Left" VerticalAlignment="Center" Margin="13,0,0,0" RenderTransformOrigin="5.716,9.637" Height="0" Width="35">
+            <TextBlock.RenderTransform>
+                <TransformGroup>
+                    <ScaleTransform ScaleY="-1"/>
+                    <SkewTransform/>
+                    <RotateTransform/>
+                    <TranslateTransform/>
+                </TransformGroup>
+            </TextBlock.RenderTransform>
+        </TextBlock>
     </Grid>
 </Window>
