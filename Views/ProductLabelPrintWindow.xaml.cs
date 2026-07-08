@@ -71,8 +71,8 @@ namespace MyWPFCRUDApp.Views
             if (pd.ShowDialog() != true) return;
 
             // Matches the 4.61cm x 8.38cm label size from Photoshop
-            double labelWidth = MmToPx(46.1);
-            double labelHeight = MmToPx(83.8);
+            double labelWidth = MmToPx(50);
+            double labelHeight = MmToPx(100);
 
             pd.PrintTicket.PageMediaSize = new PageMediaSize(labelWidth, labelHeight);
 
