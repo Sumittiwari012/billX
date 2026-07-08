@@ -67,6 +67,34 @@ namespace MyWPFCRUDApp.Views
                 historyWin.ShowDialog();
             }
         }
+        private void PrintOptionsButton_Click(object sender, RoutedEventArgs e)
+        {
+            var win = new PrintOptionsWindow { Owner = Window.GetWindow(this) };
+            if (win.ShowDialog() != true) return;
+
+            var vm = DataContext as PurchaseViewModel;
+
+            switch (win.SelectedOption)
+            {
+                case "Barcode":
+                    if (vm == null || !vm.PurchaseItems.Any())
+                    {
+                        MessageBox.Show("Add at least one item to the invoice first.");
+                        return;
+                    }
+
+                    var barcodeWin = new BarcodeLabelsWindow(vm.PurchaseItems)
+                    {
+                        Owner = Window.GetWindow(this)
+                    };
+                    barcodeWin.ShowDialog();
+                    break;
+
+                case "PurchaseBill":
+                    MessageBox.Show("Purchase Bill print not built yet — coming in a later step.");
+                    break;
+            }
+        }
         private void PaymentButton_Click(object sender, RoutedEventArgs e)
         {
             if (DataContext is PurchaseViewModel vm)
