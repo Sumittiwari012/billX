@@ -22,9 +22,11 @@ namespace MyWPFCRUDApp.Views
         // ── Populate label fields ──────────────────────────────────────────────
         private void PopulateLabel()
         {
+            TbNameTop.Text = _product.ProductName;
+
             // Desc / Net Qty / Size row
             TbCategoryShort.Text = string.IsNullOrWhiteSpace(_product.CategoryName) ? "-" : _product.CategoryName;
-            TbNetQty.Text = "1";
+            TbNetQty.Text = _product.Quantity.ToString();   // was hardcoded "1"
             TbSizeVal.Text = string.IsNullOrWhiteSpace(_product.Size) ? "-" : _product.Size;
 
             // Category (big)
@@ -68,10 +70,9 @@ namespace MyWPFCRUDApp.Views
             var pd = new PrintDialog();
             if (pd.ShowDialog() != true) return;
 
-            // Force the printer's page size to exactly 50mm x 100mm so this
-            // prints at true label size instead of stretching to a full page.
-            double labelWidth = MmToPx(50);
-            double labelHeight = MmToPx(100);
+            // Matches the 4.61cm x 8.38cm label size from Photoshop
+            double labelWidth = MmToPx(46.1);
+            double labelHeight = MmToPx(83.8);
 
             pd.PrintTicket.PageMediaSize = new PageMediaSize(labelWidth, labelHeight);
 
