@@ -18,8 +18,8 @@
                 Grid.Row="0"
                 Width="189" Height="378"
                 Background="White"
-                HorizontalAlignment="Center" VerticalAlignment="Top"
-                Margin="0,20,-10,12">
+                HorizontalAlignment="Left" VerticalAlignment="Top"
+                Margin="10,10,0,0">
             <Grid>
                 <Grid.RowDefinitions>
                     <RowDefinition Height="34"/>
