@@ -20,7 +20,7 @@
                 Background="White"
                 
                 HorizontalAlignment="Center" VerticalAlignment="Top"
-                Margin="0,0,0,12">
+                Margin="0,0,-5,12">
             <Grid>
                 <Grid.RowDefinitions>
                     <RowDefinition Height="34"/>
@@ -60,11 +60,11 @@
                             <Border Grid.ColumnSpan="3" Grid.Row="1" BorderBrush="Black" BorderThickness="0,0,0,1"/>
 
                             <TextBlock Grid.Row="0" Grid.Column="0" Text="Desc" FontWeight="Bold" FontSize="12"
-                                       HorizontalAlignment="Center" VerticalAlignment="Center"/>
+           HorizontalAlignment="Center" VerticalAlignment="Center"/>
                             <TextBlock Grid.Row="0" Grid.Column="1" Text="Net Qty" FontWeight="Bold" FontSize="11"
-                                       HorizontalAlignment="Center" VerticalAlignment="Center"/>
+           HorizontalAlignment="Center" VerticalAlignment="Center"/>
                             <TextBlock Grid.Row="0" Grid.Column="2" Text="Size" FontWeight="Bold" FontSize="12"
-                                       HorizontalAlignment="Center" VerticalAlignment="Center"/>
+           HorizontalAlignment="Center" VerticalAlignment="Center"/>
 
                             <TextBlock x:Name="TbCategoryShort" Grid.Row="1" Grid.Column="0" FontSize="9"
                                        HorizontalAlignment="Center" VerticalAlignment="Center"/>
