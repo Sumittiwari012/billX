@@ -23,9 +23,9 @@ namespace MyWPFCRUDApp.Views
         private void PopulateLabel()
         {
 
-            TbProductCode.Text = _product.Colour;
+            
             // Desc / Net Qty / Size row
-            TbCategoryShort.Text = string.IsNullOrWhiteSpace(_product.CategoryName) ? "-" : _product.CategoryName;
+            TbCategoryShort.Text = _product.Colour;
             TbNetQty.Text = "1";   // was hardcoded "1"
             TbSizeVal.Text = string.IsNullOrWhiteSpace(_product.Size) ? "-" : _product.Size;
 
