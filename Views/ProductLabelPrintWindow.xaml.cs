@@ -26,7 +26,7 @@ namespace MyWPFCRUDApp.Views
             TbProductCode.Text = _product.Colour;
             // Desc / Net Qty / Size row
             TbCategoryShort.Text = string.IsNullOrWhiteSpace(_product.CategoryName) ? "-" : _product.CategoryName;
-            TbNetQty.Text = _product.Quantity.ToString();   // was hardcoded "1"
+            TbNetQty.Text = "1";   // was hardcoded "1"
             TbSizeVal.Text = string.IsNullOrWhiteSpace(_product.Size) ? "-" : _product.Size;
 
             // Category (big)
