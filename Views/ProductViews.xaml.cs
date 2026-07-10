@@ -60,5 +60,22 @@ namespace MyWPFCRUDApp.Views
                 win.ShowDialog();
             }
         }
+        private void PrintSelectedButton_Click(object sender, RoutedEventArgs e)
+        {
+            var selected = _vm.CheckedProducts.ToList();
+
+            if (!selected.Any())
+            {
+                MessageBox.Show("Please select at least one product to print.",
+                    "No Products Selected", MessageBoxButton.OK, MessageBoxImage.Information);
+                return;
+            }
+
+            foreach (var product in selected)
+            {
+                var win = new ProductLabelPrintWindow(product);
+                win.ShowDialog();   // blocks here — next window opens only after this one is closed
+            }
+        }
     }
 }
