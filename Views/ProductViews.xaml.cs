@@ -1,8 +1,9 @@
+using MyWPFCRUDApp.Helpers;
 using MyWPFCRUDApp.ViewModels;
+using System.Linq;
 using System.Windows;
 using System.Windows.Controls;
 using static MyWPFCRUDApp.Services.ProductService;
-
 namespace MyWPFCRUDApp.Views
 {
     public partial class ProductViews : UserControl
@@ -15,7 +16,6 @@ namespace MyWPFCRUDApp.Views
             this.DataContext = _vm;
             this.Loaded += (s, e) => BindColumnVisibility();
         }
-
         private void BindColumnVisibility()
         {
             var map = new Dictionary<string, DataGridColumn>
@@ -51,7 +51,6 @@ namespace MyWPFCRUDApp.Views
                 }
             }
         }
-
         private void PrintRowButton_Click(object sender, RoutedEventArgs e)
         {
             if (sender is Button btn && btn.Tag is ProductDisplayModel product)
@@ -63,7 +62,6 @@ namespace MyWPFCRUDApp.Views
         private void PrintSelectedButton_Click(object sender, RoutedEventArgs e)
         {
             var selected = _vm.CheckedProducts.ToList();
-
             if (!selected.Any())
             {
                 MessageBox.Show("Please select at least one product to print.",
@@ -71,9 +69,18 @@ namespace MyWPFCRUDApp.Views
                 return;
             }
 
+            // Resolve the saved default printer once for the whole batch
+            var queue = PrinterSettingsService.GetDefaultPrintQueue();
+            if (queue == null)
+            {
+                MessageBox.Show("No printer is configured. Please set one in Printer Settings.",
+                    "Printer Not Set", MessageBoxButton.OK, MessageBoxImage.Warning);
+                return;
+            }
+
             foreach (var product in selected)
             {
-                var win = new ProductLabelPrintWindow(product);
+                var win = new ProductLabelPrintWindow(product, queue);
                 win.ShowDialog();   // blocks here — next window opens only after this one is closed
             }
         }

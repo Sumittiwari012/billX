@@ -220,6 +220,9 @@ namespace MyWPFCRUDApp.ViewModels
                     case "Payment Setting":
                         viewType = typeof(PaymentMethodViews);
                         break;
+                    case "Printer Setting":
+                        viewType = typeof(PrinterSetting);
+                        break;
                     default:
                         CurrentView = new WorkInProgressView();
                         return;
