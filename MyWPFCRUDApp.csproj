@@ -1,0 +1,50 @@
+<Project Sdk="Microsoft.NET.Sdk">
+	<PropertyGroup>
+		<OutputType>WinExe</OutputType>
+		<TargetFramework>net8.0-windows</TargetFramework>
+		<Nullable>enable</Nullable>
+		<ImplicitUsings>enable</ImplicitUsings>
+		<UseWPF>true</UseWPF>
+
+		<!-- Auto-updater reads this to compare against GitHub release tag -->
+		<Version>1.2.64</Version>
+		<AssemblyVersion>1.2.64.0</AssemblyVersion>
+		<FileVersion>1.2.64.0</FileVersion>
+
+		<!-- Shown in Windows Add/Remove Programs -->
+		<Product>BillX</Product>
+		<Company>YourCompanyName</Company>
+		<Copyright>Copyright © 2026</Copyright>
+		<StartupObject>MyWPFCRUDApp.App</StartupObject>
+		
+		<CopyLocalLockFileAssemblies>true</CopyLocalLockFileAssemblies>
+		<SelfContained>false</SelfContained>
+		<PublishReadyToRun>false</PublishReadyToRun>
+    <ErrorOnDuplicatePublishOutputFiles>false</ErrorOnDuplicatePublishOutputFiles>
+		<ApplicationIcon>BillXLogo.ico</ApplicationIcon>
+		<ApplicationManifest>app.manifest</ApplicationManifest>
+	</PropertyGroup>
+	<ItemGroup>
+	  <Resource Include="BillXLogo.ico" />
+	</ItemGroup>
+
+	<ItemGroup>
+		<PackageReference Include="ClosedXML" Version="0.102.2" />
+		<PackageReference Include="ExcelDataReader.DataSet" Version="3.8.0" />
+		<PackageReference Include="MySql.Data" Version="8.4.0" />
+		<PackageReference Include="ZXing.Net" Version="0.16.11" />
+	</ItemGroup>
+
+	<!-- Copy MySQL ZIP to output folder so GetBundledZip() finds it next to .exe -->
+	<ItemGroup>
+		<None Update="mysql-8.0.45-winx64.zip">
+			<CopyToOutputDirectory>Always</CopyToOutputDirectory>
+			<CopyToPublishDirectory>Always</CopyToPublishDirectory>
+			<TargetPath>mysql-8.0.45-winx64.zip</TargetPath>
+		</None>
+	</ItemGroup>
+	<ItemGroup>
+	  <Folder Include="assets\" />
+	  <Folder Include="ViewModels\BaseViewModel\" />
+	</ItemGroup>
+</Project>

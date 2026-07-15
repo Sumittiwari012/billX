@@ -1,0 +1,6 @@
+gemini_key.txt
+bin/
+obj/
+.vs/
+*.user
+*.suo

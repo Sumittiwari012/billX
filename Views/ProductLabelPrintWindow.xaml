@@ -1,0 +1,140 @@
+<Window x:Class="MyWPFCRUDApp.Views.ProductLabelPrintWindow"
+        xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        Title="Print Product Label"
+        Width="280" Height="550"
+        WindowStartupLocation="CenterScreen"
+        ResizeMode="NoResize"
+        Background="#FFECECEC">
+
+    <Grid Margin="16">
+        <Grid.RowDefinitions>
+            <RowDefinition Height="*"/>
+            <RowDefinition Height="Auto"/>
+        </Grid.RowDefinitions>
+
+        <!-- Label Preview (this Border is exactly 50mm x 100mm — this is what gets printed) -->
+        <Border x:Name="PrintArea"
+                Grid.Row="0"
+                Width="189" Height="378"
+                Background="White"
+                HorizontalAlignment="Left" VerticalAlignment="Top"
+                Margin="10,10,0,0">
+            <Grid>
+                <Grid.RowDefinitions>
+                    <RowDefinition Height="34"/>
+                    <RowDefinition Height="53"/>
+                    <RowDefinition Height="33"/>
+                    <RowDefinition Height="34"/>
+                    <RowDefinition Height="81"/>
+                    <RowDefinition Height="50"/>
+                    <RowDefinition/>
+                </Grid.RowDefinitions>
+
+                <Border Grid.Row="1" Grid.RowSpan="6" Width="160" HorizontalAlignment="Center"
+                        BorderBrush="Black" BorderThickness="1" Margin="0,10,0,28">
+                    <Grid Margin="0,1,0,9">
+                        <Grid.RowDefinitions>
+                            <RowDefinition Height="36"/>
+                            <RowDefinition Height="30"/>
+                            <RowDefinition Height="34"/>
+                            <RowDefinition Height="80"/>
+                            <RowDefinition Height="50"/>
+                            <RowDefinition Height="*"/>
+                        </Grid.RowDefinitions>
+
+                        <Grid Grid.Row="0" Grid.RowSpan="2">
+                            <Grid.ColumnDefinitions>
+                                <ColumnDefinition Width="*"/>
+                                <ColumnDefinition Width="*"/>
+                                <ColumnDefinition Width="*"/>
+                            </Grid.ColumnDefinitions>
+                            <Grid.RowDefinitions>
+                                <RowDefinition Height="*"/>
+                                <RowDefinition Height="*"/>
+                            </Grid.RowDefinitions>
+
+                            <Border Grid.Column="0" Grid.RowSpan="2" BorderBrush="Black" BorderThickness="0,0,1,0"/>
+                            <Border Grid.Column="1" Grid.RowSpan="2" BorderBrush="Black" BorderThickness="0,0,1,0"/>
+                            <Border Grid.ColumnSpan="3" Grid.Row="0" BorderBrush="Black" BorderThickness="0,0,0,1"/>
+                            <Border Grid.ColumnSpan="3" Grid.Row="1" BorderBrush="Black" BorderThickness="0,0,0,1"/>
+
+                            <TextBlock Grid.Column="0" Text="Desc" FontWeight="Bold" FontSize="12"
+           HorizontalAlignment="Left" VerticalAlignment="Center" Margin="13,0,0,0"/>
+                            <TextBlock Grid.Row="0" Grid.Column="1" Text="Net Qty" FontWeight="Bold" FontSize="11"
+           HorizontalAlignment="Center" VerticalAlignment="Center"/>
+                            <TextBlock Grid.Row="0" Grid.Column="2" Text="Size" FontWeight="Bold" FontSize="12"
+           HorizontalAlignment="Center" VerticalAlignment="Center"/>
+
+                            <TextBlock x:Name="TbCategoryShort" Grid.Row="1" Grid.Column="0" FontSize="9"
+                                       HorizontalAlignment="Center" VerticalAlignment="Center"/>
+                            <TextBlock x:Name="TbNetQty" Grid.Row="1" Grid.Column="1" FontSize="9"
+                                       HorizontalAlignment="Center" VerticalAlignment="Center"/>
+                            <TextBlock x:Name="TbSizeVal" Grid.Row="1" Grid.Column="2" FontSize="9"
+                                       HorizontalAlignment="Center" VerticalAlignment="Center"/>
+                        </Grid>
+
+                        <Border Grid.Row="2" BorderBrush="Black" BorderThickness="0,0,0,1">
+                            <Grid>
+                                <TextBlock x:Name="TbCategoryBig" FontSize="13" FontWeight="Bold"
+                                           HorizontalAlignment="Center" VerticalAlignment="Center"/>
+
+                                <TextBlock x:Name="TbProductCode" FontSize="7"
+                                           HorizontalAlignment="Right" VerticalAlignment="Center" Margin="0,0,6,0"/>
+                            </Grid>
+                        </Border>
+
+                        <StackPanel Grid.Row="3" HorizontalAlignment="Center" VerticalAlignment="Center">
+                            <Image x:Name="BarcodeImage" Width="130" Height="42" Stretch="Fill"/>
+                            <TextBlock x:Name="TbBarcodeNumber" FontSize="12" FontWeight="Bold"
+                                       HorizontalAlignment="Center" Margin="0,3,0,0"/>
+                        </StackPanel>
+
+                        <Border Grid.Row="4" BorderBrush="Black" BorderThickness="0,1,0,1" Padding="4">
+                            <StackPanel HorizontalAlignment="Center" VerticalAlignment="Center">
+                                <TextBlock x:Name="TbCompanyName" FontSize="8" FontWeight="Bold"
+                                           TextWrapping="Wrap" TextAlignment="Center"/>
+                                <TextBlock x:Name="TbCompanyAddress" FontSize="7"
+                                           TextWrapping="Wrap" TextAlignment="Center" Margin="0,1,0,0"/>
+                            </StackPanel>
+                        </Border>
+
+                        <StackPanel Grid.Row="5" HorizontalAlignment="Center" VerticalAlignment="Center">
+                            <TextBlock Text="MRP   (incl. of all taxes)" FontSize="11" FontWeight="Bold" HorizontalAlignment="Center"/>
+                            <StackPanel Orientation="Horizontal" HorizontalAlignment="Center" Margin="0,6,0,0">
+                                <TextBlock Text="₹" FontSize="30" FontWeight="Bold"/>
+                                <TextBlock x:Name="TbMRPValue" FontSize="30" FontWeight="Bold" Margin="2,0,0,0"/>
+                            </StackPanel>
+                        </StackPanel>
+                    </Grid>
+                </Border>
+
+            </Grid>
+        </Border>
+
+        <!-- Buttons -->
+        <StackPanel Grid.Row="1" Orientation="Horizontal" HorizontalAlignment="Center">
+            <Button Content="🖨 Print"
+                    Click="PrintButton_Click"
+                    Width="110" Height="34" Margin="0,0,8,0"
+                    Background="#FF1F3A5F"
+                    Foreground="White"
+                    FontWeight="Bold"/>
+            <Button Content="Close"
+                    Click="CloseButton_Click"
+                    Width="80" Height="34"
+                    Background="#FFEEEEEE"/>
+        </StackPanel>
+        <TextBlock Grid.Column="0" Text="Desc" FontWeight="Bold" FontSize="12"
+HorizontalAlignment="Left" VerticalAlignment="Center" Margin="13,0,0,0" RenderTransformOrigin="5.716,9.637" Height="0" Width="35">
+            <TextBlock.RenderTransform>
+                <TransformGroup>
+                    <ScaleTransform ScaleY="-1"/>
+                    <SkewTransform/>
+                    <RotateTransform/>
+                    <TranslateTransform/>
+                </TransformGroup>
+            </TextBlock.RenderTransform>
+        </TextBlock>
+    </Grid>
+</Window>

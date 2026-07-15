@@ -1,0 +1,46 @@
+﻿<Window x:Class="MyWPFCRUDApp.Views.PrintOptionsWindow"
+        xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        Title="What would you like to print?"
+        Width="645" Height="330"
+        WindowStartupLocation="CenterOwner"
+        ResizeMode="NoResize"
+        Background="#FFFDF8F0">
+    <Grid Margin="20">
+        <Grid.RowDefinitions>
+            <RowDefinition Height="Auto"/>
+            <RowDefinition Height="*"/>
+            <RowDefinition Height="Auto"/>
+        </Grid.RowDefinitions>
+
+        <TextBlock Grid.Row="0"
+                   Text="Choose what to print"
+                   FontSize="14" FontWeight="Bold"
+                   Foreground="#212529"
+                   Margin="0,0,0,15"/>
+
+        <StackPanel Grid.Row="1" VerticalAlignment="Center">
+            <Button Content="🏷 Barcode"
+                    Click="BarcodeButton_Click"
+                    Height="42" Margin="0,0,0,10"
+                    Background="#1971C2" Foreground="White"
+                    FontWeight="SemiBold" FontSize="13"
+                    Cursor="Hand"/>
+
+            <Button Content="🧾 Purchase Bill"
+                    Click="PurchaseBillButton_Click"
+                    Height="42"
+                    Background="#2B8A3E" Foreground="White"
+                    FontWeight="SemiBold" FontSize="13"
+                    Cursor="Hand"/>
+        </StackPanel>
+
+        <Button Grid.Row="2"
+                Content="Cancel"
+                Click="CancelButton_Click"
+                Height="32" Width="90"
+                HorizontalAlignment="Right"
+                Margin="0,15,0,0"
+                Background="#FFEEEEEE"/>
+    </Grid>
+</Window>

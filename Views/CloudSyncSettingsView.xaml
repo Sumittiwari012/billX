@@ -1,0 +1,56 @@
+<UserControl x:Class="MyWPFCRUDApp.Views.CloudSyncSettingsView"
+             xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml">
+
+    <StackPanel Margin="24" MaxWidth="440" HorizontalAlignment="Left">
+
+        <TextBlock Text="Cloud Database Connection"
+                   FontSize="18" FontWeight="Bold" Foreground="#1B2A4A"
+                   Margin="0,0,0,4"/>
+        <TextBlock Text="Entered once, saved locally and encrypted. Never stored in source control."
+                   FontSize="12" Foreground="#777" TextWrapping="Wrap" Margin="0,0,0,16"/>
+
+        <TextBlock Text="Server / Host"/>
+        <TextBox x:Name="TxtServer" Margin="0,2,0,10" Padding="6,4"/>
+
+        <TextBlock Text="Port"/>
+        <TextBox x:Name="TxtPort" Text="3306" Margin="0,2,0,10" Padding="6,4"/>
+
+        <TextBlock Text="Database Name"/>
+        <TextBox x:Name="TxtDatabase" Margin="0,2,0,10" Padding="6,4"/>
+
+        <TextBlock Text="Username"/>
+        <TextBox x:Name="TxtUser" Margin="0,2,0,10" Padding="6,4"/>
+
+        <TextBlock Text="Password"/>
+        <PasswordBox x:Name="PwdPassword" Margin="0,2,0,16" Padding="6,4"/>
+
+        <StackPanel Orientation="Horizontal">
+            <Button x:Name="BtnSaveSettings"
+                    Content="Save Connection Settings"
+                    Click="SaveSettings_Click"
+                    Padding="12,8" Margin="0,0,10,0"
+                    Background="#EDE8DC" Foreground="#1B2A4A"
+                    BorderBrush="#C4B99A" Cursor="Hand"/>
+
+            <Button x:Name="BtnPushToCloud"
+                    Content="Push Local Data to Cloud"
+                    Click="PushToCloud_Click"
+                    Padding="12,8" Margin="0,0,10,0"
+                    Background="#1B2A4A" Foreground="White"
+                    BorderThickness="0" Cursor="Hand"/>
+
+            <Button x:Name="BtnPullFromCloud"
+                    Content="Pull New Sales From Cloud"
+                    Click="PullFromCloud_Click"
+                    Padding="12,8"
+                    Background="#2C6B4B" Foreground="White"
+                    BorderThickness="0" Cursor="Hand"/>
+        </StackPanel>
+
+        <TextBlock x:Name="StatusText"
+                   Margin="0,16,0,0"
+                   TextWrapping="Wrap"
+                   Foreground="#555"/>
+    </StackPanel>
+</UserControl>
