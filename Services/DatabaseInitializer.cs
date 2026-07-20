@@ -436,6 +436,53 @@ namespace MyWPFCRUDApp.Services
     -- Traceability back to the original purchase invoice
     CONSTRAINT FK_CustomerPurchaseReturn_Invoice FOREIGN KEY (InvoiceNumber) 
     REFERENCES MCustomerPurchaseMaster(InvoiceNumber)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;",
+@"CREATE TABLE IF NOT EXISTS MUserType (
+    Id BIGINT AUTO_INCREMENT PRIMARY KEY,
+
+    -- Metadata
+    CreatedBy VARCHAR(100) DEFAULT 'System',
+    CreatedDate DATETIME DEFAULT CURRENT_TIMESTAMP,
+    ModifiedBy VARCHAR(100) DEFAULT 'System',
+    ModifiedDate DATETIME DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+
+    UserTypeName VARCHAR(100) NOT NULL UNIQUE
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;",
+@"CREATE TABLE IF NOT EXISTS MUser (
+    Id BIGINT AUTO_INCREMENT PRIMARY KEY,
+    -- Metadata
+    CreatedBy VARCHAR(100) DEFAULT 'System',
+    CreatedDate DATETIME DEFAULT CURRENT_TIMESTAMP,
+    ModifiedBy VARCHAR(100) DEFAULT 'System',
+    ModifiedDate DATETIME DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+    UserName VARCHAR(100) NOT NULL UNIQUE,
+    UserTypeId BIGINT NOT NULL,
+    CONSTRAINT FK_MUser_UserType FOREIGN KEY (UserTypeId) REFERENCES MUserType(Id)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;",
+@"CREATE TABLE IF NOT EXISTS MCounter (
+    Id BIGINT AUTO_INCREMENT PRIMARY KEY,
+    -- Metadata
+    CreatedBy VARCHAR(100) DEFAULT 'System',
+    CreatedDate DATETIME DEFAULT CURRENT_TIMESTAMP,
+    ModifiedBy VARCHAR(100) DEFAULT 'System',
+    ModifiedDate DATETIME DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+    CounterName VARCHAR(100) NOT NULL UNIQUE,
+    UserId BIGINT NOT NULL,
+    Password VARCHAR(255) NOT NULL,
+    CONSTRAINT FK_MCounter_MUser FOREIGN KEY (UserId) REFERENCES MUser(Id)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;",
+@"CREATE TABLE IF NOT EXISTS MPettyCash (
+    Id BIGINT AUTO_INCREMENT PRIMARY KEY,
+    -- Metadata
+    CreatedBy VARCHAR(100) DEFAULT 'System',
+    CreatedDate DATETIME DEFAULT CURRENT_TIMESTAMP,
+    ModifiedBy VARCHAR(100) DEFAULT 'System',
+    ModifiedDate DATETIME DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+    PettyCash DECIMAL(18,2) NOT NULL DEFAULT 0.00,
+    CounterId BIGINT NOT NULL,
+    Date DATE NULL,
+    Accepted TINYINT(1) NOT NULL DEFAULT 0,
+    CONSTRAINT FK_PettyCash_Counter FOREIGN KEY (CounterId) REFERENCES MCounter(Id)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;"
 
                 
@@ -478,7 +525,8 @@ namespace MyWPFCRUDApp.Services
                 { "mrpcolumnadded in the table","ALTER TABLE MPurchaseDetail ADD COLUMN MRP DOUBLE NOT NULL DEFAULT 0.0;"},
                 { "make_productname_nullable","ALTER TABLE MProducts MODIFY ProductName VARCHAR(200) NULL;" },
                 { "make_productquantity_productcode_nullable","ALTER TABLE ProductQuantity MODIFY ProductCode VARCHAR(50) NULL;" },
-                { "enforce_unique_barcode_on_productquantity","ALTER TABLE ProductQuantity ADD UNIQUE KEY UQ_ProductQuantity_Barcode (Barcode);" }
+                { "enforce_unique_barcode_on_productquantity","ALTER TABLE ProductQuantity ADD UNIQUE KEY UQ_ProductQuantity_Barcode (Barcode);" },
+                { "add_mobile_column","ALTER TABLE MUser ADD COLUMN MobileNumber BIGINT NOT NULL DEFAULT 0;"}
         
         // Future changes go here:
         // { "Remove_OldColumn", "ALTER TABLE MProducts DROP COLUMN OldColumn;" }

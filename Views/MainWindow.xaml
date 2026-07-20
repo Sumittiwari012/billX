@@ -143,6 +143,15 @@
                                        Visibility="{Binding SidebarTextVisibility}"/>
                         </StackPanel>
                     </Button>
+                    <Button Style="{StaticResource SidebarBtnStyle}"
+        Command="{Binding SelectSectionCommand}"
+        CommandParameter="user">
+                        <StackPanel Orientation="Horizontal">
+                            <TextBlock Text="👤" FontSize="16" VerticalAlignment="Center"/>
+                            <TextBlock Text=" User" VerticalAlignment="Center"
+                   Visibility="{Binding SidebarTextVisibility}"/>
+                        </StackPanel>
+                    </Button>
 
                 </StackPanel>
             </ScrollViewer>

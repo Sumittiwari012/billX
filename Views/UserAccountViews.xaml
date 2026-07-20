@@ -1,0 +1,59 @@
+﻿<UserControl x:Class="MyWPFCRUDApp.Views.UserAccountViews"
+             xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006" 
+             xmlns:d="http://schemas.microsoft.com/expression/blend/2008" 
+             xmlns:local="clr-namespace:MyWPFCRUDApp.Views"
+             Background="AliceBlue"
+             mc:Ignorable="d" 
+             d:DesignHeight="450" d:DesignWidth="800">
+    <Grid Margin="10">
+        <Grid.ColumnDefinitions>
+            <ColumnDefinition Width="1.2*"/>
+            <ColumnDefinition Width="2*"/>
+        </Grid.ColumnDefinitions>
+        <GroupBox Header="Registered Users" Margin="5">
+            <DataGrid ItemsSource="{Binding Users}" 
+                      SelectedItem="{Binding SelectedUser}" 
+                      AutoGenerateColumns="False" 
+                      IsReadOnly="True"
+                      SelectionMode="Single">
+                <DataGrid.Columns>
+                    <DataGridTextColumn Header="ID" Binding="{Binding Id}" Width="40"/>
+                    <DataGridTextColumn Header="User Name" Binding="{Binding UserName}" Width="*"/>
+                    <DataGridTextColumn Header="User Type" Binding="{Binding UserTypeName}" Width="*"/>
+                    <DataGridTextColumn Header="Mobile Number" Binding="{Binding MobileNumber}" Width="*"/>
+                </DataGrid.Columns>
+            </DataGrid>
+        </GroupBox>
+        <ScrollViewer Grid.Column="1" VerticalScrollBarVisibility="Auto" Margin="5">
+            <StackPanel>
+                <GroupBox Header="Basic Identity" Margin="0,0,0,10">
+                    <UniformGrid Columns="2" Margin="5">
+                        <StackPanel Margin="5">
+                            <Label Content="User Name*"/>
+                            <TextBox Text="{Binding CurrentUser.UserName, UpdateSourceTrigger=PropertyChanged}"/>
+                        </StackPanel>
+                        <StackPanel Margin="5">
+                            <Label Content="User Type*"/>
+                            <ComboBox ItemsSource="{Binding UserTypes}"
+                                      SelectedItem="{Binding SelectedUserType}"
+                                      DisplayMemberPath="UserTypeName"/>
+                        </StackPanel>
+                        <StackPanel Margin="5">
+                            <Label Content="Mobile Number*"/>
+                            <TextBox Text="{Binding CurrentUser.MobileNumber, UpdateSourceTrigger=PropertyChanged}"
+                                     MaxLength="10"
+                                     PreviewTextInput="NumericOnly_PreviewTextInput"/>
+                        </StackPanel>
+                    </UniformGrid>
+                </GroupBox>
+                <StackPanel Orientation="Horizontal" HorizontalAlignment="Right" Margin="0,10,5,20">
+                    <Button Content="Reset" Command="{Binding UserResetCommand}" Width="90" Height="30" Margin="5"/>
+                    <Button Content="Delete" Command="{Binding UserDeleteCommand}" Width="90" Height="30" Margin="5" Background="#FFFFEBEB" Foreground="DarkRed"/>
+                    <Button Content="Save" Command="{Binding UserSaveCommand}" Width="130" Height="30" Margin="5" Background="#FF007ACC" Foreground="White" FontWeight="Bold"/>
+                </StackPanel>
+            </StackPanel>
+        </ScrollViewer>
+    </Grid>
+</UserControl>

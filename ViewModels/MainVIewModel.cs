@@ -133,8 +133,9 @@ namespace MyWPFCRUDApp.ViewModels
             ["inventory"] = ("Inventory", new[] { "Stock Entry", "Stock Adjustment", "Branch Stock Inward", "Branch Stock Outward" }),
             ["banking"] = ("Banking", new[] { "Bank Master", "Branch Master", "Bank Account Registration", "Fund Deposit", "Fund Transfer", "Payment Withdrawal", "Account Statement" }),
             ["reports"] = ("Reports", new[] { "Supplier Ledger", "Customer Ledger", "Cash Ledger", "Income Report", "Expense Report", "Sales Report", "Purchase Report", "Balance Sheet", "Profit & Loss", "Trial Balance", "Low Stock Item" }),
-            ["settings"] = ("Settings", new[] { "User", "Add Company", "Terminal Settings", "Sales Invoice Settings", "Auto Round Off", "WhatsApp", "Printer Setting", "Payment Setting", "Cloud Sync" }),
-            ["tax"] = ("Tax", new[] { "Tax Type", "GSTR1", "GSTR3B" })
+            ["settings"] = ("Settings", new[] {"Add Company", "Terminal Settings", "Sales Invoice Settings", "Auto Round Off", "WhatsApp", "Printer Setting", "Payment Setting", "Cloud Sync" }),
+            ["tax"] = ("Tax", new[] { "Tax Type", "GSTR1", "GSTR3B" }),
+            ["user"]= ("User", new[] { "User Type", "User", "Counter Settings","Petty Cash" })
         };
 
         public MainViewModel()
@@ -225,6 +226,18 @@ namespace MyWPFCRUDApp.ViewModels
                         break;
                     case "Cloud Sync":
                         viewType = typeof(CloudSyncSettingsView);
+                        break;
+                    case "User Type":
+                        viewType = typeof(UserTypeViews);
+                        break;
+                    case "User":
+                        viewType = typeof(UserAccountViews);
+                        break;
+                    case "Counter Settings":
+                        viewType = typeof(CounterViews);
+                        break;
+                    case "Petty Cash":
+                        viewType = typeof(PettyCashViews);
                         break;
                     default:
                         CurrentView = new WorkInProgressView();
