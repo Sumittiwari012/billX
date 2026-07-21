@@ -135,7 +135,7 @@ namespace MyWPFCRUDApp.ViewModels
             ["reports"] = ("Reports", new[] { "Supplier Ledger", "Customer Ledger", "Cash Ledger", "Income Report", "Expense Report", "Sales Report", "Purchase Report", "Balance Sheet", "Profit & Loss", "Trial Balance", "Low Stock Item" }),
             ["settings"] = ("Settings", new[] {"Add Company", "Terminal Settings", "Sales Invoice Settings", "Auto Round Off", "WhatsApp", "Printer Setting", "Payment Setting", "Cloud Sync" }),
             ["tax"] = ("Tax", new[] { "Tax Type", "GSTR1", "GSTR3B" }),
-            ["user"]= ("User", new[] { "User Type", "User", "Counter Settings","Petty Cash" })
+            ["user"]= ("User", new[] { "User Type", "User", "Counter Settings","Petty Cash","Login/Logout" })
         };
 
         public MainViewModel()
@@ -238,6 +238,9 @@ namespace MyWPFCRUDApp.ViewModels
                         break;
                     case "Petty Cash":
                         viewType = typeof(PettyCashViews);
+                        break;
+                    case "Login/Logout":
+                        viewType = typeof(LoginLogoutViews);
                         break;
                     default:
                         CurrentView = new WorkInProgressView();

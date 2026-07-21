@@ -35,18 +35,15 @@ namespace MyWPFCRUDApp.Services
         /// </summary>
         private static readonly string[] TablesInDependencyOrder =
         {
-            // Level 0 - no FK dependencies
             "MCategory",
             "MUnit",
-
-            // Level 1 - depend on level 0
-            "MSubCategory",   // -> MCategory
-
-            // Level 2 - depend on level 1
-            "MProducts",      // -> MCategory, MSubCategory, MUnit
-
-            // Level 3 - depend on level 2
-            "ProductQuantity",// -> MProducts (Barcode)
+            "MUserType",
+            "MUser",
+            "MCounter",
+            "MPettyCash",
+            "MSubCategory",  
+            "MProducts",     
+            "ProductQuantity",
         };
 
         /// <summary>

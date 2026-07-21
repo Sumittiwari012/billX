@@ -410,32 +410,48 @@ namespace MyWPFCRUDApp.Services
     AmountPaid DECIMAL(18,2) NOT NULL DEFAULT 0.00
 
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;",
-@"CREATE TABLE IF NOT EXISTS MCustomerPurchaseReturn (
+@"CREATE TABLE IF NOT EXISTS MCustomerReturnMaster (
     Id BIGINT AUTO_INCREMENT PRIMARY KEY,
-
-    -- Which purchase this return traces back to
+ 
+    -- Traceability
     InvoiceNumber VARCHAR(100) NOT NULL,
-    Barcode VARCHAR(100) NOT NULL,
-
-    -- Snapshot of the original row's values at return time
-    Quantity DOUBLE NOT NULL DEFAULT 0,
-    ValueAmount DECIMAL(18,2) NOT NULL DEFAULT 0.00,
-    DiscountProvided DECIMAL(18,2) NOT NULL DEFAULT 0.00,
-    AfterTaxation DECIMAL(18,2) NOT NULL DEFAULT 0.00,
-
-    -- Return-specific info
-    ReturnDate DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
-    Remarks TEXT,
-
+    ReturnInvoiceNumber VARCHAR(100) NOT NULL UNIQUE,
+    CustomerId BIGINT NOT NULL,
+ 
+    -- Financials
+    TotalAmount DECIMAL(18,2) NOT NULL DEFAULT 0.00,
+ 
     -- Metadata
     CreatedBy VARCHAR(100) DEFAULT 'System',
     CreatedDate DATETIME DEFAULT CURRENT_TIMESTAMP,
     ModifiedBy VARCHAR(100) DEFAULT 'System',
     ModifiedDate DATETIME DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
-
-    -- Traceability back to the original purchase invoice
-    CONSTRAINT FK_CustomerPurchaseReturn_Invoice FOREIGN KEY (InvoiceNumber) 
-    REFERENCES MCustomerPurchaseMaster(InvoiceNumber)
+ 
+    CONSTRAINT FK_CustomerReturnMaster_Invoice FOREIGN KEY (InvoiceNumber)
+    REFERENCES MCustomerPurchaseMaster(InvoiceNumber),
+ 
+    CONSTRAINT FK_CustomerReturnMaster_Customer FOREIGN KEY (CustomerId)
+    REFERENCES MCustomer(Id)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;",
+@"CREATE TABLE IF NOT EXISTS MCustomerReturnDetail (
+    Id BIGINT AUTO_INCREMENT PRIMARY KEY,
+ 
+    ReturnInvoiceNumber VARCHAR(100) NOT NULL,
+    ProductId BIGINT NOT NULL,
+    Quantity DOUBLE NOT NULL DEFAULT 0,
+    SalePrice DECIMAL(18,2) NOT NULL DEFAULT 0.00,
+ 
+    -- Metadata
+    CreatedBy LONGTEXT,
+    CreatedDate DATETIME(6) NOT NULL DEFAULT CURRENT_TIMESTAMP(6),
+    ModifiedBy LONGTEXT,
+    ModifiedDate DATETIME(6) NOT NULL DEFAULT CURRENT_TIMESTAMP(6) ON UPDATE CURRENT_TIMESTAMP(6),
+ 
+    CONSTRAINT FK_CustomerReturnDetail_Master FOREIGN KEY (ReturnInvoiceNumber)
+    REFERENCES MCustomerReturnMaster(ReturnInvoiceNumber) ON DELETE CASCADE,
+ 
+    CONSTRAINT FK_CustomerReturnDetail_Product FOREIGN KEY (ProductId)
+    REFERENCES MProducts(Id)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;",
 @"CREATE TABLE IF NOT EXISTS MUserType (
     Id BIGINT AUTO_INCREMENT PRIMARY KEY,
@@ -483,6 +499,21 @@ namespace MyWPFCRUDApp.Services
     Date DATE NULL,
     Accepted TINYINT(1) NOT NULL DEFAULT 0,
     CONSTRAINT FK_PettyCash_Counter FOREIGN KEY (CounterId) REFERENCES MCounter(Id)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;",
+@"CREATE TABLE IF NOT EXISTS MLoginLogout (
+    Id BIGINT AUTO_INCREMENT PRIMARY KEY,
+    -- Metadata
+    CreatedBy VARCHAR(100) DEFAULT 'System',
+    CreatedDate DATETIME DEFAULT CURRENT_TIMESTAMP,
+    ModifiedBy VARCHAR(100) DEFAULT 'System',
+    ModifiedDate DATETIME DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+    CounterId BIGINT NOT NULL,
+    UserId BIGINT NOT NULL,
+    loginTime DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    logoutTime DATETIME NULL,
+    Settlement TINYINT(1) NOT NULL DEFAULT 0,
+    CONSTRAINT FK_loginlogout_counter FOREIGN KEY (CounterId) REFERENCES MCounter(Id),
+    CONSTRAINT FK_loginlogout_user FOREIGN KEY (UserId) REFERENCES MUser(Id)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;"
 
                 

@@ -10,12 +10,15 @@ using MySql.Data.MySqlClient;
 namespace MyWPFCRUDApp.Services
 {
     /// <summary>
-    /// Pulls customer, customer-purchase, payment, and product-quantity rows that
-    /// exist in the cloud database into the local database.
+    /// Pulls customer, customer-purchase, customer-return, payment, petty-cash,
+    /// login/logout, and product-quantity rows that exist in the cloud database
+    /// into the local database.
     ///
     /// For MCustomer / MCustomerPurchaseMaster / MCustomerPurchaseDetail /
-    /// MCustomerPayment: rows are pulled by Id, tracked via __CloudImportTracking,
-    /// and only ever ADDED locally - existing local rows are never changed.
+    /// MCustomerPayment / MCustomerReturnMaster / MCustomerReturnDetail /
+    /// MPettyCash / MLoginLogout: rows are pulled by Id, tracked via
+    /// __CloudImportTracking, and only ever ADDED locally - existing local rows
+    /// are never changed.
     ///
     /// For ProductQuantity: rows are matched by the natural key Barcode instead.
     /// If a barcode doesn't exist locally yet, the row is inserted. If it already
@@ -23,11 +26,26 @@ namespace MyWPFCRUDApp.Services
     /// cloud's value - this is the one table where the cloud is treated as the
     /// source of truth for the value, not just for new rows.
     ///
-    /// IMPORTANT ASSUMPTION: MCustomerPurchaseDetail.ProductId is trusted as-is
-    /// (not remapped) because product master data (MProducts, MCategory, MUnit,
-    /// MSubCategory) is pushed local -> cloud with explicit, matching Id values via
-    /// CloudSyncService. If that ever changes, ProductId matching here would need
-    /// to be redone via a natural key (e.g. Barcode) instead.
+    /// IMPORTANT ASSUMPTION: MCustomerPurchaseDetail.ProductId and
+    /// MCustomerReturnDetail.ProductId are trusted as-is (not remapped) because
+    /// product master data (MProducts, MCategory, MUnit, MSubCategory) is pushed
+    /// local -> cloud with explicit, matching Id values via CloudSyncService. If
+    /// that ever changes, ProductId matching here would need to be redone via a
+    /// natural key (e.g. Barcode) instead.
+    ///
+    /// MLoginLogout.UserId is likewise trusted as-is (not remapped) - MUser isn't
+    /// pulled here, so there's no cloudId -> localId map for it. If MUser ever
+    /// becomes something IDs diverge on, this will need the same natural-key
+    /// treatment as ProductId above.
+    ///
+    /// MPettyCash.CounterId and MLoginLogout.CounterId are also trusted as-is
+    /// (not remapped) - MCounter isn't pulled here either, so there's no
+    /// cloudId -> localId map for it. Same caveat as ProductId/UserId above if
+    /// that ever changes.
+    ///
+    /// NOT pulled here (sync direction wasn't established for these, so they're
+    /// left untouched to avoid guessing wrong): MCounter, MPaymentMethod, MUser,
+    /// MUserType.
     ///
     /// Usage:
     ///   await CloudPullService.PullCustomerDataFromCloudAsync(progress);
@@ -95,6 +113,44 @@ namespace MyWPFCRUDApp.Services
                     {
                         ["CustomerId"] = customerIdMap
                     },
+                    progress, cancellationToken);
+
+                progress?.Report("Pulling customer return invoices...");
+                var returnMasterIdMap = await PullTableAsync(
+                    cloudConn, localConn, transaction,
+                    table: "MCustomerReturnMaster",
+                    idColumn: "Id",
+                    remapColumns: new Dictionary<string, IReadOnlyDictionary<long, long>>
+                    {
+                        ["CustomerId"] = customerIdMap
+                    },
+                    progress, cancellationToken);
+
+                progress?.Report("Pulling customer return line items...");
+                await PullTableAsync(
+                    cloudConn, localConn, transaction,
+                    table: "MCustomerReturnDetail",
+                    idColumn: "Id",
+                    remapColumns: new Dictionary<string, IReadOnlyDictionary<long, long>>
+                    {
+                        ["ReturnMasterId"] = returnMasterIdMap
+                    },
+                    progress, cancellationToken);
+
+                progress?.Report("Pulling petty cash entries...");
+                await PullTableAsync(
+                    cloudConn, localConn, transaction,
+                    table: "MPettyCash",
+                    idColumn: "Id",
+                    remapColumns: null,
+                    progress, cancellationToken);
+
+                progress?.Report("Pulling login/logout records...");
+                await PullTableAsync(
+                    cloudConn, localConn, transaction,
+                    table: "MLoginLogout",
+                    idColumn: "Id",
+                    remapColumns: null,
                     progress, cancellationToken);
 
                 progress?.Report("Pulling product quantities...");
