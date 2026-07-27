@@ -475,17 +475,27 @@ namespace MyWPFCRUDApp.Services
     UserTypeId BIGINT NOT NULL,
     CONSTRAINT FK_MUser_UserType FOREIGN KEY (UserTypeId) REFERENCES MUserType(Id)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;",
-@"CREATE TABLE IF NOT EXISTS MCounter (
+@"CREATE TABLE IF NOT EXISTS MCounterNew (
     Id BIGINT AUTO_INCREMENT PRIMARY KEY,
     -- Metadata
     CreatedBy VARCHAR(100) DEFAULT 'System',
     CreatedDate DATETIME DEFAULT CURRENT_TIMESTAMP,
     ModifiedBy VARCHAR(100) DEFAULT 'System',
     ModifiedDate DATETIME DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
-    CounterName VARCHAR(100) NOT NULL UNIQUE,
+    CounterName VARCHAR(100) NOT NULL UNIQUE
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;",
+@"CREATE TABLE IF NOT EXISTS MCounterUser (
+    Id BIGINT AUTO_INCREMENT PRIMARY KEY,
+    -- Metadata
+    CreatedBy VARCHAR(100) DEFAULT 'System',
+    CreatedDate DATETIME DEFAULT CURRENT_TIMESTAMP,
+    ModifiedBy VARCHAR(100) DEFAULT 'System',
+    ModifiedDate DATETIME DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+    CounterId BIGINT NOT NULL,
     UserId BIGINT NOT NULL,
     Password VARCHAR(255) NOT NULL,
-    CONSTRAINT FK_MCounter_MUser FOREIGN KEY (UserId) REFERENCES MUser(Id)
+    CONSTRAINT FK_MCounterUser_MCounterNew FOREIGN KEY (CounterId) REFERENCES MCounterNew(Id) ON DELETE CASCADE,
+    CONSTRAINT FK_MCounterUser_MUser FOREIGN KEY (UserId) REFERENCES MUser(Id)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;",
 @"CREATE TABLE IF NOT EXISTS MPettyCash (
     Id BIGINT AUTO_INCREMENT PRIMARY KEY,
@@ -498,7 +508,7 @@ namespace MyWPFCRUDApp.Services
     CounterId BIGINT NOT NULL,
     Date DATE NULL,
     Accepted TINYINT(1) NOT NULL DEFAULT 0,
-    CONSTRAINT FK_PettyCash_Counter FOREIGN KEY (CounterId) REFERENCES MCounter(Id)
+    CONSTRAINT FK_PettyCash_Counter FOREIGN KEY (CounterId) REFERENCES MCounterNew(Id)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;",
 @"CREATE TABLE IF NOT EXISTS MLoginLogout (
     Id BIGINT AUTO_INCREMENT PRIMARY KEY,
@@ -512,9 +522,23 @@ namespace MyWPFCRUDApp.Services
     loginTime DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
     logoutTime DATETIME NULL,
     Settlement TINYINT(1) NOT NULL DEFAULT 0,
-    CONSTRAINT FK_loginlogout_counter FOREIGN KEY (CounterId) REFERENCES MCounter(Id),
+    CONSTRAINT FK_loginlogout_counter FOREIGN KEY (CounterId) REFERENCES MCounterNew(Id),
     CONSTRAINT FK_loginlogout_user FOREIGN KEY (UserId) REFERENCES MUser(Id)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;",
+@"CREATE TABLE IF NOT EXISTS SettlementRequest (
+    Id BIGINT AUTO_INCREMENT PRIMARY KEY,
+    -- Metadata
+    CreatedBy VARCHAR(100) DEFAULT 'System',
+    CreatedDate DATETIME DEFAULT CURRENT_TIMESTAMP,
+    ModifiedBy VARCHAR(100) DEFAULT 'System',
+    ModifiedDate DATETIME DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+    CounterId BIGINT NOT NULL,
+    LoginLogoutId BIGINT NOT NULL,
+    Accepted TINYINT(1) NOT NULL DEFAULT 0,
+    CONSTRAINT FK_settlement_counter FOREIGN KEY (CounterId) REFERENCES MCounterNew(Id)
+    
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;"
+
 
                 
 
@@ -557,8 +581,15 @@ namespace MyWPFCRUDApp.Services
                 { "make_productname_nullable","ALTER TABLE MProducts MODIFY ProductName VARCHAR(200) NULL;" },
                 { "make_productquantity_productcode_nullable","ALTER TABLE ProductQuantity MODIFY ProductCode VARCHAR(50) NULL;" },
                 { "enforce_unique_barcode_on_productquantity","ALTER TABLE ProductQuantity ADD UNIQUE KEY UQ_ProductQuantity_Barcode (Barcode);" },
-                { "add_mobile_column","ALTER TABLE MUser ADD COLUMN MobileNumber BIGINT NOT NULL DEFAULT 0;"}
-        
+                { "add_mobile_column","ALTER TABLE MUser ADD COLUMN MobileNumber BIGINT NOT NULL DEFAULT 0;"},
+                {"customer_payment_updated","ALTER TABLE MCustomerPayment ADD COLUMN CounterId DOUBLE NOT NULL DEFAULT 1;" },
+                {"customer_purchasedetail_updated","ALTER TABLE MCustomerPurchaseDetail ADD COLUMN CounterId DOUBLE NOT NULL DEFAULT 1;" },
+                {"customer_purchasemaster_updated","ALTER TABLE MCustomerPurchaseMaster ADD COLUMN CounterId DOUBLE NOT NULL DEFAULT 1;" },
+                {"customer_returndetail_updated","ALTER TABLE MCustomerReturnDetail ADD COLUMN CounterId DOUBLE NOT NULL DEFAULT 1;" },
+                {"customer_returnMaster_updated","ALTER TABLE MCustomerReturnMaster ADD COLUMN CounterId DOUBLE NOT NULL DEFAULT 1;" },
+                {"customer_pettycashloginid_updated","ALTER TABLE MPettyCash ADD COLUMN LoginLogoutId DOUBLE NOT NULL DEFAULT 1;" }
+
+
         // Future changes go here:
         // { "Remove_OldColumn", "ALTER TABLE MProducts DROP COLUMN OldColumn;" }
     };

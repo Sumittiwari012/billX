@@ -1,4 +1,4 @@
-﻿using MyWPFCRUDApp.Helpers;
+using MyWPFCRUDApp.Helpers;
 using MyWPFCRUDApp.Models;
 using MyWPFCRUDApp.Services;
 using System;
@@ -25,8 +25,8 @@ namespace MyWPFCRUDApp.ViewModels
             set => SetProperty(ref _pettyCashEntries, value);
         }
 
-        private ObservableCollection<MCounter> _counters;
-        public ObservableCollection<MCounter> Counters
+        private ObservableCollection<MCounterNew> _counters;
+        public ObservableCollection<MCounterNew> Counters
         {
             get => _counters;
             set => SetProperty(ref _counters, value);
@@ -60,8 +60,8 @@ namespace MyWPFCRUDApp.ViewModels
             set => SetProperty(ref _currentEntry, value);
         }
 
-        private MCounter _selectedCounter;
-        public MCounter SelectedCounter
+        private MCounterNew _selectedCounter;
+        public MCounterNew SelectedCounter
         {
             get => _selectedCounter;
             set => SetProperty(ref _selectedCounter, value);
@@ -70,7 +70,7 @@ namespace MyWPFCRUDApp.ViewModels
         public void LoadData()
         {
             var counterData = _counterService.GetCounters();
-            Counters = new ObservableCollection<MCounter>(counterData);
+            Counters = new ObservableCollection<MCounterNew>(counterData);
 
             var entryData = _pettyCashService.GetPettyCash();
             PettyCashEntries = new ObservableCollection<MPettyCash>(entryData);

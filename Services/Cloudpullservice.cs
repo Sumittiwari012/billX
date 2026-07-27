@@ -11,48 +11,54 @@ namespace MyWPFCRUDApp.Services
 {
     /// <summary>
     /// Pulls customer, customer-purchase, customer-return, payment, petty-cash,
-    /// login/logout, and product-quantity rows that exist in the cloud database
-    /// into the local database.
+    /// login/logout, and product-quantity rows from the cloud database into the
+    /// local database.
     ///
     /// For MCustomer / MCustomerPurchaseMaster / MCustomerPurchaseDetail /
     /// MCustomerPayment / MCustomerReturnMaster / MCustomerReturnDetail /
-    /// MPettyCash / MLoginLogout: rows are pulled by Id, tracked via
-    /// __CloudImportTracking, and only ever ADDED locally - existing local rows
-    /// are never changed.
+    /// MPettyCash / MLoginLogout: this is a FULL REPLACE. Every row currently in
+    /// the local table is deleted, and every row from the cloud table is copied
+    /// in as-is (including the cloud's own Id values - they are NOT remapped).
+    /// The cloud is treated as the sole source of truth for these tables.
     ///
-    /// For ProductQuantity: rows are matched by the natural key Barcode instead.
-    /// If a barcode doesn't exist locally yet, the row is inserted. If it already
-    /// exists locally, its Quantity (and MinimumSellingQuantity) is UPDATED to the
-    /// cloud's value - this is the one table where the cloud is treated as the
-    /// source of truth for the value, not just for new rows.
+    /// Because Id values are carried over unchanged, foreign keys between these
+    /// tables (e.g. MCustomerPurchaseDetail.PurchaseMasterId) line up naturally
+    /// and need no translation. Foreign key checks are disabled for the duration
+    /// of the pull so tables can be cleared/reloaded without worrying about
+    /// delete/insert ordering across them.
     ///
-    /// IMPORTANT ASSUMPTION: MCustomerPurchaseDetail.ProductId and
-    /// MCustomerReturnDetail.ProductId are trusted as-is (not remapped) because
-    /// product master data (MProducts, MCategory, MUnit, MSubCategory) is pushed
-    /// local -> cloud with explicit, matching Id values via CloudSyncService. If
-    /// that ever changes, ProductId matching here would need to be redone via a
-    /// natural key (e.g. Barcode) instead.
-    ///
-    /// MLoginLogout.UserId is likewise trusted as-is (not remapped) - MUser isn't
-    /// pulled here, so there's no cloudId -> localId map for it. If MUser ever
-    /// becomes something IDs diverge on, this will need the same natural-key
-    /// treatment as ProductId above.
-    ///
-    /// MPettyCash.CounterId and MLoginLogout.CounterId are also trusted as-is
-    /// (not remapped) - MCounter isn't pulled here either, so there's no
-    /// cloudId -> localId map for it. Same caveat as ProductId/UserId above if
-    /// that ever changes.
+    /// For ProductQuantity: rows are matched by the natural key Barcode instead,
+    /// and this table is NOT wiped. If a barcode doesn't exist locally yet, the
+    /// row is inserted. If it already exists locally, its Quantity (and
+    /// MinimumSellingQuantity) is UPDATED to the cloud's value.
     ///
     /// NOT pulled here (sync direction wasn't established for these, so they're
-    /// left untouched to avoid guessing wrong): MCounter, MPaymentMethod, MUser,
-    /// MUserType.
+    /// left untouched to avoid guessing wrong): MCounterNew, MCounterUser,
+    /// MPaymentMethod, MUser, MUserType.
     ///
     /// Usage:
     ///   await CloudPullService.PullCustomerDataFromCloudAsync(progress);
     /// </summary>
     public static class CloudPullService
     {
-        private const string TrackingTable = "__CloudImportTracking";
+        /// <summary>
+        /// Tables that are fully replaced from the cloud (deleted locally, then
+        /// re-copied verbatim, Id included). Order matters only in that it's a
+        /// sensible "parent before child" read/insert order for reporting
+        /// purposes - actual FK enforcement is disabled during the pull, so the
+        /// order does not need to satisfy dependency constraints.
+        /// </summary>
+        private static readonly (string Table, string IdColumn)[] FullReplaceTables = new[]
+        {
+            ("MCustomer", "Id"),
+            ("MCustomerPurchaseMaster", "Id"),
+            ("MCustomerPurchaseDetail", "Id"),
+            ("MCustomerPayment", "Id"),
+            ("MCustomerReturnMaster", "Id"),
+            ("MCustomerReturnDetail", "Id"),
+            ("MPettyCash", "Id"),
+            ("MLoginLogout", "Id"),
+        };
 
         public static async Task PullCustomerDataFromCloudAsync(
             IProgress<string>? progress = null,
@@ -68,90 +74,24 @@ namespace MyWPFCRUDApp.Services
             await localConn.OpenAsync(cancellationToken);
             await cloudConn.OpenAsync(cancellationToken);
 
-            await EnsureTrackingTableAsync(localConn, cancellationToken);
-
             using var transaction = await localConn.BeginTransactionAsync(cancellationToken);
 
             try
             {
-                progress?.Report("Pulling customers...");
-                var customerIdMap = await PullTableAsync(
-                    cloudConn, localConn, transaction,
-                    table: "MCustomer",
-                    idColumn: "Id",
-                    remapColumns: null,
-                    progress, cancellationToken);
+                // Disabled so tables can be cleared/reloaded in any order without
+                // tripping FK constraints between them (Ids are carried over
+                // unchanged from the cloud, so relationships stay intact once all
+                // tables are reloaded).
+                await SetForeignKeyChecksAsync(localConn, transaction, enabled: false, cancellationToken);
 
-                progress?.Report("Pulling customer purchase invoices...");
-                var purchaseMasterIdMap = await PullTableAsync(
-                    cloudConn, localConn, transaction,
-                    table: "MCustomerPurchaseMaster",
-                    idColumn: "Id",
-                    remapColumns: new Dictionary<string, IReadOnlyDictionary<long, long>>
-                    {
-                        ["CustomerId"] = customerIdMap
-                    },
-                    progress, cancellationToken);
+                foreach (var (table, idColumn) in FullReplaceTables)
+                {
+                    progress?.Report($"Pulling {table}...");
+                    await PullTableFullReplaceAsync(
+                        cloudConn, localConn, transaction, table, idColumn, progress, cancellationToken);
+                }
 
-                progress?.Report("Pulling customer purchase line items...");
-                await PullTableAsync(
-                    cloudConn, localConn, transaction,
-                    table: "MCustomerPurchaseDetail",
-                    idColumn: "Id",
-                    remapColumns: new Dictionary<string, IReadOnlyDictionary<long, long>>
-                    {
-                        ["PurchaseMasterId"] = purchaseMasterIdMap
-                    },
-                    progress, cancellationToken);
-
-                progress?.Report("Pulling customer payments...");
-                await PullTableAsync(
-                    cloudConn, localConn, transaction,
-                    table: "MCustomerPayment",
-                    idColumn: "Id",
-                    remapColumns: new Dictionary<string, IReadOnlyDictionary<long, long>>
-                    {
-                        ["CustomerId"] = customerIdMap
-                    },
-                    progress, cancellationToken);
-
-                progress?.Report("Pulling customer return invoices...");
-                var returnMasterIdMap = await PullTableAsync(
-                    cloudConn, localConn, transaction,
-                    table: "MCustomerReturnMaster",
-                    idColumn: "Id",
-                    remapColumns: new Dictionary<string, IReadOnlyDictionary<long, long>>
-                    {
-                        ["CustomerId"] = customerIdMap
-                    },
-                    progress, cancellationToken);
-
-                progress?.Report("Pulling customer return line items...");
-                await PullTableAsync(
-                    cloudConn, localConn, transaction,
-                    table: "MCustomerReturnDetail",
-                    idColumn: "Id",
-                    remapColumns: new Dictionary<string, IReadOnlyDictionary<long, long>>
-                    {
-                        ["ReturnMasterId"] = returnMasterIdMap
-                    },
-                    progress, cancellationToken);
-
-                progress?.Report("Pulling petty cash entries...");
-                await PullTableAsync(
-                    cloudConn, localConn, transaction,
-                    table: "MPettyCash",
-                    idColumn: "Id",
-                    remapColumns: null,
-                    progress, cancellationToken);
-
-                progress?.Report("Pulling login/logout records...");
-                await PullTableAsync(
-                    cloudConn, localConn, transaction,
-                    table: "MLoginLogout",
-                    idColumn: "Id",
-                    remapColumns: null,
-                    progress, cancellationToken);
+                await SetForeignKeyChecksAsync(localConn, transaction, enabled: true, cancellationToken);
 
                 progress?.Report("Pulling product quantities...");
                 await PullProductQuantitiesAsync(cloudConn, localConn, transaction, progress, cancellationToken);
@@ -164,6 +104,13 @@ namespace MyWPFCRUDApp.Services
                 await transaction.RollbackAsync(cancellationToken);
                 throw;
             }
+        }
+
+        private static async Task SetForeignKeyChecksAsync(
+            MySqlConnection conn, MySqlTransaction tx, bool enabled, CancellationToken cancellationToken)
+        {
+            using var cmd = new MySqlCommand($"SET FOREIGN_KEY_CHECKS={(enabled ? 1 : 0)};", conn, tx);
+            await cmd.ExecuteNonQueryAsync(cancellationToken);
         }
 
         /// <summary>
@@ -285,25 +232,21 @@ namespace MyWPFCRUDApp.Services
         }
 
         /// <summary>
-        /// Pulls every row of <paramref name="table"/> from the cloud database.
-        /// Rows already present locally (per the tracking table) are skipped.
-        /// New rows are inserted locally with a fresh auto-increment Id, with any
-        /// foreign-key columns listed in <paramref name="remapColumns"/> translated
-        /// from their cloud Id to the corresponding local Id. Returns a complete
-        /// cloudId -> localId map for the whole table (covering both rows that were
-        /// already tracked and rows inserted just now), for use by dependent tables.
+        /// Deletes every row currently in the local <paramref name="table"/> and
+        /// replaces it with an exact copy of the cloud table's rows, including the
+        /// cloud's own <paramref name="idColumn"/> values (no remapping, no
+        /// tracking - the cloud is the source of truth for this table).
         /// </summary>
-        private static async Task<Dictionary<long, long>> PullTableAsync(
+        private static async Task PullTableFullReplaceAsync(
             MySqlConnection cloudConn,
             MySqlConnection localConn,
             MySqlTransaction localTx,
             string table,
             string idColumn,
-            IReadOnlyDictionary<string, IReadOnlyDictionary<long, long>>? remapColumns,
             IProgress<string>? progress,
             CancellationToken cancellationToken)
         {
-            var idMap = new Dictionary<long, long>();
+            await DeleteAllRowsAsync(localConn, localTx, table, cancellationToken);
 
             var cloudRows = new DataTable();
             using (var adapter = new MySqlDataAdapter($"SELECT * FROM `{table}`;", cloudConn))
@@ -313,80 +256,42 @@ namespace MyWPFCRUDApp.Services
 
             if (cloudRows.Rows.Count == 0)
             {
-                progress?.Report($"{table}: nothing in the cloud to pull.");
-                return idMap;
+                progress?.Report($"{table}: local table cleared, nothing in the cloud to copy.");
+                return;
             }
 
             var localColumns = await GetLocalColumnsAsync(localConn, localTx, table, cancellationToken);
 
-            int inserted = 0, alreadyPresent = 0, skippedOrphan = 0;
+            var columnsToInsert = cloudRows.Columns
+                .Cast<DataColumn>()
+                .Select(c => c.ColumnName)
+                .Where(c => localColumns.Contains(c)) // idColumn included - Ids are carried over as-is.
+                .ToList();
+
+            int inserted = 0;
 
             foreach (DataRow row in cloudRows.Rows)
             {
                 cancellationToken.ThrowIfCancellationRequested();
 
-                var cloudId = Convert.ToInt64(row[idColumn]);
-
-                var existingLocalId = await TryGetTrackedLocalIdAsync(localConn, localTx, table, cloudId, cancellationToken);
-                if (existingLocalId.HasValue)
-                {
-                    idMap[cloudId] = existingLocalId.Value;
-                    alreadyPresent++;
-                    continue;
-                }
-
-                var columnsToInsert = cloudRows.Columns
-                    .Cast<DataColumn>()
-                    .Select(c => c.ColumnName)
-                    .Where(c => localColumns.Contains(c) && !c.Equals(idColumn, StringComparison.OrdinalIgnoreCase))
-                    .ToList();
-
                 var values = new Dictionary<string, object?>();
-                bool orphan = false;
-
                 foreach (var col in columnsToInsert)
                 {
-                    object? value = row[col] == DBNull.Value ? null : row[col];
-
-                    if (remapColumns != null && remapColumns.TryGetValue(col, out var map))
-                    {
-                        if (value == null)
-                        {
-                            // Nullable FK left null - carry over as null.
-                            values[col] = null;
-                            continue;
-                        }
-
-                        var rawCloudFk = Convert.ToInt64(value);
-                        if (!map.TryGetValue(rawCloudFk, out var mappedLocalFk))
-                        {
-                            orphan = true;
-                            break;
-                        }
-                        value = mappedLocalFk;
-                    }
-
-                    values[col] = value;
+                    values[col] = row[col] == DBNull.Value ? null : row[col];
                 }
 
-                if (orphan)
-                {
-                    skippedOrphan++;
-                    progress?.Report($"{table}: skipped cloud row Id {cloudId} - referenced parent row not found locally.");
-                    continue;
-                }
-
-                var newLocalId = await InsertRowAndGetIdAsync(localConn, localTx, table, values, cancellationToken);
-                await RecordTrackingAsync(localConn, localTx, table, cloudId, newLocalId, cancellationToken);
-
-                idMap[cloudId] = newLocalId;
+                await InsertRowAsync(localConn, localTx, table, values, cancellationToken);
                 inserted++;
             }
 
-            progress?.Report(
-                $"{table}: {inserted} new row(s) added, {alreadyPresent} already present, {skippedOrphan} skipped (missing parent).");
+            progress?.Report($"{table}: local table cleared, {inserted} row(s) copied from cloud.");
+        }
 
-            return idMap;
+        private static async Task DeleteAllRowsAsync(
+            MySqlConnection conn, MySqlTransaction tx, string table, CancellationToken cancellationToken)
+        {
+            using var cmd = new MySqlCommand($"DELETE FROM `{table}`;", conn, tx);
+            await cmd.ExecuteNonQueryAsync(cancellationToken);
         }
 
         private static async Task<HashSet<string>> GetLocalColumnsAsync(
@@ -412,19 +317,7 @@ namespace MyWPFCRUDApp.Services
             return result;
         }
 
-        private static async Task<long?> TryGetTrackedLocalIdAsync(
-            MySqlConnection conn, MySqlTransaction tx, string table, long cloudId, CancellationToken cancellationToken)
-        {
-            var sql = $"SELECT LocalId FROM `{TrackingTable}` WHERE TableName=@t AND CloudId=@c;";
-            using var cmd = new MySqlCommand(sql, conn, tx);
-            cmd.Parameters.AddWithValue("@t", table);
-            cmd.Parameters.AddWithValue("@c", cloudId);
-
-            var result = await cmd.ExecuteScalarAsync(cancellationToken);
-            return result == null ? (long?)null : Convert.ToInt64(result);
-        }
-
-        private static async Task<long> InsertRowAndGetIdAsync(
+        private static async Task InsertRowAsync(
             MySqlConnection conn, MySqlTransaction tx, string table,
             Dictionary<string, object?> values, CancellationToken cancellationToken)
         {
@@ -437,43 +330,10 @@ namespace MyWPFCRUDApp.Services
             sb.Append(string.Join(",", columns.Select(c => $"@{c}")));
             sb.Append(");");
 
-            using (var cmd = new MySqlCommand(sb.ToString(), conn, tx))
-            {
-                foreach (var col in columns)
-                    cmd.Parameters.AddWithValue($"@{col}", values[col] ?? DBNull.Value);
+            using var cmd = new MySqlCommand(sb.ToString(), conn, tx);
+            foreach (var col in columns)
+                cmd.Parameters.AddWithValue($"@{col}", values[col] ?? DBNull.Value);
 
-                await cmd.ExecuteNonQueryAsync(cancellationToken);
-            }
-
-            using var idCmd = new MySqlCommand("SELECT LAST_INSERT_ID();", conn, tx);
-            var idResult = await idCmd.ExecuteScalarAsync(cancellationToken);
-            return Convert.ToInt64(idResult);
-        }
-
-        private static async Task RecordTrackingAsync(
-            MySqlConnection conn, MySqlTransaction tx, string table, long cloudId, long localId,
-            CancellationToken cancellationToken)
-        {
-            var sql = $"INSERT INTO `{TrackingTable}` (TableName, CloudId, LocalId) VALUES (@t, @c, @l);";
-            using var cmd = new MySqlCommand(sql, conn, tx);
-            cmd.Parameters.AddWithValue("@t", table);
-            cmd.Parameters.AddWithValue("@c", cloudId);
-            cmd.Parameters.AddWithValue("@l", localId);
-            await cmd.ExecuteNonQueryAsync(cancellationToken);
-        }
-
-        private static async Task EnsureTrackingTableAsync(MySqlConnection conn, CancellationToken cancellationToken)
-        {
-            const string sql = @"
-                CREATE TABLE IF NOT EXISTS __CloudImportTracking (
-                    TableName    VARCHAR(100) NOT NULL,
-                    CloudId      BIGINT NOT NULL,
-                    LocalId      BIGINT NOT NULL,
-                    ImportedDate DATETIME DEFAULT CURRENT_TIMESTAMP,
-                    PRIMARY KEY (TableName, CloudId)
-                ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;";
-
-            using var cmd = new MySqlCommand(sql, conn);
             await cmd.ExecuteNonQueryAsync(cancellationToken);
         }
     }

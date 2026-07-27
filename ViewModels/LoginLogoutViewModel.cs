@@ -1,4 +1,4 @@
-﻿using MyWPFCRUDApp.Helpers;
+using MyWPFCRUDApp.Helpers;
 using MyWPFCRUDApp.Models;
 using MyWPFCRUDApp.Services;
 using System;
@@ -23,8 +23,8 @@ namespace MyWPFCRUDApp.ViewModels
             set => SetProperty(ref _loginLogouts, value);
         }
 
-        private ObservableCollection<MCounter> _counters;
-        public ObservableCollection<MCounter> Counters
+        private ObservableCollection<MCounterNew> _counters;
+        public ObservableCollection<MCounterNew> Counters
         {
             get => _counters;
             set => SetProperty(ref _counters, value);
@@ -67,8 +67,8 @@ namespace MyWPFCRUDApp.ViewModels
             set => SetProperty(ref _currentLoginLogout, value);
         }
 
-        private MCounter _selectedCounter;
-        public MCounter SelectedCounter
+        private MCounterNew _selectedCounter;
+        public MCounterNew SelectedCounter
         {
             get => _selectedCounter;
             set => SetProperty(ref _selectedCounter, value);
@@ -83,7 +83,7 @@ namespace MyWPFCRUDApp.ViewModels
 
         public void LoadData()
         {
-            Counters = new ObservableCollection<MCounter>(_loginLogoutService.GetCounters());
+            Counters = new ObservableCollection<MCounterNew>(_loginLogoutService.GetCounters());
             Users = new ObservableCollection<MUser>(_loginLogoutService.GetUsers());
             LoginLogouts = new ObservableCollection<MLoginLogout>(_loginLogoutService.GetLoginLogouts());
         }

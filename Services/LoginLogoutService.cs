@@ -1,4 +1,4 @@
-﻿using MySql.Data.MySqlClient;
+using MySql.Data.MySqlClient;
 using MyWPFCRUDApp.Models;
 using System;
 using System.Collections.Generic;
@@ -60,7 +60,7 @@ namespace MyWPFCRUDApp.Services
                 c.CounterName,
                 u.UserName
             FROM MLoginLogout l
-            INNER JOIN MCounter c ON l.CounterId = c.Id
+            INNER JOIN MCounterNew c ON l.CounterId = c.Id
             INNER JOIN MUser u ON l.UserId = u.Id
             ORDER BY l.Id DESC";
             var cmd = new MySqlCommand(sql, conn);
@@ -114,21 +114,22 @@ namespace MyWPFCRUDApp.Services
             return cmd.ExecuteNonQuery() > 0;
         }
 
-        // Support lookups for the CounterId / UserId dropdowns
-        public List<MCounter> GetCounters()
+        // Support lookup for the CounterId dropdown.
+        // MCounterNew no longer has a UserId column (that moved to
+        // MCounterUser, since a counter can now have multiple users).
+        public List<MCounterNew> GetCounters()
         {
-            var list = new List<MCounter>();
+            var list = new List<MCounterNew>();
             using var conn = new MySqlConnection(Con);
             conn.Open();
-            var cmd = new MySqlCommand("SELECT Id, CounterName, UserId FROM MCounter", conn);
+            var cmd = new MySqlCommand("SELECT Id, CounterName FROM MCounterNew", conn);
             using var reader = cmd.ExecuteReader();
             while (reader.Read())
             {
-                list.Add(new MCounter
+                list.Add(new MCounterNew
                 {
                     Id = reader.GetInt64("Id"),
                     CounterName = reader.GetString("CounterName"),
-                    UserId = reader.GetInt64("UserId"),
                 });
             }
             return list;
