@@ -32,7 +32,7 @@
                 </Grid.RowDefinitions>
 
                 <Border Grid.Row="1" Grid.RowSpan="6" Width="160" HorizontalAlignment="Center"
-                        BorderBrush="Black" BorderThickness="1" Margin="0,10,0,10">
+                        BorderBrush="Black" BorderThickness="1" Margin="0,10,0,28">
                     <Grid Margin="0,1,0,9">
                         <Grid.RowDefinitions>
                             <RowDefinition Height="36"/>
@@ -100,18 +100,11 @@
                         </Border>
 
                         <StackPanel Grid.Row="5" HorizontalAlignment="Center" VerticalAlignment="Center">
-                            <StackPanel Orientation="Horizontal" HorizontalAlignment="Right" Margin="0,0,-30,0">
-                                <TextBlock Text="MRP  ₹" FontSize="11" FontWeight="Bold"/>
-                                <TextBlock x:Name="TbMRPValue" FontSize="11" FontWeight="Bold"/>
+                            <TextBlock Text="MRP   (incl. of all taxes)" FontSize="11" FontWeight="Bold" HorizontalAlignment="Center"/>
+                            <StackPanel Orientation="Horizontal" HorizontalAlignment="Center" Margin="0,6,0,0">
+                                <TextBlock Text="₹" FontSize="30" FontWeight="Bold"/>
+                                <TextBlock x:Name="TbMRPValue" FontSize="30" FontWeight="Bold" Margin="2,0,0,0"/>
                             </StackPanel>
-                            <TextBlock Text="SALE PRICE" FontSize="10" FontWeight="Bold"
-               HorizontalAlignment="Center" Margin="0,3,0,0"/>
-                            <StackPanel Orientation="Horizontal" HorizontalAlignment="Center" Margin="0,2,0,0">
-                                <TextBlock Text="₹" FontSize="26" FontWeight="Bold"/>
-                                <TextBlock x:Name="TbSalePriceValue" FontSize="26" FontWeight="Bold" Margin="2,0,0,0"/>
-                            </StackPanel>
-                            <TextBlock Text="(incl. of all taxes)" FontSize="7"
-               HorizontalAlignment="Center" Margin="0,1,0,0"/>
                         </StackPanel>
                     </Grid>
                 </Border>

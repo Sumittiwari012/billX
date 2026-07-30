@@ -37,6 +37,7 @@ namespace MyWPFCRUDApp.Views
                 { "Colour",          ColColour },
                 { "Rack",            ColRack },
                 { "HSNCode",         ColHSN },
+                { "DiscountPercentage",Coldis}
             };
             foreach (var col in _vm.ProductColumns)
             {

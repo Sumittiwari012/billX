@@ -59,10 +59,10 @@ namespace MyWPFCRUDApp.Views
                 TbCompanyAddress.Text = "";
             }
             // MRP
-            TbMRPValue.Text = _product.MRP.ToString("N0");
+            TbMRPValue.Text = _product.RetailSalePrice.ToString("N0");
 
             // Sale Price
-            TbSalePriceValue.Text = _product.RetailSalePrice.ToString("N0");
+            //TbSalePriceValue.Text = _product.RetailSalePrice.ToString("N0");
         }
         // ── Print ──────────────────────────────────────────────────────────────
         private void PrintButton_Click(object sender, RoutedEventArgs e)

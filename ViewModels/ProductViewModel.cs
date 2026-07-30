@@ -174,6 +174,7 @@ namespace MyWPFCRUDApp.ViewModels
         ("Colour",          "Colour"),
         ("Rack",            "Rack"),
         ("HSNCode",         "HSN"),
+        ("DiscountPercentage","DiscountPercentage")
     };
 
             foreach (var (key, header) in cols)
@@ -689,7 +690,53 @@ namespace MyWPFCRUDApp.ViewModels
                 MessageBox.Show("Export failed: " + ex.Message);
             }
         }
+        // ─── Bulk Discount ─────────────────────────────────────────────────────
+        private double _bulkDiscountPercentage;
+        public double BulkDiscountPercentage
+        {
+            get => _bulkDiscountPercentage;
+            set => SetProperty(ref _bulkDiscountPercentage, value);
+        }
 
+        public ICommand ApplyBulkDiscountCommand =>
+            new RelayCommand(_ => ApplyBulkDiscount(), _ => CheckedProducts.Any());
+
+        private void ApplyBulkDiscount()
+        {
+            if (!_checkedProducts.Any())
+            {
+                MessageBox.Show("Please select at least one product.");
+                return;
+            }
+
+            if (BulkDiscountPercentage < 0 || BulkDiscountPercentage > 100)
+            {
+                MessageBox.Show("Please enter a discount percentage between 0 and 100.");
+                return;
+            }
+
+            var result = MessageBox.Show(
+                $"Apply a {BulkDiscountPercentage}% discount to {_checkedProducts.Count} selected product(s)? " +
+                "This will overwrite their current Sale price.",
+                "Confirm Bulk Discount", MessageBoxButton.YesNo, MessageBoxImage.Question);
+
+            if (result != MessageBoxResult.Yes) return;
+
+            int updated = 0;
+            foreach (var p in _checkedProducts.ToList())
+            {
+                // sale = mrp - mrp * discount%
+                var newSalePrice = p.MRP - (p.MRP * ((decimal)BulkDiscountPercentage / 100m));
+
+                if (_productService.UpdateDiscountAndSalePrice(p.Id, BulkDiscountPercentage, newSalePrice))
+                    updated++;
+            }
+
+            MessageBox.Show($"Discount applied to {updated} product(s).",
+                "Bulk Discount Applied", MessageBoxButton.OK, MessageBoxImage.Information);
+
+            LoadData(); // refresh grid so updated Sale/Discount values show immediately
+        }
         // ─── Import from Excel (unchanged logic) ───────────────────────────────
         private void ExecuteImportWizard()
         {

@@ -549,5 +549,27 @@ namespace MyWPFCRUDApp.Services
             var result = cmd.ExecuteScalar();
             return (result == null || result == DBNull.Value) ? null : result.ToString();
         }
+        // ─── BULK DISCOUNT: update only DiscountPercentage + RetailSalePrice ──────
+        public bool UpdateDiscountAndSalePrice(long id, double discountPercentage, decimal retailSalePrice)
+        {
+            using var conn = new MySqlConnection(Con);
+            conn.Open();
+
+            using var cmd = new MySqlCommand(@"
+        UPDATE MProducts
+        SET    DiscountPercentage = @Discount,
+               RetailSalePrice    = @Sale,
+               modifiedDate       = @Now,
+               modifiedBy         = @User
+        WHERE  Id = @Id", conn);
+
+            cmd.Parameters.AddWithValue("@Discount", discountPercentage);
+            cmd.Parameters.AddWithValue("@Sale", retailSalePrice);
+            cmd.Parameters.AddWithValue("@Now", DateTime.Now);
+            cmd.Parameters.AddWithValue("@User", "ADMIN");
+            cmd.Parameters.AddWithValue("@Id", id);
+
+            return cmd.ExecuteNonQuery() > 0;
+        }
     }
 }
