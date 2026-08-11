@@ -20,6 +20,7 @@ namespace MyWPFCRUDApp.ViewModels
         private readonly SupplierService _supplierService;
         private readonly ProductService _productService;
         private readonly BillScanService _billScanService;
+
         private readonly TaxService _taxService;
         private long _editingMasterId = 0;
         // ── Commands ───────────────────────────────────────────────────────────
@@ -33,6 +34,8 @@ namespace MyWPFCRUDApp.ViewModels
         public ICommand OpenApiKeySetupCommand { get; }
         public ICommand ToggleHistoryCommand { get; }
         public ICommand LoadHistoryInvoiceCommand { get; }
+       
+        public ICommand ImportExcelCommand { get; }   // ← ADD THIS
 
         // ── Collections ────────────────────────────────────────────────────────
 
@@ -435,8 +438,264 @@ namespace MyWPFCRUDApp.ViewModels
             OpenApiKeySetupCommand = new RelayCommand(_ => OpenApiKeySetup());
             ToggleHistoryCommand  = new RelayCommand(_ => ToggleHistory());
             LoadHistoryInvoiceCommand = new RelayCommand(p => LoadHistoryInvoice(p as MPurchaseMaster));
+            
+            ImportExcelCommand = new RelayCommand(_ => ImportItemsFromExcel());   // ← ADD THIS
 
+            
             InitializeData();
+        }
+        // ════════════════════════════════════════════════════════════════════════
+        // EXCEL IMPORT
+        //
+        // Expected sheet: header row + one row per item. Required column:
+        //   "Barcode"
+        // Optional columns:
+        //   "ProductName"   — only needed for NEW barcodes (see below). Ignored
+        //                     for barcodes that already exist — the product
+        //                     master's name is always used for those.
+        //   "Quantity"      — defaults to 1 if missing/blank/invalid.
+        //   "PurchasePrice" — overrides the product master's price for known
+        //                     barcodes; REQUIRED (defaults to 0) for new barcodes.
+        //   "RetailPrice"   — same idea, for retail price.
+        //
+        // Barcode matching, same as HandleBarcodeSearch/AddToCart:
+        //   • FOUND in Products    → existing product's name/wholesale/MRP used,
+        //                            PurchasePrice/RetailPrice overridden if given.
+        //   • NOT FOUND in Products → added as a NEW item with ProductId = 0,
+        //                            using the row's ProductName/PurchasePrice/
+        //                            RetailPrice. Exactly like a scanned bill's
+        //                            unmatched item — SavePurchase() already knows
+        //                            how to auto-create a product for ProductId==0
+        //                            rows when you click SAVE INVOICE, so nothing
+        //                            else needs to change for this to work.
+        //
+        // Reading stops at the first row with a blank Barcode cell, so anything
+        // below the data block (notes, legends, blank rows) is never parsed as
+        // an item.
+        // ════════════════════════════════════════════════════════════════════════
+        private void ImportItemsFromExcel()
+        {
+            if (SelectedSupplier == null)
+            {
+                var result = MessageBox.Show(
+                    "Please select a supplier before importing items.\n\n" +
+                    "Click Yes to open the Add Supplier window, or No to select an existing one.",
+                    "Supplier Required", MessageBoxButton.YesNo, MessageBoxImage.Information);
+                if (result == MessageBoxResult.Yes) OpenSupplierWindow();
+                return;
+            }
+
+            var ofd = new OpenFileDialog
+            {
+                Title = "Select Excel Sheet",
+                Filter = "Excel Files|*.xlsx;*.xls"
+            };
+            if (ofd.ShowDialog() != true) return;
+
+            int added = 0;
+            int updated = 0;
+            int newBarcodesAdded = 0;
+            var skippedNoName = new System.Collections.Generic.List<string>();
+
+            try
+            {
+                using var workbook = new ClosedXML.Excel.XLWorkbook(ofd.FileName);
+                var ws = workbook.Worksheets.First();
+                var headerRow = ws.FirstRowUsed();
+
+                if (headerRow == null)
+                {
+                    MessageBox.Show("The selected sheet appears to be empty.", "Empty Sheet",
+                        MessageBoxButton.OK, MessageBoxImage.Warning);
+                    return;
+                }
+
+                // Map header name -> column index (case-insensitive, trims whitespace)
+                var colMap = new System.Collections.Generic.Dictionary<string, int>(
+                    StringComparer.OrdinalIgnoreCase);
+                foreach (var cell in headerRow.CellsUsed())
+                    colMap[cell.GetString().Trim()] = cell.Address.ColumnNumber;
+
+                if (!colMap.TryGetValue("Barcode", out int barcodeCol))
+                {
+                    MessageBox.Show(
+                        "The Excel sheet must have a 'Barcode' column.\n\n" +
+                        "Optional columns: 'ProductName' (for new barcodes), 'Quantity', " +
+                        "'PurchasePrice', 'RetailPrice'.",
+                        "Invalid Sheet", MessageBoxButton.OK, MessageBoxImage.Warning);
+                    return;
+                }
+
+                int? nameCol = colMap.TryGetValue("ProductName", out var nc) ? nc : (int?)null;
+                int? qtyCol = colMap.TryGetValue("Quantity", out var qc) ? qc : (int?)null;
+                int? priceCol = colMap.TryGetValue("PurchasePrice", out var pc) ? pc : (int?)null;
+                int? retailCol = colMap.TryGetValue("RetailPrice", out var rc) ? rc : (int?)null;
+
+                int lastRow = ws.LastRowUsed()?.RowNumber() ?? headerRow.RowNumber();
+
+                for (int r = headerRow.RowNumber() + 1; r <= lastRow; r++)
+                {
+                    var row = ws.Row(r);
+                    string barcode = row.Cell(barcodeCol).GetString().Trim();
+
+                    // First blank Barcode cell = end of the data block. Everything
+                    // below (notes, legends, blank spacer rows) is ignored.
+                    if (string.IsNullOrWhiteSpace(barcode))
+                        break;
+
+                    double qty = 1;
+                    if (qtyCol.HasValue)
+                    {
+                        var qtyCell = row.Cell(qtyCol.Value);
+                        if (!qtyCell.IsEmpty() &&
+                            double.TryParse(qtyCell.GetString(), out var parsedQty) &&
+                            parsedQty > 0)
+                        {
+                            qty = parsedQty;
+                        }
+                    }
+
+                    decimal? priceOverride = null;
+                    if (priceCol.HasValue)
+                    {
+                        var priceCell = row.Cell(priceCol.Value);
+                        if (!priceCell.IsEmpty() &&
+                            decimal.TryParse(priceCell.GetString(), out var parsedPrice))
+                        {
+                            priceOverride = parsedPrice;
+                        }
+                    }
+
+                    decimal? retailOverride = null;
+                    if (retailCol.HasValue)
+                    {
+                        var retailCell = row.Cell(retailCol.Value);
+                        if (!retailCell.IsEmpty() &&
+                            decimal.TryParse(retailCell.GetString(), out var parsedRetail))
+                        {
+                            retailOverride = parsedRetail;
+                        }
+                    }
+
+                    string nameFromSheet = nameCol.HasValue
+                        ? row.Cell(nameCol.Value).GetString().Trim()
+                        : string.Empty;
+
+                    var product = Products.FirstOrDefault(
+                        p => p.Barcode == barcode || p.ProductCode == barcode);
+
+                    if (product != null)
+                    {
+                        // ── Known barcode: same as before ──
+                        var existing = PurchaseItems.FirstOrDefault(i => i.ProductId == product.Id);
+                        if (existing != null)
+                        {
+                            int index = PurchaseItems.IndexOf(existing);
+                            existing.Quantity += qty;
+                            if (priceOverride.HasValue) existing.PurchasePrice = priceOverride.Value;
+                            if (retailOverride.HasValue) existing.Retail = retailOverride.Value;
+                            existing.AfterTaxation = (decimal)existing.Quantity * existing.PurchasePrice;
+                            PurchaseItems.RemoveAt(index);
+                            PurchaseItems.Insert(index, existing);
+                            updated++;
+                        }
+                        else
+                        {
+                            decimal price = priceOverride ?? product.PurchasePrice;
+                            decimal retail = retailOverride ?? product.RetailSalePrice;
+                            PurchaseItems.Add(new MPurchaseDetail
+                            {
+                                ProductId = product.Id,
+                                ProductName = product.ProductName,
+                                Barcode = product.Barcode,
+                                Product = product,
+                                Quantity = qty,
+                                PurchasePrice = price,
+                                WholesalePrice = product.WholesalePrice,
+                                MRP = product.MRP,
+                                Retail = retail,
+                                AfterTaxation = (decimal)qty * price
+                            });
+                            added++;
+                        }
+                    }
+                    else
+                    {
+                        // ── New barcode: needs a name to be worth anything.
+                        //    Skip (with a reason) only if no name was given at all —
+                        //    otherwise add as a brand-new item, ProductId = 0, same
+                        //    as TransferScannedItems does for unmatched scanned lines.
+                        //    SavePurchase() auto-creates the product for these when
+                        //    the invoice is saved. ──
+                        if (string.IsNullOrWhiteSpace(nameFromSheet))
+                        {
+                            skippedNoName.Add(barcode);
+                            continue;
+                        }
+
+                        decimal price = priceOverride ?? 0;
+                        decimal retail = retailOverride ?? 0;
+
+                        var existingNew = PurchaseItems.FirstOrDefault(
+                            i => i.ProductId == 0 && i.Barcode == barcode);
+
+                        if (existingNew != null)
+                        {
+                            int index = PurchaseItems.IndexOf(existingNew);
+                            existingNew.Quantity += qty;
+                            if (priceOverride.HasValue) existingNew.PurchasePrice = priceOverride.Value;
+                            if (retailOverride.HasValue) existingNew.Retail = retailOverride.Value;
+                            existingNew.AfterTaxation = (decimal)existingNew.Quantity * existingNew.PurchasePrice;
+                            PurchaseItems.RemoveAt(index);
+                            PurchaseItems.Insert(index, existingNew);
+                            updated++;
+                        }
+                        else
+                        {
+                            PurchaseItems.Add(new MPurchaseDetail
+                            {
+                                ProductId = 0,
+                                ProductName = nameFromSheet,
+                                Barcode = barcode,
+                                Quantity = qty,
+                                PurchasePrice = price,
+                                WholesalePrice = 0,
+                                MRP = 0,
+                                Retail = retail,
+                                AfterTaxation = (decimal)qty * price
+                            });
+                            added++;
+                            newBarcodesAdded++;
+                        }
+                    }
+                }
+
+                RecalculateTotal();
+                OnPropertyChanged(nameof(PurchaseItems));
+            }
+            catch (Exception ex)
+            {
+                MessageBox.Show($"Failed to read Excel file:\n\n{ex.Message}",
+                    "Import Error", MessageBoxButton.OK, MessageBoxImage.Error);
+                return;
+            }
+
+            string summary = $"✔ Import complete.\n\n" +
+                $"{added} new item(s) added" +
+                (newBarcodesAdded > 0 ? $" ({newBarcodesAdded} of these are brand-new products — " +
+                    "they'll be created automatically when you click SAVE INVOICE)." : ".") +
+                $"\n{updated} existing item(s) updated (quantity increased).";
+
+            if (skippedNoName.Any())
+            {
+                summary += $"\n\n⚠ {skippedNoName.Count} unrecognized barcode(s) skipped " +
+                    "(no 'ProductName' given, so a new product couldn't be created):\n" +
+                    string.Join(", ", skippedNoName.Take(20)) +
+                    (skippedNoName.Count > 20 ? $" ...and {skippedNoName.Count - 20} more" : "");
+            }
+
+            MessageBox.Show(summary, "Import Result", MessageBoxButton.OK,
+                skippedNoName.Any() ? MessageBoxImage.Warning : MessageBoxImage.Information);
         }
         private void LoadHistoryInvoice(MPurchaseMaster master)
         {
