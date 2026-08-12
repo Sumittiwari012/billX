@@ -127,6 +127,7 @@
                                 </Style>
                             </Button.Resources>
                         </Button>
+                        
                         <TextBlock Text="{Binding ScanHintText}"
                                    Foreground="#E03131" FontSize="10"
                                    HorizontalAlignment="Center"
@@ -142,8 +143,9 @@
                 <ColumnDefinition Width="*"/>
                 <ColumnDefinition Width="Auto"/>
             </Grid.ColumnDefinitions>
-
+            
             <GroupBox Header="Invoice Items" Grid.Column="0" Background="White" Margin="0,0,12,0">
+                
                 <DataGrid x:Name="PurchaseGrid"
                           ItemsSource="{Binding PurchaseItems}"
                           AutoGenerateColumns="False"
@@ -333,13 +335,27 @@
 
                         <Separator Margin="0,8"/>
 
-                        
 
-                        
-                        
+
+                        <Button Content="✏ Edit Products"
+        Click="EditProductsButton_Click"
+        Height="40"
+        Margin="0,15,0,0"
+        Background="#F08C00"
+        Foreground="White"
+        FontSize="14"
+        FontWeight="Bold"
+        Cursor="Hand">
+                            <Button.Resources>
+                                <Style TargetType="Border">
+                                    <Setter Property="CornerRadius" Value="6"/>
+                                </Style>
+                            </Button.Resources>
+                        </Button>
+
                         <Button Content="SAVE INVOICE"
                                 Command="{Binding PurchaseSaveCommand}"
-                                Height="40"
+                                Height="25"
                                 Margin="0,15,0,0"
                                 Background="#1971C2"
                                 Foreground="White"
@@ -354,7 +370,7 @@
                         </Button>
                         <Button Content="Payment"
         Click="PaymentButton_Click"
-        Height="40"
+        Height="20"
         Margin="0,15,0,0"
         Background="#E1AD01"
         Foreground="White"
@@ -369,7 +385,7 @@
                         </Button>
                         <Button Content="📥 Import Excel"
         Command="{Binding ImportExcelCommand}"
-        Height="40"
+        Height="25"
         Margin="0,15,0,0"
         Background="#0CA678"
         Foreground="White"
@@ -382,21 +398,7 @@
                                 </Style>
                             </Button.Resources>
                         </Button>
-                        <Button Content="🖨 Print"
-       Click="PrintOptionsButton_Click"
-        Height="40"
-        Margin="0,15,0,0"
-        Background="#495057"
-        Foreground="White"
-        FontSize="14"
-        FontWeight="Bold"
-        Cursor="Hand">
-                            <Button.Resources>
-                                <Style TargetType="Border">
-                                    <Setter Property="CornerRadius" Value="6"/>
-                                </Style>
-                            </Button.Resources>
-                        </Button>
+                        
                     </StackPanel>
                 </StackPanel>
             </Border>

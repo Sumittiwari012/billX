@@ -1222,7 +1222,67 @@ namespace MyWPFCRUDApp.ViewModels
                 MessageBox.Show("Error occurred while saving.");
             }
         }
+        // ════════════════════════════════════════════════════════════════════════
+        // Called after ProductBulkEditWindow closes successfully.
+        //   • savedProducts — every product left in the edit window after Save
+        //     (existing + newly-inserted), used to refresh matching PurchaseItems
+        //     rows with their latest name/wholesale/MRP/retail. NOTE: the invoice
+        //     line's PurchasePrice is intentionally left as whatever the user
+        //     entered on THIS invoice — a bulk edit changing the product master's
+        //     PurchasePrice doesn't silently override what you're actually paying
+        //     on this purchase.
+        //   • newProducts — subset that were brand-new (added via "Add Copies").
+        //     These become new invoice line items with Quantity = 1, since they
+        //     weren't part of the invoice before the edit window created them.
+        //   • deletedBarcodes — products removed via "Delete Selected" in the edit
+        //     window. Matching lines are removed from THIS invoice too, since a
+        //     deleted product can't be purchased.
+        // ════════════════════════════════════════════════════════════════════════
+        public void RefreshAfterProductEdit(
+            List<MProducts> savedProducts, List<MProducts> newProducts, List<string> deletedBarcodes)
+        {
+            Products = new ObservableCollection<MProducts>(_productService.GetProducts());
+            OnPropertyChanged(nameof(Products));
 
+            if (deletedBarcodes.Any())
+            {
+                var toRemove = PurchaseItems.Where(i => deletedBarcodes.Contains(i.Barcode)).ToList();
+                foreach (var item in toRemove)
+                    PurchaseItems.Remove(item);
+            }
+
+            foreach (var item in PurchaseItems)
+            {
+                var match = savedProducts.FirstOrDefault(p => p.Barcode == item.Barcode);
+                if (match == null) continue;
+
+                item.ProductId = match.Id;
+                item.ProductName = match.ProductName;
+                item.WholesalePrice = match.WholesalePrice;
+                item.MRP = match.MRP;
+                item.Retail = match.RetailSalePrice;
+            }
+
+            foreach (var newProd in newProducts)
+            {
+                PurchaseItems.Add(new MPurchaseDetail
+                {
+                    ProductId = newProd.Id,
+                    ProductName = newProd.ProductName,
+                    Barcode = newProd.Barcode,
+                    Product = newProd,
+                    Quantity = 1,
+                    PurchasePrice = newProd.PurchasePrice,
+                    WholesalePrice = newProd.WholesalePrice,
+                    MRP = newProd.MRP,
+                    Retail = newProd.RetailSalePrice,
+                    AfterTaxation = newProd.PurchasePrice
+                });
+            }
+
+            RecalculateTotal();
+            OnPropertyChanged(nameof(PurchaseItems));
+        }
         private void ResetForm()
         {
             _editingMasterId = 0;   // ← reset edit mode

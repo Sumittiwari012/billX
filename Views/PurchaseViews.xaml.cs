@@ -1,6 +1,7 @@
 using MyWPFCRUDApp.Models;
 using MyWPFCRUDApp.ViewModels;
 using System.Windows;
+using System.Linq;
 using System.Windows.Controls;
 using System.Windows.Input;
 
@@ -111,6 +112,27 @@ namespace MyWPFCRUDApp.Views
                     Owner = Window.GetWindow(this)
                 };
                 paymentWin.ShowDialog();
+            }
+        }
+        private void EditProductsButton_Click(object sender, RoutedEventArgs e)
+        {
+            if (DataContext is not PurchaseViewModel vm) return;
+
+            if (!vm.PurchaseItems.Any())
+            {
+                MessageBox.Show("Add at least one item to the invoice first.", "No Items",
+                    MessageBoxButton.OK, MessageBoxImage.Information);
+                return;
+            }
+
+            var win = new ProductBulkEditWindow(vm.PurchaseItems.ToList())
+            {
+                Owner = Window.GetWindow(this)
+            };
+
+            if (win.ShowDialog() == true)
+            {
+                vm.RefreshAfterProductEdit(win.SavedProducts, win.NewProducts, win.DeletedBarcodes);
             }
         }
     }
