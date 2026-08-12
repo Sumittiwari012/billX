@@ -25,6 +25,18 @@ namespace MyWPFCRUDApp.Views
         public MProducts Product { get; set; }
         public bool IsNew { get; set; }
 
+        // The invoice line this row was built from (see BuildRows), for BOTH
+        // existing DB products and not-yet-saved "skeleton" products that were
+        // already on the invoice. NULL only for rows created fresh in this
+        // session via "Add Copies" — those have no corresponding invoice line
+        // yet, so the caller needs to add a brand-new one for them.
+        //
+        // This is what Save/RefreshAfterProductEdit use to report results back
+        // by direct reference instead of by Barcode — matching by Barcode broke
+        // whenever Add Copies renumbered a row's barcode to make room for new
+        // copies, even for rows the user never touched.
+        public MPurchaseDetail? SourceInvoiceItem { get; set; }
+
         public string StatusLabel => IsNew ? "NEW" : "EXISTING";
 
         private bool _isSelected;
@@ -111,7 +123,23 @@ namespace MyWPFCRUDApp.Views
 
         // Result handed back to PurchaseViewModel after a successful Save.
         public List<MProducts> SavedProducts { get; private set; } = new();
+
+        // Rows with NO SourceInvoiceItem — i.e. created fresh in this session
+        // via "Add Copies". These are genuinely new invoice lines. This is now
+        // narrower than "every IsNew row": a not-yet-saved product that was
+        // already on the invoice is IsNew too, but it has a SourceInvoiceItem,
+        // so it's reported via UpdatedInvoiceLines instead — otherwise it would
+        // get added as a second, duplicate invoice line.
         public List<MProducts> NewProducts { get; private set; } = new();
+
+        // Direct row -> invoice-line links, for every row that already had a
+        // corresponding PurchaseItems entry (existing DB products AND
+        // not-yet-saved products that were already on the invoice). The caller
+        // updates these invoice lines by reference — not by matching Barcode,
+        // since Add Copies can renumber a row's barcode even if the row itself
+        // was never touched.
+        public List<(MPurchaseDetail Source, MProducts Product)> UpdatedInvoiceLines { get; private set; } = new();
+
         public List<string> DeletedBarcodes { get; private set; } = new();
 
         // Rows removed via "Delete Selected" are taken out of the grid right
@@ -188,7 +216,7 @@ namespace MyWPFCRUDApp.Views
                                    ?? _productService.GetByBarcode(item.Barcode);
                     if (existing != null)
                     {
-                        AddRow(existing, isNew: false);
+                        AddRow(existing, isNew: false, sourceInvoiceItem: item);
                         continue;
                     }
                 }
@@ -211,7 +239,7 @@ namespace MyWPFCRUDApp.Views
                     IGST = 0,
                     CESS = 0
                 };
-                AddRow(skeleton, isNew: true);
+                AddRow(skeleton, isNew: true, sourceInvoiceItem: item);
             }
         }
 
@@ -219,12 +247,14 @@ namespace MyWPFCRUDApp.Views
         // the grid from the invoice). Otherwise the row is inserted at that
         // exact position — used by Add Copies so a copy lands directly under
         // the row it was copied from rather than at the bottom of the list.
-        private void AddRow(MProducts product, bool isNew, int? insertIndex = null)
+        private ProductEditRow AddRow(MProducts product, bool isNew, int? insertIndex = null,
+            MPurchaseDetail? sourceInvoiceItem = null)
         {
             var row = new ProductEditRow
             {
                 Product = product,
                 IsNew = isNew,
+                SourceInvoiceItem = sourceInvoiceItem,
                 CategoryName = CategoryNameFor(product.CategoryId),
                 SubCategoryName = SubCategoryNameFor(product.SubCategoryId),
                 UnitName = UnitNameFor(product.UnitId)
@@ -234,6 +264,8 @@ namespace MyWPFCRUDApp.Views
                 Rows.Insert(insertIndex.Value, row);
             else
                 Rows.Add(row);
+
+            return row;
         }
 
         private void RefreshLookupDisplay(ProductEditRow row)
@@ -641,7 +673,10 @@ namespace MyWPFCRUDApp.Views
             }
 
             SavedProducts = Rows.Select(r => r.Product).ToList();
-            NewProducts = toInsert.Select(r => r.Product).ToList();
+            NewProducts = Rows.Where(r => r.SourceInvoiceItem == null).Select(r => r.Product).ToList();
+            UpdatedInvoiceLines = Rows.Where(r => r.SourceInvoiceItem != null)
+                .Select(r => (r.SourceInvoiceItem!, r.Product))
+                .ToList();
 
             DialogResult = true;
             Close();

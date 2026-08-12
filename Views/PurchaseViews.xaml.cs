@@ -132,7 +132,7 @@ namespace MyWPFCRUDApp.Views
 
             if (win.ShowDialog() == true)
             {
-                vm.RefreshAfterProductEdit(win.SavedProducts, win.NewProducts, win.DeletedBarcodes);
+                vm.RefreshAfterProductEdit(win.SavedProducts, win.NewProducts, win.DeletedBarcodes, win.UpdatedInvoiceLines);
             }
         }
     }

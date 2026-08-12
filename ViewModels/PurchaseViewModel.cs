@@ -34,7 +34,7 @@ namespace MyWPFCRUDApp.ViewModels
         public ICommand OpenApiKeySetupCommand { get; }
         public ICommand ToggleHistoryCommand { get; }
         public ICommand LoadHistoryInvoiceCommand { get; }
-       
+
         public ICommand ImportExcelCommand { get; }   // ← ADD THIS
 
         // ── Collections ────────────────────────────────────────────────────────
@@ -257,7 +257,7 @@ namespace MyWPFCRUDApp.ViewModels
                     DetermineApplicableTaxes();
             }
         }
-        
+
         // ── GST type flags ─────────────────────────────────────────────────────
         private bool _isSameState;
         public bool IsSameState
@@ -424,24 +424,24 @@ namespace MyWPFCRUDApp.ViewModels
         {
             _purchaseService = new PurchaseService();
             _supplierService = new SupplierService();
-            _productService  = new ProductService();
+            _productService = new ProductService();
             _billScanService = new BillScanService();
-            _taxService      = new TaxService();
+            _taxService = new TaxService();
 
-            AddItemCommand        = new RelayCommand(_ => AddItemToGrid());
+            AddItemCommand = new RelayCommand(_ => AddItemToGrid());
             PurchaseDeleteCommand = new RelayCommand(p => RemoveItemFromGrid(p as MPurchaseDetail));
-            PurchaseSaveCommand   = new RelayCommand(_ => SavePurchase());
-            PurchaseResetCommand  = new RelayCommand(_ => ResetForm());
-            BarcodeSearchCommand  = new RelayCommand(p => HandleBarcodeSearch(p?.ToString()));
+            PurchaseSaveCommand = new RelayCommand(_ => SavePurchase());
+            PurchaseResetCommand = new RelayCommand(_ => ResetForm());
+            BarcodeSearchCommand = new RelayCommand(p => HandleBarcodeSearch(p?.ToString()));
             OpenAddSupplierCommand = new RelayCommand(_ => OpenSupplierWindow());
-            ScanBillCommand       = new RelayCommand(async _ => await ExecuteScanBillAsync());
+            ScanBillCommand = new RelayCommand(async _ => await ExecuteScanBillAsync());
             OpenApiKeySetupCommand = new RelayCommand(_ => OpenApiKeySetup());
-            ToggleHistoryCommand  = new RelayCommand(_ => ToggleHistory());
+            ToggleHistoryCommand = new RelayCommand(_ => ToggleHistory());
             LoadHistoryInvoiceCommand = new RelayCommand(p => LoadHistoryInvoice(p as MPurchaseMaster));
-            
+
             ImportExcelCommand = new RelayCommand(_ => ImportItemsFromExcel());   // ← ADD THIS
 
-            
+
             InitializeData();
         }
         // ════════════════════════════════════════════════════════════════════════
@@ -767,7 +767,7 @@ namespace MyWPFCRUDApp.ViewModels
 
             var ofd = new OpenFileDialog
             {
-                Title  = "Select Purchase Bill (PDF or Image)",
+                Title = "Select Purchase Bill (PDF or Image)",
                 Filter = "Supported files|*.pdf;*.jpg;*.jpeg;*.png;*.webp" +
                          "|PDF|*.pdf|Images|*.jpg;*.jpeg;*.png;*.webp"
             };
@@ -1197,7 +1197,7 @@ namespace MyWPFCRUDApp.ViewModels
             else
             {
                 // INSERT new invoice + adjust supplier balance
-                
+
 
                 success = _purchaseService.AddPurchase(PurchaseMaster);
             }
@@ -1239,7 +1239,8 @@ namespace MyWPFCRUDApp.ViewModels
         //     deleted product can't be purchased.
         // ════════════════════════════════════════════════════════════════════════
         public void RefreshAfterProductEdit(
-            List<MProducts> savedProducts, List<MProducts> newProducts, List<string> deletedBarcodes)
+            List<MProducts> savedProducts, List<MProducts> newProducts, List<string> deletedBarcodes,
+            List<(MPurchaseDetail Source, MProducts Product)> updatedInvoiceLines)
         {
             Products = new ObservableCollection<MProducts>(_productService.GetProducts());
             OnPropertyChanged(nameof(Products));
@@ -1251,16 +1252,22 @@ namespace MyWPFCRUDApp.ViewModels
                     PurchaseItems.Remove(item);
             }
 
-            foreach (var item in PurchaseItems)
+            // Update each invoice line via the direct row reference the edit
+            // window handed back — NOT by matching Barcode. "Add Copies" can
+            // renumber a row's barcode to make room for new copies even when
+            // that row itself wasn't touched, so barcode-matching here used to
+            // silently miss those lines (and leave their Barcode stale/out of
+            // sync with the actual product).
+            foreach (var (source, product) in updatedInvoiceLines)
             {
-                var match = savedProducts.FirstOrDefault(p => p.Barcode == item.Barcode);
-                if (match == null) continue;
+                if (!PurchaseItems.Contains(source)) continue; // removed by a delete above
 
-                item.ProductId = match.Id;
-                item.ProductName = match.ProductName;
-                item.WholesalePrice = match.WholesalePrice;
-                item.MRP = match.MRP;
-                item.Retail = match.RetailSalePrice;
+                source.ProductId = product.Id;
+                source.ProductName = product.ProductName;
+                source.Barcode = product.Barcode;   // keep in sync if it was renumbered
+                source.WholesalePrice = product.WholesalePrice;
+                source.MRP = product.MRP;
+                source.Retail = product.RetailSalePrice;
             }
 
             foreach (var newProd in newProducts)
