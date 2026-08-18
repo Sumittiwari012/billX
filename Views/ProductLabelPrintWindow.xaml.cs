@@ -31,7 +31,7 @@ namespace MyWPFCRUDApp.Views
             TbNetQty.Text = "1";   // was hardcoded "1"
             TbSizeVal.Text = string.IsNullOrWhiteSpace(_product.Size) ? "-" : _product.Size;
             // Category (big)
-            TbCategoryBig.Text = string.IsNullOrWhiteSpace(_product.CategoryName)
+            TbCategoryBig.Text = string.IsNullOrWhiteSpace(_product.ProductName)
                 ? _product.ProductName
                 : _product.CategoryName;
             // Barcode
@@ -59,7 +59,7 @@ namespace MyWPFCRUDApp.Views
                 TbCompanyAddress.Text = "";
             }
             // MRP
-            TbMRPValue.Text = _product.RetailSalePrice.ToString("N0");
+            TbMRPValue.Text = _product.MRP.ToString("N0");
 
             // Sale Price
             //TbSalePriceValue.Text = _product.RetailSalePrice.ToString("N0");
