@@ -32,8 +32,8 @@ namespace MyWPFCRUDApp.Views
             TbSizeVal.Text = string.IsNullOrWhiteSpace(_product.Size) ? "-" : _product.Size;
             // Category (big)
             TbCategoryBig.Text = string.IsNullOrWhiteSpace(_product.ProductName)
-                ? _product.ProductName
-                : _product.CategoryName;
+                ? _product.CategoryName
+                : _product.ProductName;
             // Barcode
             TbBarcodeNumber.Text = _product.Barcode;
             BarcodeImage.Source = BarcodeImageHelper.GenerateCode128(_product.Barcode);
