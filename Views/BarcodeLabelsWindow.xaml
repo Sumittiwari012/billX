@@ -220,6 +220,12 @@
         </Grid>
 
         <StackPanel Grid.Row="2" Orientation="Horizontal" HorizontalAlignment="Right" Margin="0,12,0,0">
+            <Button Content="🖨 Print Selected"
+                    Click="PrintSelectedButton_Click"
+                    Width="140" Height="36" Margin="0,0,8,0"
+                    Background="#FF1F3A5F"
+                    Foreground="White"
+                    FontWeight="Bold"/>
             <Button Content="Close" Click="CloseButton_Click" Width="90" Height="36" Background="#EEEEEE"/>
         </StackPanel>
     </Grid>
