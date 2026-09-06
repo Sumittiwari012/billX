@@ -1,0 +1,96 @@
+﻿<Window x:Class="MyWPFCRUDApp.Views.TemplateDesignerWindow"
+        xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        Title="Design Barcode Label Template"
+        Width="1200" Height="750"
+        WindowStartupLocation="CenterOwner"
+        Background="#FFFDF8F0">
+    <Grid Margin="14">
+        <Grid.RowDefinitions>
+            <RowDefinition Height="Auto"/>
+            <RowDefinition Height="*"/>
+            <RowDefinition Height="Auto"/>
+        </Grid.RowDefinitions>
+
+        <!-- ══════════════════ TOOLBAR ══════════════════ -->
+        <Border Grid.Row="0" Background="White" BorderBrush="#E0D5C4" BorderThickness="1"
+                CornerRadius="6" Padding="10" Margin="0,0,0,10">
+            <StackPanel Orientation="Horizontal">
+                <TextBlock Text="Template Name:" VerticalAlignment="Center" Margin="0,0,6,0"/>
+                <TextBox x:Name="TemplateNameBox" Width="160" Margin="0,0,18,0" VerticalContentAlignment="Center"/>
+
+                <TextBlock Text="Width (mm):" VerticalAlignment="Center" Margin="0,0,6,0"/>
+                <TextBox x:Name="WidthMmBox" Width="55" Margin="0,0,14,0" VerticalContentAlignment="Center"
+                         TextChanged="CanvasSize_TextChanged"/>
+
+                <TextBlock Text="Height (mm):" VerticalAlignment="Center" Margin="0,0,6,0"/>
+                <TextBox x:Name="HeightMmBox" Width="55" Margin="0,0,24,0" VerticalContentAlignment="Center"
+                         TextChanged="CanvasSize_TextChanged"/>
+
+                <Separator Width="1" Margin="0,0,14,0" Background="#E0D5C4"/>
+
+                <Button Content="+ Text" Width="65" Margin="0,0,6,0" Click="AddText_Click"/>
+                <Button Content="▭ Rect" Width="65" Margin="0,0,6,0" Click="AddRectangle_Click"/>
+                <Button Content="◯ Ellipse" Width="75" Margin="0,0,6,0" Click="AddEllipse_Click"/>
+                <Button Content="─ Line" Width="55" Margin="0,0,18,0" Click="AddLine_Click"/>
+
+                <Button Content="Delete Selected" Width="110" Click="DeleteSelected_Click"/>
+            </StackPanel>
+        </Border>
+
+        <Grid Grid.Row="1">
+            <Grid.ColumnDefinitions>
+                <ColumnDefinition Width="220"/>
+                <ColumnDefinition Width="*"/>
+                <ColumnDefinition Width="260"/>
+            </Grid.ColumnDefinitions>
+
+            <!-- ══════════════════ LEFT: available product fields ══════════════════ -->
+            <Border Grid.Column="0" Background="White" BorderBrush="#E0D5C4" BorderThickness="1"
+                    CornerRadius="6" Padding="8" Margin="0,0,10,0">
+                <DockPanel>
+                    <TextBlock DockPanel.Dock="Top" Text="PRODUCT FIELDS" FontWeight="Bold" FontSize="11"
+                               Foreground="#495057" Margin="0,0,0,6"/>
+                    <TextBlock DockPanel.Dock="Bottom" Text="Double-click a field to drop it onto the canvas."
+                               FontSize="10" Foreground="#ADB5BD" TextWrapping="Wrap" Margin="0,6,0,0"/>
+                    <ListBox x:Name="FieldsList" BorderThickness="0" MouseDoubleClick="FieldsList_MouseDoubleClick"/>
+                </DockPanel>
+            </Border>
+
+            <!-- ══════════════════ CENTER: design canvas ══════════════════ -->
+            <!-- ══════════════════ CENTER: design canvas ══════════════════ -->
+            <Border Grid.Column="1" Background="#F1F1F1" BorderBrush="#E0D5C4" BorderThickness="1" CornerRadius="6">
+                <ScrollViewer HorizontalScrollBarVisibility="Auto" VerticalScrollBarVisibility="Auto">
+                    <Grid Margin="30">
+                        <!-- The physical label surface, sized in mm → px -->
+                        <Border x:Name="LabelSurfaceBorder" Background="White" BorderBrush="#495057" BorderThickness="1">
+                            <Canvas x:Name="DesignCanvas" Background="White" ClipToBounds="True"
+                        MouseLeftButtonDown="DesignCanvas_MouseLeftButtonDown"/>
+                        </Border>
+                        <!-- Overlay: selection outline + resize handles only, never saved.
+                 IMPORTANT: no Background here — a Canvas with any Background
+                 brush (even Transparent) hit-tests across its FULL bounds and
+                 will swallow every click meant for the elements underneath. -->
+                        <Canvas x:Name="AdornerCanvas" IsHitTestVisible="True"/>
+                    </Grid>
+                </ScrollViewer>
+            </Border>
+
+            <!-- ══════════════════ RIGHT: style / property panel ══════════════════ -->
+            <Border Grid.Column="2" Background="White" BorderBrush="#E0D5C4" BorderThickness="1"
+                    CornerRadius="6" Padding="10" Margin="10,0,0,0">
+                <ScrollViewer VerticalScrollBarVisibility="Auto">
+                    <StackPanel x:Name="PropertyPanel">
+                        <TextBlock Text="Select an element on the canvas to edit its style."
+                                   Foreground="#ADB5BD" FontStyle="Italic" FontSize="11" TextWrapping="Wrap"/>
+                    </StackPanel>
+                </ScrollViewer>
+            </Border>
+        </Grid>
+
+        <StackPanel Grid.Row="2" Orientation="Horizontal" HorizontalAlignment="Right" Margin="0,12,0,0">
+            <Button Content="Cancel" Width="90" Height="34" Margin="0,0,8,0" Background="#EEEEEE" Click="Cancel_Click"/>
+            <Button Content="Save Template" Width="120" Height="34" Background="#1971C2" Foreground="White" Click="Save_Click"/>
+        </StackPanel>
+    </Grid>
+</Window>

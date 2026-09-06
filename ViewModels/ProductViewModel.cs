@@ -443,13 +443,13 @@ namespace MyWPFCRUDApp.ViewModels
         {
             try
             {
-                string lastBarcode = _productService.GetLastBarcode();
-                string prefix = "M";
+                string lastBarcode = _productService.GetLastAutoBarcode();
+                string prefix = "GR"; // unchanged fallback for a brand-new sequence — change to "GR" if you want that as the default going forward
                 long nextNumber = 1;
 
                 if (!string.IsNullOrWhiteSpace(lastBarcode))
                 {
-                    var match = System.Text.RegularExpressions.Regex.Match(lastBarcode, @"^(.*?)(\d+)$");
+                    var match = System.Text.RegularExpressions.Regex.Match(lastBarcode, @"^([A-Za-z]+)(\d+)$");
                     if (match.Success)
                     {
                         prefix = match.Groups[1].Value;
@@ -459,7 +459,7 @@ namespace MyWPFCRUDApp.ViewModels
 
                 string generated = $"{prefix}{nextNumber}";
                 _lastGeneratedBarcode = generated;
-                BarcodeInput = generated;   // updates MProduct.Barcode + re-runs the filter (harmless: it won't match anything)
+                BarcodeInput = generated;
             }
             catch { /* DB unavailable – leave blank */ }
         }

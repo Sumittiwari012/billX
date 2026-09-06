@@ -132,7 +132,14 @@ namespace MyWPFCRUDApp.Views
 
             if (win.ShowDialog() == true)
             {
-                vm.RefreshAfterProductEdit(win.SavedProducts, win.NewProducts, win.DeletedBarcodes, win.UpdatedInvoiceLines);
+                // FIX: now also passes win.ResultLines — an ordered snapshot of
+                // the Bulk Edit grid at Save time — so PurchaseViewModel can
+                // rebuild PurchaseItems in that same order instead of updating
+                // existing lines in place and appending new (variance-copy)
+                // lines at the end of the invoice.
+                vm.RefreshAfterProductEdit(
+                    win.SavedProducts, win.NewProducts, win.DeletedBarcodes, win.UpdatedInvoiceLines,
+                    win.ProductsToInsert, win.ProductsToUpdate, win.ProductsToDelete, win.ResultLines);
             }
         }
     }

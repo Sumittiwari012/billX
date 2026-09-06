@@ -143,127 +143,153 @@
                 <ColumnDefinition Width="*"/>
                 <ColumnDefinition Width="Auto"/>
             </Grid.ColumnDefinitions>
-            
-            <GroupBox Header="Invoice Items" Grid.Column="0" Background="White" Margin="0,0,12,0">
-                
-                <DataGrid x:Name="PurchaseGrid"
-                          ItemsSource="{Binding PurchaseItems}"
-                          AutoGenerateColumns="False"
-                          CanUserAddRows="False"
-                          IsReadOnly="False"
-                          AlternatingRowBackground="#F8F9FA"
-                          GridLinesVisibility="Horizontal"
-                          HorizontalGridLinesBrush="#E9ECEF"
-                          CellEditEnding="PurchaseGrid_CellEditEnding">
-                    <DataGrid.Columns>
-                        <DataGridTextColumn Header="#"
-                                            Binding="{Binding RelativeSource={RelativeSource AncestorType=DataGridRow}, Path=Header}"
-                                            Width="40" IsReadOnly="True"/>
 
-                        <DataGridTextColumn Header="Barcode"
-                                            Binding="{Binding Barcode}"
-                                            Width="120" >
-                            <DataGridTextColumn.ElementStyle>
-                                <Style TargetType="TextBlock">
-                                    <Setter Property="FontFamily" Value="Consolas"/>
-                                    <Setter Property="Foreground" Value="#1971C2"/>
-                                    <Setter Property="FontWeight" Value="SemiBold"/>
-                                </Style>
-                            </DataGridTextColumn.ElementStyle>
-                        </DataGridTextColumn>
+            <!-- Invoice Items column: Auto row for the new Print button, * row for the grid -->
+            <Grid Grid.Column="0" Margin="0,0,12,0">
+                <Grid.RowDefinitions>
+                    <RowDefinition Height="Auto"/>
+                    <RowDefinition Height="*"/>
+                </Grid.RowDefinitions>
 
-                        <DataGridTextColumn Header="Product Name"
-                                            Binding="{Binding ProductName, UpdateSourceTrigger=PropertyChanged}"
-                                            Width="*">
-                            <DataGridTextColumn.ElementStyle>
-                                <Style TargetType="TextBlock">
-                                    <Setter Property="FontWeight" Value="SemiBold"/>
-                                </Style>
-                            </DataGridTextColumn.ElementStyle>
-                        </DataGridTextColumn>
+                <!-- NEW: Print button, above the Invoice Items panel -->
+                <Button Grid.Row="0"
+                        Content="🖨 Print"
+                        Click="PrintOptionsButton_Click"
+                        HorizontalAlignment="Right"
+                        Height="30" Padding="14,0"
+                        Margin="0,0,0,8"
+                        Background="#495057"
+                        Foreground="White"
+                        FontWeight="Bold"
+                        Cursor="Hand">
+                    <Button.Resources>
+                        <Style TargetType="Border">
+                            <Setter Property="CornerRadius" Value="6"/>
+                        </Style>
+                    </Button.Resources>
+                </Button>
 
-                        <DataGridTextColumn Header="Price (₹)"
-                                            Binding="{Binding PurchasePrice, UpdateSourceTrigger=PropertyChanged, StringFormat={}{0:N2}}"
-                                            Width="110">
-                            <DataGridTextColumn.ElementStyle>
-                                <Style TargetType="TextBlock">
-                                    <Setter Property="TextAlignment" Value="Right"/>
-                                </Style>
-                            </DataGridTextColumn.ElementStyle>
-                        </DataGridTextColumn>
+                <GroupBox Header="Invoice Items" Grid.Row="1" Background="White">
 
-                        <DataGridTextColumn Header="Wholesale (₹)"
-                                            Binding="{Binding WholesalePrice, UpdateSourceTrigger=PropertyChanged, StringFormat={}{0:N2}}"
-                                            Width="115">
-                            <DataGridTextColumn.ElementStyle>
-                                <Style TargetType="TextBlock">
-                                    <Setter Property="TextAlignment" Value="Right"/>
-                                    <Setter Property="Foreground" Value="#2B8A3E"/>
-                                </Style>
-                            </DataGridTextColumn.ElementStyle>
-                        </DataGridTextColumn>
+                    <DataGrid x:Name="PurchaseGrid"
+                              ItemsSource="{Binding PurchaseItems}"
+                              AutoGenerateColumns="False"
+                              CanUserAddRows="False"
+                              IsReadOnly="False"
+                              AlternatingRowBackground="#F8F9FA"
+                              GridLinesVisibility="Horizontal"
+                              HorizontalGridLinesBrush="#E9ECEF"
+                              CellEditEnding="PurchaseGrid_CellEditEnding">
+                        <DataGrid.Columns>
+                            <DataGridTextColumn Header="#"
+                                                Binding="{Binding RelativeSource={RelativeSource AncestorType=DataGridRow}, Path=Header}"
+                                                Width="40" IsReadOnly="True"/>
 
-                        <DataGridTextColumn Header="MRP (₹)"
-                                            Binding="{Binding MRP, UpdateSourceTrigger=PropertyChanged, StringFormat={}{0:N2}}"
-                                            Width="100">
-                            <DataGridTextColumn.ElementStyle>
-                                <Style TargetType="TextBlock">
-                                    <Setter Property="TextAlignment" Value="Right"/>
-                                    <Setter Property="Foreground" Value="#1971C2"/>
-                                    <Setter Property="FontWeight" Value="Bold"/>
-                                </Style>
-                            </DataGridTextColumn.ElementStyle>
-                        </DataGridTextColumn>
-                        <DataGridTextColumn Header="Retail (₹)"
-                     Binding="{Binding Retail, UpdateSourceTrigger=PropertyChanged, StringFormat={}{0:N2}}"
-                     Width="100">
-                            <DataGridTextColumn.ElementStyle>
-                                <Style TargetType="TextBlock">
-                                    <Setter Property="TextAlignment" Value="Right"/>
-                                    <Setter Property="Foreground" Value="#1971C2"/>
-                                    <Setter Property="FontWeight" Value="Bold"/>
-                                </Style>
-                            </DataGridTextColumn.ElementStyle>
-                        </DataGridTextColumn>
-                        <DataGridTextColumn Header="Qty"
-                                            Binding="{Binding Quantity, UpdateSourceTrigger=PropertyChanged}"
-                                            Width="70">
-                            <DataGridTextColumn.ElementStyle>
-                                <Style TargetType="TextBlock">
-                                    <Setter Property="TextAlignment" Value="Center"/>
-                                </Style>
-                            </DataGridTextColumn.ElementStyle>
-                        </DataGridTextColumn>
+                            <DataGridTextColumn Header="Barcode"
+                                                Binding="{Binding Barcode}"
+                                                Width="120" >
+                                <DataGridTextColumn.ElementStyle>
+                                    <Style TargetType="TextBlock">
+                                        <Setter Property="FontFamily" Value="Consolas"/>
+                                        <Setter Property="Foreground" Value="#1971C2"/>
+                                        <Setter Property="FontWeight" Value="SemiBold"/>
+                                    </Style>
+                                </DataGridTextColumn.ElementStyle>
+                            </DataGridTextColumn>
 
-                        <DataGridTextColumn Header="Net Amount (₹)"
-                                            Binding="{Binding AfterTaxation, UpdateSourceTrigger=PropertyChanged, StringFormat={}{0:N2}}"
-                                            Width="130">
-                            <DataGridTextColumn.ElementStyle>
-                                <Style TargetType="TextBlock">
-                                    <Setter Property="FontWeight" Value="Bold"/>
-                                    <Setter Property="Foreground" Value="#1971C2"/>
-                                    <Setter Property="TextAlignment" Value="Right"/>
-                                </Style>
-                            </DataGridTextColumn.ElementStyle>
-                        </DataGridTextColumn>
+                            <DataGridTextColumn Header="Product Name"
+                                                Binding="{Binding ProductName, UpdateSourceTrigger=PropertyChanged}"
+                                                Width="*">
+                                <DataGridTextColumn.ElementStyle>
+                                    <Style TargetType="TextBlock">
+                                        <Setter Property="FontWeight" Value="SemiBold"/>
+                                    </Style>
+                                </DataGridTextColumn.ElementStyle>
+                            </DataGridTextColumn>
 
-                        <DataGridTemplateColumn Header="Action" Width="85" IsReadOnly="True">
-                            <DataGridTemplateColumn.CellTemplate>
-                                <DataTemplate>
-                                    <Button Content="Remove"
-                                            Command="{Binding DataContext.PurchaseDeleteCommand, RelativeSource={RelativeSource AncestorType=DataGrid}}"
-                                            CommandParameter="{Binding}"
-                                            Background="Transparent"
-                                            BorderThickness="0"
-                                            Foreground="#E03131"
-                                            Cursor="Hand"
-                                            FontWeight="SemiBold"/>
-                                </DataTemplate>
-                            </DataGridTemplateColumn.CellTemplate>
-                        </DataGridTemplateColumn>
-                    </DataGrid.Columns>
-                </DataGrid>
-            </GroupBox>
+                            <DataGridTextColumn Header="Price (₹)"
+                                                Binding="{Binding PurchasePrice, UpdateSourceTrigger=PropertyChanged, StringFormat={}{0:N2}}"
+                                                Width="110">
+                                <DataGridTextColumn.ElementStyle>
+                                    <Style TargetType="TextBlock">
+                                        <Setter Property="TextAlignment" Value="Right"/>
+                                    </Style>
+                                </DataGridTextColumn.ElementStyle>
+                            </DataGridTextColumn>
+
+                            <DataGridTextColumn Header="Wholesale (₹)"
+                                                Binding="{Binding WholesalePrice, UpdateSourceTrigger=PropertyChanged, StringFormat={}{0:N2}}"
+                                                Width="115">
+                                <DataGridTextColumn.ElementStyle>
+                                    <Style TargetType="TextBlock">
+                                        <Setter Property="TextAlignment" Value="Right"/>
+                                        <Setter Property="Foreground" Value="#2B8A3E"/>
+                                    </Style>
+                                </DataGridTextColumn.ElementStyle>
+                            </DataGridTextColumn>
+
+                            <DataGridTextColumn Header="MRP (₹)"
+                                                Binding="{Binding MRP, UpdateSourceTrigger=PropertyChanged, StringFormat={}{0:N2}}"
+                                                Width="100">
+                                <DataGridTextColumn.ElementStyle>
+                                    <Style TargetType="TextBlock">
+                                        <Setter Property="TextAlignment" Value="Right"/>
+                                        <Setter Property="Foreground" Value="#1971C2"/>
+                                        <Setter Property="FontWeight" Value="Bold"/>
+                                    </Style>
+                                </DataGridTextColumn.ElementStyle>
+                            </DataGridTextColumn>
+                            <DataGridTextColumn Header="Retail (₹)"
+                         Binding="{Binding Retail, UpdateSourceTrigger=PropertyChanged, StringFormat={}{0:N2}}"
+                         Width="100">
+                                <DataGridTextColumn.ElementStyle>
+                                    <Style TargetType="TextBlock">
+                                        <Setter Property="TextAlignment" Value="Right"/>
+                                        <Setter Property="Foreground" Value="#1971C2"/>
+                                        <Setter Property="FontWeight" Value="Bold"/>
+                                    </Style>
+                                </DataGridTextColumn.ElementStyle>
+                            </DataGridTextColumn>
+                            <DataGridTextColumn Header="Qty"
+                                                Binding="{Binding Quantity, UpdateSourceTrigger=PropertyChanged}"
+                                                Width="70">
+                                <DataGridTextColumn.ElementStyle>
+                                    <Style TargetType="TextBlock">
+                                        <Setter Property="TextAlignment" Value="Center"/>
+                                    </Style>
+                                </DataGridTextColumn.ElementStyle>
+                            </DataGridTextColumn>
+
+                            <DataGridTextColumn Header="Net Amount (₹)"
+                                                Binding="{Binding AfterTaxation, UpdateSourceTrigger=PropertyChanged, StringFormat={}{0:N2}}"
+                                                Width="130">
+                                <DataGridTextColumn.ElementStyle>
+                                    <Style TargetType="TextBlock">
+                                        <Setter Property="FontWeight" Value="Bold"/>
+                                        <Setter Property="Foreground" Value="#1971C2"/>
+                                        <Setter Property="TextAlignment" Value="Right"/>
+                                    </Style>
+                                </DataGridTextColumn.ElementStyle>
+                            </DataGridTextColumn>
+
+                            <DataGridTemplateColumn Header="Action" Width="85" IsReadOnly="True">
+                                <DataGridTemplateColumn.CellTemplate>
+                                    <DataTemplate>
+                                        <Button Content="Remove"
+                                                Command="{Binding DataContext.PurchaseDeleteCommand, RelativeSource={RelativeSource AncestorType=DataGrid}}"
+                                                CommandParameter="{Binding}"
+                                                Background="Transparent"
+                                                BorderThickness="0"
+                                                Foreground="#E03131"
+                                                Cursor="Hand"
+                                                FontWeight="SemiBold"/>
+                                    </DataTemplate>
+                                </DataGridTemplateColumn.CellTemplate>
+                            </DataGridTemplateColumn>
+                        </DataGrid.Columns>
+                    </DataGrid>
+                </GroupBox>
+            </Grid>
 
             <Border Grid.Column="1" Background="White" BorderBrush="#DEE2E6" BorderThickness="1" Padding="14,10" CornerRadius="8" VerticalAlignment="Stretch">
                 <StackPanel Width="280">

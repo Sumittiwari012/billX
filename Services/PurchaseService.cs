@@ -2,6 +2,7 @@ using MySql.Data.MySqlClient;
 using MyWPFCRUDApp.Models;
 using System;
 using System.Collections.Generic;
+using System.Linq;
 
 namespace MyWPFCRUDApp.Services
 {
@@ -89,7 +90,13 @@ namespace MyWPFCRUDApp.Services
     PurchasePrice   = @Price,
     WholesalePrice  = @Wholesale,
     MRP             = @MRP,
-    RetailSalePrice = @Retail,   -- ← was 'RetailPrice', but MProducts column is RetailSalePrice
+    RetailSalePrice = @Retail,
+    HSNCode         = @HSNCode,
+    Size            = @Size,
+    Colour          = @Colour,
+    CGST            = @CGST,
+    SGST            = @SGST,
+    IGST            = @IGST,
     ModifiedBy      = 'WPFUser',
     ModifiedDate    = @Now
     WHERE Id = @ProductId";
@@ -99,7 +106,13 @@ namespace MyWPFCRUDApp.Services
                         cmdProd.Parameters.AddWithValue("@Price", detail.PurchasePrice);
                         cmdProd.Parameters.AddWithValue("@Wholesale", detail.WholesalePrice);
                         cmdProd.Parameters.AddWithValue("@MRP", detail.MRP);
-                        cmdProd.Parameters.AddWithValue("@Retail", detail.Retail);   // ← add
+                        cmdProd.Parameters.AddWithValue("@Retail", detail.Retail);
+                        cmdProd.Parameters.AddWithValue("@HSNCode", detail.HSNCode ?? (object)DBNull.Value);
+                        cmdProd.Parameters.AddWithValue("@Size", detail.Size ?? (object)DBNull.Value);
+                        cmdProd.Parameters.AddWithValue("@Colour", detail.Colour ?? (object)DBNull.Value);
+                        cmdProd.Parameters.AddWithValue("@CGST", (double)detail.CGST);
+                        cmdProd.Parameters.AddWithValue("@SGST", (double)detail.SGST);
+                        cmdProd.Parameters.AddWithValue("@IGST", (double)detail.IGST);
                         cmdProd.Parameters.AddWithValue("@Now", DateTime.Now);
                         cmdProd.Parameters.AddWithValue("@ProductId", detail.ProductId);
                         cmdProd.ExecuteNonQuery();
@@ -175,7 +188,7 @@ namespace MyWPFCRUDApp.Services
                 cmdProd.Parameters.AddWithValue("@SubCategoryId", defaultSubId);
                 cmdProd.Parameters.AddWithValue("@UnitId", defaultUnitId);
                 cmdProd.Parameters.AddWithValue("@PurchasePrice", detail.PurchasePrice);
-                
+
                 cmdProd.Parameters.AddWithValue("@WholesalePrice", detail.WholesalePrice);
                 cmdProd.Parameters.AddWithValue("@MRP", detail.MRP);
                 cmdProd.Parameters.AddWithValue("@RetailPrice", detail.Retail > 0 ? detail.Retail : detail.PurchasePrice);
@@ -433,6 +446,27 @@ namespace MyWPFCRUDApp.Services
             }
             return list;
         }
+
+        // ─── UPDATE PURCHASE ───────────────────────────────────────────────────
+        // FIX (stock math): the old version blindly did
+        //     Quantity = Quantity + @Qty
+        // for every line's NEW quantity, on top of stock that already reflected
+        // the OLD quantity from before this edit — so every time an invoice was
+        // opened from history and re-saved, stock inflated by the full new
+        // quantity again, never accounting for what was already added the first
+        // time (or a previous edit).
+        //
+        // Fixed behavior — everything EXCEPT quantity is replaced outright with
+        // whatever's on the edited invoice (name, prices, HSN, etc. via the
+        // existing UPDATE statements below), but stock is adjusted by the
+        // DELTA between old and new quantity, grouped by Barcode:
+        //     • Quantity increased  → stock goes UP by the extra amount only.
+        //     • Quantity decreased  → stock goes DOWN by the removed amount only.
+        //     • Quantity unchanged  → stock untouched.
+        // A barcode that disappeared entirely from the invoice (line removed in
+        // Bulk Edit / manually deleted before Save) has its old quantity backed
+        // out in full. A barcode that's brand-new to this invoice has its full
+        // new quantity added, same as a fresh purchase line.
         public bool UpdatePurchase(long masterId, MPurchaseMaster purchase)
         {
             if (purchase == null || purchase.MPurchaseDetail == null) return false;
@@ -443,6 +477,27 @@ namespace MyWPFCRUDApp.Services
 
             try
             {
+                // 0. Snapshot the OLD quantity per barcode, BEFORE the old detail
+                //    lines are deleted, so we know what to back out below.
+                var oldQtyByBarcode = new Dictionary<string, double>(StringComparer.OrdinalIgnoreCase);
+                using (var cmd = new MySqlCommand(@"
+                    SELECT p.Barcode, d.Quantity
+                    FROM MPurchaseDetail d
+                    LEFT JOIN MProducts p ON p.Id = d.ProductId
+                    WHERE d.PurchaseMasterId = @MasterId", conn, trans))
+                {
+                    cmd.Parameters.AddWithValue("@MasterId", masterId);
+                    using var rdr = cmd.ExecuteReader();
+                    while (rdr.Read())
+                    {
+                        string barcode = rdr["Barcode"] == DBNull.Value ? null : rdr.GetString("Barcode");
+                        if (string.IsNullOrWhiteSpace(barcode)) continue;
+                        double qty = rdr.GetDouble("Quantity");
+                        oldQtyByBarcode[barcode] = oldQtyByBarcode.TryGetValue(barcode, out var existing)
+                            ? existing + qty : qty;
+                    }
+                }
+
                 // 1. Update master row
                 var masterSql = @"UPDATE MPurchaseMaster SET
             InvoiceNumber = @InvoiceNumber,
@@ -480,7 +535,10 @@ namespace MyWPFCRUDApp.Services
                     cmd.ExecuteNonQuery();
                 }
 
-                // 3. Insert updated lines + update product prices + add to stock
+                // 3. Insert updated lines + update product prices (stock handled
+                //    separately below, once we know every line's final barcode).
+                var newQtyByBarcode = new Dictionary<string, double>(StringComparer.OrdinalIgnoreCase);
+
                 foreach (var detail in purchase.MPurchaseDetail)
                 {
                     if (detail.ProductId == 0)
@@ -507,7 +565,8 @@ namespace MyWPFCRUDApp.Services
                         cmd.ExecuteNonQuery();
                     }
 
-                    // Update product prices to latest values
+                    // Update product prices/details to the latest values — this
+                    // is the "replace everything except quantity" part.
                     var updateProductSql = @"UPDATE MProducts SET
                 PurchasePrice   = @Price,
                 WholesalePrice  = @Wholesale,
@@ -528,25 +587,42 @@ namespace MyWPFCRUDApp.Services
                         cmd.ExecuteNonQuery();
                     }
 
-                    // ── Add purchased quantity onto existing stock ─────────────────────
-                    // Looks up the row by Barcode and adds the new quantity to whatever
-                    // is already there — same pattern as AddPurchase, no reversal.
                     if (!string.IsNullOrWhiteSpace(detail.Barcode))
                     {
-                        var increaseStockSql = @"UPDATE ProductQuantity SET
-                    Quantity     = Quantity + @Qty,
-                    ModifiedBy   = 'WPFUser',
-                    ModifiedDate = @Now
-                    WHERE Barcode = @Barcode";
-
-                        using (var cmdQty = new MySqlCommand(increaseStockSql, conn, trans))
-                        {
-                            cmdQty.Parameters.AddWithValue("@Qty", detail.Quantity);
-                            cmdQty.Parameters.AddWithValue("@Now", DateTime.Now);
-                            cmdQty.Parameters.AddWithValue("@Barcode", detail.Barcode);
-                            cmdQty.ExecuteNonQuery();
-                        }
+                        newQtyByBarcode[detail.Barcode] = newQtyByBarcode.TryGetValue(detail.Barcode, out var existing)
+                            ? existing + detail.Quantity : detail.Quantity;
                     }
+                }
+
+                // 4. Apply the quantity DELTA per barcode — the actual fix.
+                //    Union of every barcode that appeared before and/or after
+                //    the edit, so removed lines back their quantity out and
+                //    brand-new lines add their full quantity in, same as a
+                //    changed line only moving by the difference.
+                var allBarcodes = new HashSet<string>(oldQtyByBarcode.Keys, StringComparer.OrdinalIgnoreCase);
+                allBarcodes.UnionWith(newQtyByBarcode.Keys);
+
+                foreach (var barcode in allBarcodes)
+                {
+                    double oldQty = oldQtyByBarcode.TryGetValue(barcode, out var oq) ? oq : 0;
+                    double newQty = newQtyByBarcode.TryGetValue(barcode, out var nq) ? nq : 0;
+                    double delta = newQty - oldQty;
+                    if (delta == 0) continue; // unchanged — leave stock alone
+
+                    // GREATEST(0, ...) guards against stock going negative if a
+                    // quantity is reduced below what's already been sold/moved
+                    // elsewhere since this invoice was first saved.
+                    var adjustStockSql = @"UPDATE ProductQuantity SET
+                        Quantity     = GREATEST(0, Quantity + @Delta),
+                        ModifiedBy   = 'WPFUser',
+                        ModifiedDate = @Now
+                        WHERE Barcode = @Barcode";
+
+                    using var cmdQty = new MySqlCommand(adjustStockSql, conn, trans);
+                    cmdQty.Parameters.AddWithValue("@Delta", delta);
+                    cmdQty.Parameters.AddWithValue("@Now", DateTime.Now);
+                    cmdQty.Parameters.AddWithValue("@Barcode", barcode);
+                    cmdQty.ExecuteNonQuery();
                 }
 
                 trans.Commit();
@@ -559,11 +635,18 @@ namespace MyWPFCRUDApp.Services
                 throw;
             }
         }
+
         // ─── DELETE PURCHASE ───────────────────────────────────────────────────
         /// <summary>
         /// Deletes a purchase invoice and its detail lines.
-        /// For every distinct product that appeared in this invoice's details,
-        /// looks up its Barcode and sets ProductQuantity.Quantity to 0.
+        ///
+        /// FIX (stock math): the old version set ProductQuantity.Quantity = 0
+        /// for every barcode that appeared in this invoice — which wiped out
+        /// stock contributed by ANY other purchase of the same product, not
+        /// just this one. Now it instead SUBTRACTS this invoice's own quantity
+        /// (summed per barcode, in case a barcode appears on more than one
+        /// line) from whatever stock currently holds, clamped at 0 so it never
+        /// goes negative.
         /// </summary>
         public (bool Success, long SupplierId) DeletePurchase(long masterId)
         {
@@ -589,31 +672,28 @@ namespace MyWPFCRUDApp.Services
                     }
                 }
 
-                // 1. Get distinct ProductIds referenced by this invoice's detail lines
-                var productIds = new List<long>();
-                using (var cmd = new MySqlCommand(
-                    "SELECT DISTINCT ProductId FROM MPurchaseDetail WHERE PurchaseMasterId = @MasterId",
-                    conn, trans))
+                // 1. Sum THIS invoice's quantity per barcode — this is what gets
+                //    backed out of stock, not the whole stock row.
+                var qtyByBarcode = new Dictionary<string, double>(StringComparer.OrdinalIgnoreCase);
+                using (var cmd = new MySqlCommand(@"
+                    SELECT p.Barcode, d.Quantity
+                    FROM MPurchaseDetail d
+                    LEFT JOIN MProducts p ON p.Id = d.ProductId
+                    WHERE d.PurchaseMasterId = @MasterId", conn, trans))
                 {
                     cmd.Parameters.AddWithValue("@MasterId", masterId);
                     using var rdr = cmd.ExecuteReader();
                     while (rdr.Read())
-                        productIds.Add(rdr.GetInt64("ProductId"));
+                    {
+                        string barcode = rdr["Barcode"] == DBNull.Value ? null : rdr.GetString("Barcode");
+                        if (string.IsNullOrWhiteSpace(barcode)) continue;
+                        double qty = rdr.GetDouble("Quantity");
+                        qtyByBarcode[barcode] = qtyByBarcode.TryGetValue(barcode, out var existing)
+                            ? existing + qty : qty;
+                    }
                 }
 
-                // 2. Resolve their barcodes from MProducts
-                var barcodes = new List<string>();
-                foreach (var productId in productIds)
-                {
-                    using var cmd = new MySqlCommand(
-                        "SELECT Barcode FROM MProducts WHERE Id = @ProductId", conn, trans);
-                    cmd.Parameters.AddWithValue("@ProductId", productId);
-                    var result = cmd.ExecuteScalar();
-                    if (result != null && result != DBNull.Value)
-                        barcodes.Add(result.ToString());
-                }
-
-                // 3. Delete the detail lines
+                // 2. Delete the detail lines
                 using (var cmd = new MySqlCommand(
                     "DELETE FROM MPurchaseDetail WHERE PurchaseMasterId = @MasterId", conn, trans))
                 {
@@ -621,7 +701,7 @@ namespace MyWPFCRUDApp.Services
                     cmd.ExecuteNonQuery();
                 }
 
-                // 3b. Delete orphaned payments tied to this invoice — otherwise they keep
+                // 2b. Delete orphaned payments tied to this invoice — otherwise they keep
                 //     counting toward the supplier's balance after the invoice is gone.
                 if (!string.IsNullOrWhiteSpace(invoiceNumber))
                 {
@@ -633,7 +713,7 @@ namespace MyWPFCRUDApp.Services
                     cmd.ExecuteNonQuery();
                 }
 
-                // 4. Delete the master row
+                // 3. Delete the master row
                 int rowsDeleted;
                 using (var cmd = new MySqlCommand(
                     "DELETE FROM MPurchaseMaster WHERE Id = @MasterId", conn, trans))
@@ -642,15 +722,18 @@ namespace MyWPFCRUDApp.Services
                     rowsDeleted = cmd.ExecuteNonQuery();
                 }
 
-                // 5. Set quantity to 0 for every barcode that was in this invoice
-                foreach (var barcode in barcodes)
+                // 4. Subtract this invoice's quantity from current stock, per
+                //    barcode — never zero the whole row, since the same product
+                //    may have stock from other purchases too. Clamped at 0.
+                foreach (var (barcode, qty) in qtyByBarcode)
                 {
                     using var cmd = new MySqlCommand(@"
                 UPDATE ProductQuantity SET
-                    Quantity     = 0,
+                    Quantity     = GREATEST(0, Quantity - @Qty),
                     ModifiedBy   = 'WPFUser',
                     ModifiedDate = @Now
                 WHERE Barcode = @Barcode", conn, trans);
+                    cmd.Parameters.AddWithValue("@Qty", qty);
                     cmd.Parameters.AddWithValue("@Now", DateTime.Now);
                     cmd.Parameters.AddWithValue("@Barcode", barcode);
                     cmd.ExecuteNonQuery();

@@ -13,6 +13,12 @@ namespace MyWPFCRUDApp.Services
     public class ProductService
     {
         private string Con => DatabaseHelper.ConnectionString;
+
+        // Captures the exception message from the most recent InsertProduct /
+        // UpdateProduct / DeleteProduct call that returned false, so callers
+        // can show the *real* database error instead of a generic message.
+        public string? LastError { get; private set; }
+
         public class ProductDisplayModel : INotifyPropertyChanged
         {
             public long Id { get; set; }
@@ -160,6 +166,8 @@ namespace MyWPFCRUDApp.Services
         }
         public bool InsertProduct(MProducts p)
         {
+            LastError = null;
+
             using var conn = new MySqlConnection(Con);
             conn.Open();
             using var trans = conn.BeginTransaction();
@@ -229,9 +237,10 @@ namespace MyWPFCRUDApp.Services
                 trans.Commit();
                 return true;
             }
-            catch (Exception)
+            catch (Exception ex)
             {
                 trans.Rollback();
+                LastError = ex.Message;
                 return false;
             }
         }
@@ -239,6 +248,8 @@ namespace MyWPFCRUDApp.Services
         // ─── UPDATE ────────────────────────────────────────────────────────────
         public bool UpdateProduct(MProducts p)
         {
+            LastError = null;
+
             using var conn = new MySqlConnection(Con);
             conn.Open();
             using var trans = conn.BeginTransaction();
@@ -296,9 +307,10 @@ namespace MyWPFCRUDApp.Services
                 trans.Commit();
                 return true;
             }
-            catch (Exception)
+            catch (Exception ex)
             {
                 trans.Rollback();
+                LastError = ex.Message;
                 return false;
             }
         }
@@ -306,6 +318,8 @@ namespace MyWPFCRUDApp.Services
         // ─── DELETE ────────────────────────────────────────────────────────────
         public bool DeleteProduct(long id)
         {
+            LastError = null;
+
             using var conn = new MySqlConnection(Con);
             conn.Open();
             using var trans = conn.BeginTransaction();
@@ -337,9 +351,10 @@ namespace MyWPFCRUDApp.Services
                 trans.Commit();
                 return true;
             }
-            catch (Exception)
+            catch (Exception ex)
             {
                 trans.Rollback();
+                LastError = ex.Message;
                 return false;
             }
         }
@@ -397,6 +412,14 @@ namespace MyWPFCRUDApp.Services
         }
 
         // ─── GET BY BARCODE ────────────────────────────────────────────────────
+        // Returns a FULLY populated MProducts — every column, same as
+        // GetProducts(). Previously this only set a handful of fields
+        // (UnitId, PurchasePrice, RetailSalePrice, WholesalePrice, MRP,
+        // Godown, Rack, MfgDate, PartGroup, IMEI1, IMEI2, DiscountPercentage,
+        // CESS were all left at their default — UnitId defaulting to 0 is
+        // what caused "Add Copies" to fail with a UnitId foreign-key error,
+        // since anything built from a row that came through this method
+        // silently carried UnitId = 0 into InsertProduct).
         public MProducts? GetByBarcode(string barcode)
         {
             using var conn = new MySqlConnection(Con);
@@ -417,15 +440,32 @@ namespace MyWPFCRUDApp.Services
                 Barcode = reader["Barcode"].ToString()!,
                 CategoryId = Convert.ToInt64(reader["CategoryId"]),
                 SubCategoryId = Convert.ToInt64(reader["SubCategoryId"]),
+                UnitId = Convert.ToInt64(reader["UnitId"]),
                 HSNCode = reader["HSNCode"] == DBNull.Value ? null : reader["HSNCode"].ToString(),
+                PartGroup = reader["PartGroup"] == DBNull.Value ? null : reader["PartGroup"].ToString(),
                 Description = reader["Description"] == DBNull.Value ? null : reader["Description"].ToString(),
-                Size = reader["Size"] == DBNull.Value ? null : reader["Size"].ToString(),
-                Colour = reader["Colour"] == DBNull.Value ? null : reader["Colour"].ToString(),
-                Batch = reader["Batch"] == DBNull.Value ? null : reader["Batch"].ToString(),
-                ExpDate = reader["ExpDate"] == DBNull.Value ? null : Convert.ToDateTime(reader["ExpDate"]),
+                PurchasePrice = Convert.ToDecimal(reader["PurchasePrice"]),
+                RetailSalePrice = Convert.ToDecimal(reader["RetailSalePrice"]),
+                WholesalePrice = Convert.ToDecimal(reader["WholesalePrice"]),
+                DiscountPercentage = Convert.ToDouble(reader["DiscountPercentage"]),
                 CGST = Convert.ToDouble(reader["CGST"]),
                 SGST = Convert.ToDouble(reader["SGST"]),
                 IGST = Convert.ToDouble(reader["IGST"]),
+                CESS = Convert.ToDouble(reader["CESS"]),
+                MRP = Convert.ToDecimal(reader["MRP"]),
+                Godown = reader["Godown"] == DBNull.Value ? null : reader["Godown"].ToString(),
+                Rack = reader["Rack"] == DBNull.Value ? null : reader["Rack"].ToString(),
+                Batch = reader["Batch"] == DBNull.Value ? null : reader["Batch"].ToString(),
+                MfgDate = reader["MfgDate"] == DBNull.Value ? null : Convert.ToDateTime(reader["MfgDate"]),
+                ExpDate = reader["ExpDate"] == DBNull.Value ? null : Convert.ToDateTime(reader["ExpDate"]),
+                Size = reader["Size"] == DBNull.Value ? null : reader["Size"].ToString(),
+                Colour = reader["Colour"] == DBNull.Value ? null : reader["Colour"].ToString(),
+                IMEI1 = reader["IMEI1"] == DBNull.Value ? null : reader["IMEI1"].ToString(),
+                IMEI2 = reader["IMEI2"] == DBNull.Value ? null : reader["IMEI2"].ToString(),
+                createdDate = reader["createdDate"] == DBNull.Value ? default : Convert.ToDateTime(reader["createdDate"]),
+                createdBy = reader["createdBy"] == DBNull.Value ? null : reader["createdBy"].ToString(),
+                modifiedDate = reader["modifiedDate"] == DBNull.Value ? default : Convert.ToDateTime(reader["modifiedDate"]),
+                modifiedBy = reader["modifiedBy"] == DBNull.Value ? null : reader["modifiedBy"].ToString(),
             };
         }
 
@@ -450,13 +490,32 @@ namespace MyWPFCRUDApp.Services
                 Barcode = reader["Barcode"].ToString()!,
                 CategoryId = Convert.ToInt64(reader["CategoryId"]),
                 SubCategoryId = Convert.ToInt64(reader["SubCategoryId"]),
+                UnitId = Convert.ToInt64(reader["UnitId"]),
                 HSNCode = reader["HSNCode"] == DBNull.Value ? null : reader["HSNCode"].ToString(),
+                PartGroup = reader["PartGroup"] == DBNull.Value ? null : reader["PartGroup"].ToString(),
                 Description = reader["Description"] == DBNull.Value ? null : reader["Description"].ToString(),
-                Size = reader["Size"] == DBNull.Value ? null : reader["Size"].ToString(),
-                Colour = reader["Colour"] == DBNull.Value ? null : reader["Colour"].ToString(),
+                PurchasePrice = Convert.ToDecimal(reader["PurchasePrice"]),
+                RetailSalePrice = Convert.ToDecimal(reader["RetailSalePrice"]),
+                WholesalePrice = Convert.ToDecimal(reader["WholesalePrice"]),
+                DiscountPercentage = Convert.ToDouble(reader["DiscountPercentage"]),
                 CGST = Convert.ToDouble(reader["CGST"]),
                 SGST = Convert.ToDouble(reader["SGST"]),
                 IGST = Convert.ToDouble(reader["IGST"]),
+                CESS = Convert.ToDouble(reader["CESS"]),
+                MRP = Convert.ToDecimal(reader["MRP"]),
+                Godown = reader["Godown"] == DBNull.Value ? null : reader["Godown"].ToString(),
+                Rack = reader["Rack"] == DBNull.Value ? null : reader["Rack"].ToString(),
+                Batch = reader["Batch"] == DBNull.Value ? null : reader["Batch"].ToString(),
+                MfgDate = reader["MfgDate"] == DBNull.Value ? null : Convert.ToDateTime(reader["MfgDate"]),
+                ExpDate = reader["ExpDate"] == DBNull.Value ? null : Convert.ToDateTime(reader["ExpDate"]),
+                Size = reader["Size"] == DBNull.Value ? null : reader["Size"].ToString(),
+                Colour = reader["Colour"] == DBNull.Value ? null : reader["Colour"].ToString(),
+                IMEI1 = reader["IMEI1"] == DBNull.Value ? null : reader["IMEI1"].ToString(),
+                IMEI2 = reader["IMEI2"] == DBNull.Value ? null : reader["IMEI2"].ToString(),
+                createdDate = reader["createdDate"] == DBNull.Value ? default : Convert.ToDateTime(reader["createdDate"]),
+                createdBy = reader["createdBy"] == DBNull.Value ? null : reader["createdBy"].ToString(),
+                modifiedDate = reader["modifiedDate"] == DBNull.Value ? default : Convert.ToDateTime(reader["modifiedDate"]),
+                modifiedBy = reader["modifiedBy"] == DBNull.Value ? null : reader["modifiedBy"].ToString(),
             };
         }
 
@@ -570,6 +629,34 @@ namespace MyWPFCRUDApp.Services
             cmd.Parameters.AddWithValue("@Id", id);
 
             return cmd.ExecuteNonQuery() > 0;
+        }
+        // ─── GET LAST AUTO-GENERATED BARCODE ──────────────────────────────────
+        // Used to generate the next sequential barcode (e.g. "GR7809" -> "GR7810").
+        // Only barcodes matching "letters followed by digits" count as part of
+        // the auto-increment sequence — a purely numeric barcode (e.g. a scanned
+        // manufacturer code like "145239745") is a different naming scheme
+        // entirely. If GetLastBarcode()'s simple "most recent row" approach picked
+        // that up, the sequence would jump to some unrelated huge number instead
+        // of continuing from the last GR-style barcode. This walks backward from
+        // the most recent product and returns the first one that actually fits
+        // the auto-increment shape, skipping anything that doesn't.
+        public string? GetLastAutoBarcode()
+        {
+            using var conn = new MySqlConnection(Con);
+            conn.Open();
+
+            using var cmd = new MySqlCommand(
+                "SELECT Barcode FROM MProducts ORDER BY Id DESC", conn);
+            using var reader = cmd.ExecuteReader();
+
+            while (reader.Read())
+            {
+                string barcode = reader["Barcode"]?.ToString() ?? "";
+                if (System.Text.RegularExpressions.Regex.IsMatch(barcode, @"^[A-Za-z]+\d+$"))
+                    return barcode;
+            }
+
+            return null;
         }
     }
 }

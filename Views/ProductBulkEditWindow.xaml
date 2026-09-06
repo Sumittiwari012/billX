@@ -44,6 +44,33 @@
                 BorderBrush="#DEE2E6" BorderThickness="1" Margin="0,0,0,10">
             <StackPanel Orientation="Horizontal">
 
+                <!-- Select all / Unselect all -->
+                <StackPanel Orientation="Horizontal" Margin="0,0,30,0">
+                    <Button Content="Select All"
+                            Click="SelectAllButton_Click"
+                            Height="30" Padding="10,0"
+                            Background="White" BorderBrush="#CED4DA"
+                            Margin="0,0,8,0">
+                        <Button.Resources>
+                            <Style TargetType="Border">
+                                <Setter Property="CornerRadius" Value="4"/>
+                            </Style>
+                        </Button.Resources>
+                    </Button>
+                    <Button Content="Unselect All"
+                            Click="UnselectAllButton_Click"
+                            Height="30" Padding="10,0"
+                            Background="White" BorderBrush="#CED4DA">
+                        <Button.Resources>
+                            <Style TargetType="Border">
+                                <Setter Property="CornerRadius" Value="4"/>
+                            </Style>
+                        </Button.Resources>
+                    </Button>
+                </StackPanel>
+
+                <Separator Width="1" Background="#DEE2E6" Margin="0,0,30,0"/>
+
                 <!-- Bulk apply -->
                 <StackPanel Orientation="Horizontal" Margin="0,0,30,0">
                     <TextBlock Text="Bulk apply:" VerticalAlignment="Center"
@@ -137,9 +164,9 @@
                     </Button>
                 </StackPanel>
 
-                <TextBlock Text="Tip: check rows using the ✓ column, then use any action above. Deletes are applied when you click Save."
+                <TextBlock Text="Tip: check rows using the ✓ column (click-drag to paint multiple), or use Select All / Unselect All, then use any action above. Deletes are applied when you click Save."
                            Foreground="#868E96" FontSize="11" VerticalAlignment="Center"
-                           Margin="30,0,0,0" TextWrapping="Wrap" MaxWidth="220"/>
+                           Margin="30,0,0,0" TextWrapping="Wrap" MaxWidth="240"/>
             </StackPanel>
         </Border>
 
@@ -153,12 +180,29 @@
                       AlternatingRowBackground="#F8F9FA"
                       GridLinesVisibility="Horizontal"
                       HorizontalGridLinesBrush="#E9ECEF"
-                      RowHeaderWidth="0">
+                      RowHeaderWidth="0"
+                      PreviewMouseMove="ProductGrid_PreviewMouseMove"
+                      PreviewMouseLeftButtonUp="ProductGrid_PreviewMouseLeftButtonUp">
                 <DataGrid.Columns>
 
-                    <!-- Select (always visible) -->
-                    <DataGridCheckBoxColumn Header="✓" Binding="{Binding IsSelected, Mode=TwoWay}"
-                                             Width="36"/>
+                    <!-- Select (always visible) — header checkbox does
+                         select-all / unselect-all (tri-state: dash means a
+                         mix of selected/unselected rows). Each cell checkbox
+                         supports click-and-drag painting across rows. -->
+                    <DataGridTemplateColumn x:Name="SelectColumn" Width="36">
+                        <DataGridTemplateColumn.Header>
+                            <CheckBox x:Name="ChkSelectAll"
+                                      IsThreeState="True"
+                                      Click="SelectAll_Click"
+                                      ToolTip="Select / unselect all"/>
+                        </DataGridTemplateColumn.Header>
+                        <DataGridTemplateColumn.CellTemplate>
+                            <DataTemplate>
+                                <CheckBox IsChecked="{Binding IsSelected, Mode=TwoWay}"
+                                          HorizontalAlignment="Center"/>
+                            </DataTemplate>
+                        </DataGridTemplateColumn.CellTemplate>
+                    </DataGridTemplateColumn>
 
                     <!-- New/Existing badge -->
                     <DataGridTextColumn Header="Status" Width="70" IsReadOnly="True"
@@ -172,7 +216,7 @@
                     </DataGridTextColumn>
 
                     <!-- Always visible -->
-                    <DataGridTextColumn Header="Barcode" Binding="{Binding Product.Barcode}" Width="110"/>
+                    <DataGridTextColumn Header="Barcode" Binding="{Binding Product.Barcode}" Width="110" Visibility="Collapsed"/>
                     <DataGridTextColumn Header="ProductName" Binding="{Binding Product.ProductName}" Width="180"/>
 
                     <!-- Toggleable text columns -->
@@ -198,7 +242,7 @@
                     <DataGridTextColumn Header="Colour" Binding="{Binding Product.Colour}" Width="80"/>
                     <DataGridTextColumn Header="IMEI1" Binding="{Binding Product.IMEI1}" Width="110" Visibility="Collapsed"/>
                     <DataGridTextColumn Header="IMEI2" Binding="{Binding Product.IMEI2}" Width="110" Visibility="Collapsed"/>
-                    <DataGridTextColumn Header="Quantity" Binding="{Binding Product.Quantity}" Width="80" Visibility="Collapsed"/>
+                    <DataGridTextColumn Header="Quantity" Binding="{Binding Quantity}" Width="80" />
 
                     <!-- Category / SubCategory / Unit — dropdown editors -->
                     <DataGridTemplateColumn Header="Category" Width="130">

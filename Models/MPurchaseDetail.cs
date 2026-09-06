@@ -89,5 +89,47 @@ namespace MyWPFCRUDApp.Models
         public event PropertyChangedEventHandler? PropertyChanged;
         private void OnPropertyChanged([CallerMemberName] string? name = null)
             => PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(name));
+        private string _hsnCode = string.Empty;
+        [NotMapped]
+        public string HSNCode
+        {
+            get => _hsnCode;
+            set { _hsnCode = value; OnPropertyChanged(); }
+        }
+        private string _size = string.Empty;
+        [NotMapped]
+        public string Size
+        {
+            get => _size;
+            set { _size = value; OnPropertyChanged(); }
+        }
+        private string _colour = string.Empty;
+        [NotMapped]
+        public string Colour
+        {
+            get => _colour;
+            set { _colour = value; OnPropertyChanged(); }
+        }
+        private decimal _cgst;
+        [NotMapped]
+        public decimal CGST
+        {
+            get => _cgst;
+            set { if (_cgst != value) { _cgst = value; OnPropertyChanged(); } }
+        }
+        private decimal _sgst;
+        [NotMapped]
+        public decimal SGST
+        {
+            get => _sgst;
+            set { if (_sgst != value) { _sgst = value; OnPropertyChanged(); } }
+        }
+        private decimal _igst;
+        [NotMapped]
+        public decimal IGST
+        {
+            get => _igst;
+            set { if (_igst != value) { _igst = value; OnPropertyChanged(); } }
+        }
     }
 }

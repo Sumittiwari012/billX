@@ -23,6 +23,20 @@ namespace MyWPFCRUDApp.ViewModels
 
         private readonly TaxService _taxService;
         private long _editingMasterId = 0;
+
+        // NEW — guards against a second click of SAVE INVOICE re-saving the
+        // same invoice (and crashing on a duplicate-key DB exception).
+        // Reset to false whenever a fresh/loaded invoice becomes save-able
+        // again (InitializeData / LoadHistoryInvoice), set to true only after
+        // a successful save.
+        private bool _invoiceSaved = false;
+
+        // Product-master changes staged by Bulk Edit — nothing here hits the
+        // database until SavePurchase() runs (SAVE INVOICE), matching the
+        // rule that Bulk Edit itself never writes to the DB.
+        private readonly System.Collections.Generic.List<MProducts> _pendingProductInserts = new();
+        private readonly System.Collections.Generic.List<MProducts> _pendingProductUpdates = new();
+        private readonly System.Collections.Generic.List<MProducts> _pendingProductDeletes = new();
         // ── Commands ───────────────────────────────────────────────────────────
         public ICommand AddItemCommand { get; }
         public ICommand PurchaseDeleteCommand { get; }
@@ -493,9 +507,7 @@ namespace MyWPFCRUDApp.ViewModels
             if (ofd.ShowDialog() != true) return;
 
             int added = 0;
-            int updated = 0;
-            int newBarcodesAdded = 0;
-            var skippedNoName = new System.Collections.Generic.List<string>();
+            int newProductsCount = 0;
 
             try
             {
@@ -510,37 +522,78 @@ namespace MyWPFCRUDApp.ViewModels
                     return;
                 }
 
-                // Map header name -> column index (case-insensitive, trims whitespace)
                 var colMap = new System.Collections.Generic.Dictionary<string, int>(
                     StringComparer.OrdinalIgnoreCase);
                 foreach (var cell in headerRow.CellsUsed())
                     colMap[cell.GetString().Trim()] = cell.Address.ColumnNumber;
 
-                if (!colMap.TryGetValue("Barcode", out int barcodeCol))
+                if (!colMap.TryGetValue("ProductName", out int nameCol))
                 {
                     MessageBox.Show(
-                        "The Excel sheet must have a 'Barcode' column.\n\n" +
-                        "Optional columns: 'ProductName' (for new barcodes), 'Quantity', " +
-                        "'PurchasePrice', 'RetailPrice'.",
+                        "The Excel sheet must have a 'ProductName' column.\n\n" +
+                        "Optional columns: 'Quantity', 'PurchasePrice', 'RetailPrice', 'MRP', " +
+                        "'Size', 'Color', 'HSNCode', 'CGST', 'SGST', 'IGST'.\n\n" +
+                        "Barcodes are assigned automatically — no Barcode column needed.",
                         "Invalid Sheet", MessageBoxButton.OK, MessageBoxImage.Warning);
                     return;
                 }
 
-                int? nameCol = colMap.TryGetValue("ProductName", out var nc) ? nc : (int?)null;
                 int? qtyCol = colMap.TryGetValue("Quantity", out var qc) ? qc : (int?)null;
                 int? priceCol = colMap.TryGetValue("PurchasePrice", out var pc) ? pc : (int?)null;
                 int? retailCol = colMap.TryGetValue("RetailPrice", out var rc) ? rc : (int?)null;
+                int? mrpCol = colMap.TryGetValue("MRP", out var mc) ? mc : (int?)null;
+                int? sizeCol = colMap.TryGetValue("Size", out var szc) ? szc : (int?)null;
+                int? colourCol = colMap.TryGetValue("Color", out var clc) ? clc : (int?)null;
+                int? hsnCol = colMap.TryGetValue("HSNCode", out var hc) ? hc : (int?)null;
+                int? cgstCol = colMap.TryGetValue("CGST", out var cgc) ? cgc : (int?)null;
+                int? sgstCol = colMap.TryGetValue("SGST", out var sgc) ? sgc : (int?)null;
+                int? igstCol = colMap.TryGetValue("IGST", out var igc) ? igc : (int?)null;
+
+                // ── Barcode auto-generation setup ───────────────────────────────
+                // Seed the "already used" set from every product barcode currently
+                // known (DB) plus everything already sitting on this invoice, so
+                // freshly generated barcodes for this import batch never collide
+                // with either.
+                var usedBarcodes = new System.Collections.Generic.HashSet<string>(
+                    Products.Select(p => p.Barcode).Where(b => !string.IsNullOrWhiteSpace(b)),
+                    StringComparer.OrdinalIgnoreCase);
+                foreach (var pi in PurchaseItems)
+                    if (!string.IsNullOrWhiteSpace(pi.Barcode)) usedBarcodes.Add(pi.Barcode);
+
+                string barcodePrefix = "M";
+                long nextBarcodeNumber = 1;
+                string? lastAuto = _productService.GetLastAutoBarcode();
+                if (!string.IsNullOrWhiteSpace(lastAuto))
+                {
+                    var match = System.Text.RegularExpressions.Regex.Match(lastAuto, @"^([A-Za-z]+)(\d+)$");
+                    if (match.Success)
+                    {
+                        barcodePrefix = match.Groups[1].Value;
+                        nextBarcodeNumber = long.Parse(match.Groups[2].Value) + 1;
+                    }
+                }
+
+                string GenerateBarcode()
+                {
+                    string candidate;
+                    do
+                    {
+                        candidate = $"{barcodePrefix}{nextBarcodeNumber}";
+                        nextBarcodeNumber++;
+                    } while (usedBarcodes.Contains(candidate));
+                    usedBarcodes.Add(candidate);
+                    return candidate;
+                }
 
                 int lastRow = ws.LastRowUsed()?.RowNumber() ?? headerRow.RowNumber();
 
                 for (int r = headerRow.RowNumber() + 1; r <= lastRow; r++)
                 {
                     var row = ws.Row(r);
-                    string barcode = row.Cell(barcodeCol).GetString().Trim();
+                    string nameFromSheet = row.Cell(nameCol).GetString().Trim();
 
-                    // First blank Barcode cell = end of the data block. Everything
-                    // below (notes, legends, blank spacer rows) is ignored.
-                    if (string.IsNullOrWhiteSpace(barcode))
+                    // First blank ProductName cell = end of the data block.
+                    if (string.IsNullOrWhiteSpace(nameFromSheet))
                         break;
 
                     double qty = 1;
@@ -555,119 +608,64 @@ namespace MyWPFCRUDApp.ViewModels
                         }
                     }
 
-                    decimal? priceOverride = null;
-                    if (priceCol.HasValue)
+                    decimal? ReadDecimal(int? col)
                     {
-                        var priceCell = row.Cell(priceCol.Value);
-                        if (!priceCell.IsEmpty() &&
-                            decimal.TryParse(priceCell.GetString(), out var parsedPrice))
-                        {
-                            priceOverride = parsedPrice;
-                        }
+                        if (!col.HasValue) return null;
+                        var cell = row.Cell(col.Value);
+                        return !cell.IsEmpty() && decimal.TryParse(cell.GetString(), out var v) ? v : (decimal?)null;
                     }
 
-                    decimal? retailOverride = null;
-                    if (retailCol.HasValue)
+                    string ReadString(int? col)
                     {
-                        var retailCell = row.Cell(retailCol.Value);
-                        if (!retailCell.IsEmpty() &&
-                            decimal.TryParse(retailCell.GetString(), out var parsedRetail))
-                        {
-                            retailOverride = parsedRetail;
-                        }
+                        if (!col.HasValue) return null;
+                        var cell = row.Cell(col.Value);
+                        var s = cell.GetString().Trim();
+                        return string.IsNullOrWhiteSpace(s) ? null : s;
                     }
 
-                    string nameFromSheet = nameCol.HasValue
-                        ? row.Cell(nameCol.Value).GetString().Trim()
-                        : string.Empty;
+                    decimal? priceOverride = ReadDecimal(priceCol);
+                    decimal? retailOverride = ReadDecimal(retailCol);
+                    decimal? mrpOverride = ReadDecimal(mrpCol);
+                    decimal? cgstOverride = ReadDecimal(cgstCol);
+                    decimal? sgstOverride = ReadDecimal(sgstCol);
+                    decimal? igstOverride = ReadDecimal(igstCol);
+                    string sizeFromSheet = ReadString(sizeCol);
+                    string colourFromSheet = ReadString(colourCol);
+                    string hsnFromSheet = ReadString(hsnCol);
 
-                    var product = Products.FirstOrDefault(
-                        p => p.Barcode == barcode || p.ProductCode == barcode);
+                    // FIX: no more matching/merging by ProductName — against the
+                    // product master OR against other rows already on this
+                    // invoice (including earlier rows from this same Excel
+                    // sheet). Every row in the sheet becomes its own separate
+                    // invoice line, taken exactly as the sheet has it, with a
+                    // freshly auto-generated barcode. Nothing hits the database
+                    // until SAVE INVOICE is clicked (SavePurchase() already
+                    // auto-creates a product for ProductId == 0 rows).
+                    decimal price = priceOverride ?? 0;
+                    decimal retail = retailOverride ?? 0;
+                    decimal mrp = mrpOverride ?? 0;
+                    string generatedBarcode = GenerateBarcode();
 
-                    if (product != null)
+                    PurchaseItems.Add(new MPurchaseDetail
                     {
-                        // ── Known barcode: same as before ──
-                        var existing = PurchaseItems.FirstOrDefault(i => i.ProductId == product.Id);
-                        if (existing != null)
-                        {
-                            int index = PurchaseItems.IndexOf(existing);
-                            existing.Quantity += qty;
-                            if (priceOverride.HasValue) existing.PurchasePrice = priceOverride.Value;
-                            if (retailOverride.HasValue) existing.Retail = retailOverride.Value;
-                            existing.AfterTaxation = (decimal)existing.Quantity * existing.PurchasePrice;
-                            PurchaseItems.RemoveAt(index);
-                            PurchaseItems.Insert(index, existing);
-                            updated++;
-                        }
-                        else
-                        {
-                            decimal price = priceOverride ?? product.PurchasePrice;
-                            decimal retail = retailOverride ?? product.RetailSalePrice;
-                            PurchaseItems.Add(new MPurchaseDetail
-                            {
-                                ProductId = product.Id,
-                                ProductName = product.ProductName,
-                                Barcode = product.Barcode,
-                                Product = product,
-                                Quantity = qty,
-                                PurchasePrice = price,
-                                WholesalePrice = product.WholesalePrice,
-                                MRP = product.MRP,
-                                Retail = retail,
-                                AfterTaxation = (decimal)qty * price
-                            });
-                            added++;
-                        }
-                    }
-                    else
-                    {
-                        // ── New barcode: needs a name to be worth anything.
-                        //    Skip (with a reason) only if no name was given at all —
-                        //    otherwise add as a brand-new item, ProductId = 0, same
-                        //    as TransferScannedItems does for unmatched scanned lines.
-                        //    SavePurchase() auto-creates the product for these when
-                        //    the invoice is saved. ──
-                        if (string.IsNullOrWhiteSpace(nameFromSheet))
-                        {
-                            skippedNoName.Add(barcode);
-                            continue;
-                        }
-
-                        decimal price = priceOverride ?? 0;
-                        decimal retail = retailOverride ?? 0;
-
-                        var existingNew = PurchaseItems.FirstOrDefault(
-                            i => i.ProductId == 0 && i.Barcode == barcode);
-
-                        if (existingNew != null)
-                        {
-                            int index = PurchaseItems.IndexOf(existingNew);
-                            existingNew.Quantity += qty;
-                            if (priceOverride.HasValue) existingNew.PurchasePrice = priceOverride.Value;
-                            if (retailOverride.HasValue) existingNew.Retail = retailOverride.Value;
-                            existingNew.AfterTaxation = (decimal)existingNew.Quantity * existingNew.PurchasePrice;
-                            PurchaseItems.RemoveAt(index);
-                            PurchaseItems.Insert(index, existingNew);
-                            updated++;
-                        }
-                        else
-                        {
-                            PurchaseItems.Add(new MPurchaseDetail
-                            {
-                                ProductId = 0,
-                                ProductName = nameFromSheet,
-                                Barcode = barcode,
-                                Quantity = qty,
-                                PurchasePrice = price,
-                                WholesalePrice = 0,
-                                MRP = 0,
-                                Retail = retail,
-                                AfterTaxation = (decimal)qty * price
-                            });
-                            added++;
-                            newBarcodesAdded++;
-                        }
-                    }
+                        ProductId = 0,
+                        ProductName = nameFromSheet,
+                        Barcode = generatedBarcode,
+                        Quantity = qty,
+                        PurchasePrice = price,
+                        WholesalePrice = 0,
+                        MRP = mrp,
+                        Retail = retail,
+                        Size = sizeFromSheet,
+                        Colour = colourFromSheet,
+                        HSNCode = hsnFromSheet,
+                        CGST = cgstOverride ?? 0,
+                        SGST = sgstOverride ?? 0,
+                        IGST = igstOverride ?? 0,
+                        AfterTaxation = (decimal)qty * price
+                    });
+                    added++;
+                    newProductsCount++;
                 }
 
                 RecalculateTotal();
@@ -681,25 +679,19 @@ namespace MyWPFCRUDApp.ViewModels
             }
 
             string summary = $"✔ Import complete.\n\n" +
-                $"{added} new item(s) added" +
-                (newBarcodesAdded > 0 ? $" ({newBarcodesAdded} of these are brand-new products — " +
-                    "they'll be created automatically when you click SAVE INVOICE)." : ".") +
-                $"\n{updated} existing item(s) updated (quantity increased).";
+                $"{added} item(s) added, taken exactly as they appear in the sheet " +
+                "(no matching or merging by product name) — barcodes were auto-assigned " +
+                "and are only recorded in your product list once you click SAVE INVOICE.";
 
-            if (skippedNoName.Any())
-            {
-                summary += $"\n\n⚠ {skippedNoName.Count} unrecognized barcode(s) skipped " +
-                    "(no 'ProductName' given, so a new product couldn't be created):\n" +
-                    string.Join(", ", skippedNoName.Take(20)) +
-                    (skippedNoName.Count > 20 ? $" ...and {skippedNoName.Count - 20} more" : "");
-            }
-
-            MessageBox.Show(summary, "Import Result", MessageBoxButton.OK,
-                skippedNoName.Any() ? MessageBoxImage.Warning : MessageBoxImage.Information);
+            MessageBox.Show(summary, "Import Result", MessageBoxButton.OK, MessageBoxImage.Information);
         }
         private void LoadHistoryInvoice(MPurchaseMaster master)
         {
             if (master == null) return;
+
+            // NEW — an invoice pulled up from History is fresh to save/update
+            // again (until it's actually saved once via this session).
+            _invoiceSaved = false;
 
             _editingMasterId = master.Id;
             PurchaseMaster.InvoiceNumber = master.InvoiceNumber;
@@ -818,7 +810,7 @@ namespace MyWPFCRUDApp.ViewModels
             //    which breaks if any product was ever deleted or barcodes don't
             //    start at 1. e.g. last barcode "M10" → next items get M11, M12, ...
             string lastBarcode = _productService.GetLastBarcode();
-            string prefix = "M";
+            string prefix = "GR";
             long nextNumber = 1;
 
             if (!string.IsNullOrWhiteSpace(lastBarcode))
@@ -1029,6 +1021,9 @@ namespace MyWPFCRUDApp.ViewModels
 
         private void InitializeData()
         {
+            // NEW — a brand-new / blank invoice is always save-able.
+            _invoiceSaved = false;
+
             string nextInvoice = "";
             string nextVendorInvoice = "";          // ← NEW
             try
@@ -1129,10 +1124,90 @@ namespace MyWPFCRUDApp.ViewModels
 
         private void SavePurchase()
         {
+            // NEW — block a second click of SAVE INVOICE. Without this, clicking
+            // Save twice re-runs the insert/update below with the same invoice
+            // data, which can throw an unhandled DB exception (e.g. duplicate
+            // invoice number) and crash the app instead of showing a message.
+            if (_invoiceSaved)
+            {
+                MessageBox.Show(
+                    "This invoice has already been saved.\n\n" +
+                    "Start a new invoice (Reset) if you want to record another purchase.",
+                    "Invoice Already Saved",
+                    MessageBoxButton.OK,
+                    MessageBoxImage.Information);
+                return;
+            }
+
             if (SelectedSupplier == null)
             { MessageBox.Show("Please select a supplier."); return; }
             if (!PurchaseItems.Any())
             { MessageBox.Show("Please add at least one item."); return; }
+
+            // ── Commit everything Bulk Edit staged — deletes, then updates,
+            //    then inserts. This is the ONLY place any of these actually
+            //    hit the database; Bulk Edit itself only ever edited
+            //    in-memory MProducts objects. ──
+            foreach (var toDelete in _pendingProductDeletes)
+            {
+                if (!_productService.DeleteProduct(toDelete.Id))
+                {
+                    MessageBox.Show(
+                        $"Failed to delete '{toDelete.ProductName}' (barcode {toDelete.Barcode}) " +
+                        "from the product master. Stopping here — nothing else was saved.\n\n" +
+                        $"Details: {_productService.LastError}",
+                        "Delete Failed", MessageBoxButton.OK, MessageBoxImage.Error);
+                    return;
+                }
+            }
+
+            foreach (var toUpdate in _pendingProductUpdates)
+            {
+                if (!_productService.UpdateProduct(toUpdate))
+                {
+                    MessageBox.Show(
+                        $"Failed to update product '{toUpdate.ProductName}' (barcode {toUpdate.Barcode}).\n\n" +
+                        $"Details: {_productService.LastError}",
+                        "Update Failed", MessageBoxButton.OK, MessageBoxImage.Error);
+                    return;
+                }
+            }
+
+            foreach (var toInsert in _pendingProductInserts)
+            {
+                var existingByBarcode = _productService.GetByBarcode(toInsert.Barcode);
+                if (existingByBarcode != null)
+                {
+                    toInsert.Id = existingByBarcode.Id; // already there — nothing to do
+                    continue;
+                }
+
+                if (!_productService.InsertProduct(toInsert))
+                {
+                    MessageBox.Show(
+                        $"Failed to save new product '{toInsert.ProductName}' (barcode {toInsert.Barcode}).\n\n" +
+                        $"Details: {_productService.LastError}",
+                        "Save Failed", MessageBoxButton.OK, MessageBoxImage.Error);
+                    return;
+                }
+
+                var insertedProduct = _productService.GetByBarcode(toInsert.Barcode);
+                if (insertedProduct != null) toInsert.Id = insertedProduct.Id;
+            }
+
+            // Any invoice line still pointing at ProductId == 0 whose product
+            // was just inserted above (matched by Barcode) picks up its real
+            // Id here, before the generic "auto-create for ProductId==0" loop
+            // below runs — that loop is now only a fallback for items Bulk
+            // Edit never touched (typed manually, Scan Bill, or Excel import).
+            foreach (var item in PurchaseItems)
+            {
+                if (item.ProductId > 0) continue;
+                var match = _pendingProductInserts.FirstOrDefault(p =>
+                    string.Equals(p.Barcode, item.Barcode, StringComparison.OrdinalIgnoreCase));
+                if (match != null && match.Id > 0)
+                    item.ProductId = match.Id;
+            }
 
             var cats = new CategoryService().GetCategory();
             var subs = new SubCategoryService().GetSubCategoryList();
@@ -1161,9 +1236,13 @@ namespace MyWPFCRUDApp.ViewModels
                     WholesalePrice = item.WholesalePrice,
                     RetailSalePrice = item.Retail,
                     MRP = item.MRP,
-                    CGST = 0,
-                    SGST = 0,
-                    IGST = 0,
+                    HSNCode = item.HSNCode,
+                    Size = item.Size,
+                    Colour = item.Colour,
+                    DiscountPercentage = 0,
+                    CGST = (double)item.CGST,
+                    SGST = (double)item.SGST,
+                    IGST = (double)item.IGST,
                     CESS = 0,
                 };
 
@@ -1189,24 +1268,43 @@ namespace MyWPFCRUDApp.ViewModels
 
             bool success;
 
-            if (_editingMasterId > 0)
+            // NEW — wrap the actual DB save in try/catch so any unexpected
+            // error (duplicate key, connection drop, etc.) shows a message
+            // instead of taking the whole application down.
+            try
             {
-                // UPDATE existing invoice — no supplier balance change
-                success = _purchaseService.UpdatePurchase(_editingMasterId, PurchaseMaster);
+                if (_editingMasterId > 0)
+                {
+                    // UPDATE existing invoice — no supplier balance change
+                    success = _purchaseService.UpdatePurchase(_editingMasterId, PurchaseMaster);
+                }
+                else
+                {
+                    // INSERT new invoice + adjust supplier balance
+                    success = _purchaseService.AddPurchase(PurchaseMaster);
+                }
             }
-            else
+            catch (Exception ex)
             {
-                // INSERT new invoice + adjust supplier balance
-
-
-                success = _purchaseService.AddPurchase(PurchaseMaster);
+                MessageBox.Show(
+                    $"Failed to save invoice:\n\n{ex.Message}",
+                    "Save Error", MessageBoxButton.OK, MessageBoxImage.Error);
+                return;
             }
 
             if (success)
             {
+                _pendingProductInserts.Clear();
+                _pendingProductUpdates.Clear();
+                _pendingProductDeletes.Clear();
+
                 decimal newBalance = _supplierService.RecalculateAndUpdateSupplierBalance(SelectedSupplier.Id);
                 SupplierBalance = newBalance;
                 SelectedSupplier.CurrentBalance = newBalance;
+
+                // NEW — lock this invoice against further saves until Reset /
+                // a new invoice / a history invoice is loaded.
+                _invoiceSaved = true;
 
                 string msg = _editingMasterId > 0
                     ? "✔ Invoice updated successfully!"
@@ -1231,60 +1329,107 @@ namespace MyWPFCRUDApp.ViewModels
         //     entered on THIS invoice — a bulk edit changing the product master's
         //     PurchasePrice doesn't silently override what you're actually paying
         //     on this purchase.
-        //   • newProducts — subset that were brand-new (added via "Add Copies").
-        //     These become new invoice line items with Quantity = 1, since they
-        //     weren't part of the invoice before the edit window created them.
+        //   • newProducts — subset that were brand-new (added via "Add Copies"),
+        //     paired with the Quantity typed into the Bulk Edit grid for that row.
+        //     These become new invoice line items using THAT quantity — not a
+        //     hardcoded 1 — since the whole point of editing Quantity in Bulk
+        //     Edit is for it to carry through to the invoice.
+        //     FIX: this parameter used to be List<MProducts> with no quantity
+        //     attached, so every new row landed on the invoice as Quantity = 1
+        //     regardless of what was typed in the grid.
         //   • deletedBarcodes — products removed via "Delete Selected" in the edit
         //     window. Matching lines are removed from THIS invoice too, since a
         //     deleted product can't be purchased.
         // ════════════════════════════════════════════════════════════════════════
         public void RefreshAfterProductEdit(
-            List<MProducts> savedProducts, List<MProducts> newProducts, List<string> deletedBarcodes,
-            List<(MPurchaseDetail Source, MProducts Product)> updatedInvoiceLines)
+            List<MProducts> savedProducts,
+            List<(MProducts Product, double Quantity)> newProducts,
+            List<string> deletedBarcodes,
+            List<(MPurchaseDetail Source, MProducts Product)> updatedInvoiceLines,
+            List<MProducts> productsToInsert, List<MProducts> productsToUpdate, List<MProducts> productsToDelete,
+            List<ProductBulkEditWindow.BulkEditResultLine> resultLines)
         {
-            Products = new ObservableCollection<MProducts>(_productService.GetProducts());
+            // Stage the product-master changes Bulk Edit produced — actually
+            // applied to the database inside SavePurchase(), not here. This
+            // keeps closing Bulk Edit a purely in-memory step for the invoice
+            // you're building; nothing commits until SAVE INVOICE.
+            _pendingProductInserts.AddRange(productsToInsert);
+            _pendingProductUpdates.AddRange(productsToUpdate);
+            _pendingProductDeletes.AddRange(productsToDelete);
+
+            // Reflect the staged changes in the local Products list (used by
+            // dropdowns / barcode search) without touching the database.
+            if (productsToDelete.Any())
+            {
+                var deleteIds = new System.Collections.Generic.HashSet<long>(productsToDelete.Select(p => p.Id));
+                foreach (var p in Products.Where(p => deleteIds.Contains(p.Id)).ToList())
+                    Products.Remove(p);
+            }
+            foreach (var updated in productsToUpdate)
+            {
+                var match = Products.FirstOrDefault(p => p.Id == updated.Id);
+                if (match != null) Products[Products.IndexOf(match)] = updated;
+            }
             OnPropertyChanged(nameof(Products));
 
-            if (deletedBarcodes.Any())
-            {
-                var toRemove = PurchaseItems.Where(i => deletedBarcodes.Contains(i.Barcode)).ToList();
-                foreach (var item in toRemove)
-                    PurchaseItems.Remove(item);
-            }
+            // FIX: rebuild PurchaseItems from resultLines — an ordered snapshot
+            // of the Bulk Edit grid taken at Save time — instead of updating
+            // existing lines in place (keeping their old position) and appending
+            // every new line at the end. Add Copies already inserts each variance
+            // copy directly under the row it was copied from inside the Bulk Edit
+            // grid, but that ordering was being discarded here, so copies always
+            // landed at the bottom of the invoice no matter where they were
+            // created. Rebuilding from resultLines in order fixes that.
+            //
+            // Deleted rows are already absent from resultLines (Bulk Edit removes
+            // them from its Rows collection immediately on Delete Selected), so
+            // no separate pass over deletedBarcodes is needed here.
+            PurchaseItems.Clear();
 
-            // Update each invoice line via the direct row reference the edit
-            // window handed back — NOT by matching Barcode. "Add Copies" can
-            // renumber a row's barcode to make room for new copies even when
-            // that row itself wasn't touched, so barcode-matching here used to
-            // silently miss those lines (and leave their Barcode stale/out of
-            // sync with the actual product).
-            foreach (var (source, product) in updatedInvoiceLines)
+            foreach (var line in resultLines)
             {
-                if (!PurchaseItems.Contains(source)) continue; // removed by a delete above
-
-                source.ProductId = product.Id;
-                source.ProductName = product.ProductName;
-                source.Barcode = product.Barcode;   // keep in sync if it was renumbered
-                source.WholesalePrice = product.WholesalePrice;
-                source.MRP = product.MRP;
-                source.Retail = product.RetailSalePrice;
-            }
-
-            foreach (var newProd in newProducts)
-            {
-                PurchaseItems.Add(new MPurchaseDetail
+                if (line.SourceInvoiceItem != null)
                 {
-                    ProductId = newProd.Id,
-                    ProductName = newProd.ProductName,
-                    Barcode = newProd.Barcode,
-                    Product = newProd,
-                    Quantity = 1,
-                    PurchasePrice = newProd.PurchasePrice,
-                    WholesalePrice = newProd.WholesalePrice,
-                    MRP = newProd.MRP,
-                    Retail = newProd.RetailSalePrice,
-                    AfterTaxation = newProd.PurchasePrice
-                });
+                    // Existing invoice line — update via the direct row reference
+                    // the edit window handed back, NOT by matching Barcode.
+                    // "Add Copies" can renumber a row's barcode to make room for
+                    // new copies even when that row itself wasn't touched, so
+                    // barcode-matching used to silently miss those lines.
+                    var source = line.SourceInvoiceItem;
+                    var product = line.Product;
+
+                    source.ProductId = product.Id;   // still 0 here for a not-yet-inserted product
+                    source.ProductName = product.ProductName;
+                    source.Barcode = product.Barcode;   // keep in sync if it was renumbered
+                    source.WholesalePrice = product.WholesalePrice;
+                    source.MRP = product.MRP;
+                    source.Retail = product.RetailSalePrice;
+
+                    PurchaseItems.Add(source);
+                }
+                else
+                {
+                    // Brand-new line (created via Add Copies). Use the quantity
+                    // typed into the Bulk Edit grid for this row instead of
+                    // hardcoding 1, and calculate AfterTaxation from that real
+                    // quantity (qty * price) instead of just PurchasePrice.
+                    double qty = line.Quantity > 0 ? line.Quantity : 1;
+                    var newProd = line.Product;
+
+                    PurchaseItems.Add(new MPurchaseDetail
+                    {
+                        ProductId = newProd.Id, // 0 — created for real in SavePurchase()
+                        ProductName = newProd.ProductName,
+                        Barcode = newProd.Barcode,
+                        Product = newProd,
+                        Quantity = qty,
+                        PurchasePrice = newProd.PurchasePrice,
+                        WholesalePrice = newProd.WholesalePrice,
+                        MRP = newProd.MRP,
+                        Retail = newProd.RetailSalePrice,
+                        AfterTaxation = (decimal)qty * newProd.PurchasePrice
+                    });
+                }
             }
 
             RecalculateTotal();
@@ -1293,6 +1438,10 @@ namespace MyWPFCRUDApp.ViewModels
         private void ResetForm()
         {
             _editingMasterId = 0;   // ← reset edit mode
+            _invoiceSaved = false;  // NEW — a reset form is fresh and save-able again
+            _pendingProductInserts.Clear();
+            _pendingProductUpdates.Clear();
+            _pendingProductDeletes.Clear();
             InitializeData();
             SelectedSupplier = null;
             SupplierHistory = new ObservableCollection<MPurchaseMaster>();
