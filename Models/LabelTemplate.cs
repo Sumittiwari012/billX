@@ -5,7 +5,15 @@ using System.Runtime.CompilerServices;
 
 namespace MyWPFCRUDApp.Models
 {
-    public enum LabelElementType { Text, Barcode, Rectangle, Ellipse, Line }
+    public enum LabelElementType
+    {
+        Barcode,
+        Text,
+        Rectangle,
+        Ellipse,
+        Line,
+        Image   // new
+    }
 
     // One shape/text/barcode placed on the label canvas. Position and size are
     // stored in millimeters — not pixels — so the template survives being
@@ -37,8 +45,9 @@ namespace MyWPFCRUDApp.Models
         public string FillColor { get; set; } = "#FFFFFF";
         public string StrokeColor { get; set; } = "#000000";
         public double StrokeThickness { get; set; } = 1;
-
+        public string? ImageBase64 { get; set; }
         public int ZIndex { get; set; }
+        public double Rotation { get; set; } // degrees, 0–360
 
         public event PropertyChangedEventHandler? PropertyChanged;
         private void OnPropertyChanged([CallerMemberName] string? name = null)

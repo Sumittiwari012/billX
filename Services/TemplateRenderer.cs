@@ -4,7 +4,7 @@ using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Data;
 using System.Windows.Media;
-
+using System.Windows.Media.Imaging;
 namespace MyWPFCRUDApp.Services
 {
     // Turns a LabelTemplate + a bound data row into an actual WPF visual —
@@ -40,12 +40,15 @@ namespace MyWPFCRUDApp.Services
             double w = el.Width * PxPerMm;
             double h = el.Height * PxPerMm;
 
+            FrameworkElement visual;
+
             switch (el.Type)
             {
                 case LabelElementType.Barcode:
                     var img = new Image { Width = w, Height = h, Stretch = Stretch.Fill, DataContext = dataContext };
                     img.SetBinding(Image.SourceProperty, new Binding(el.BindingPath ?? "BarcodeImage"));
-                    return img;
+                    visual = img;
+                    break;
 
                 case LabelElementType.Text:
                     var tb = new TextBlock
@@ -77,10 +80,11 @@ namespace MyWPFCRUDApp.Services
                     {
                         tb.Text = el.StaticText ?? string.Empty;
                     }
-                    return tb;
+                    visual = tb;
+                    break;
 
                 case LabelElementType.Rectangle:
-                    return new System.Windows.Shapes.Rectangle
+                    visual = new System.Windows.Shapes.Rectangle
                     {
                         Width = w,
                         Height = h,
@@ -88,9 +92,10 @@ namespace MyWPFCRUDApp.Services
                         Stroke = ToBrush(el.StrokeColor),
                         StrokeThickness = el.StrokeThickness
                     };
+                    break;
 
                 case LabelElementType.Ellipse:
-                    return new System.Windows.Shapes.Ellipse
+                    visual = new System.Windows.Shapes.Ellipse
                     {
                         Width = w,
                         Height = h,
@@ -98,9 +103,10 @@ namespace MyWPFCRUDApp.Services
                         Stroke = ToBrush(el.StrokeColor),
                         StrokeThickness = el.StrokeThickness
                     };
+                    break;
 
                 case LabelElementType.Line:
-                    return new System.Windows.Shapes.Line
+                    visual = new System.Windows.Shapes.Line
                     {
                         X1 = 0,
                         Y1 = h / 2,
@@ -109,16 +115,49 @@ namespace MyWPFCRUDApp.Services
                         Stroke = ToBrush(el.StrokeColor),
                         StrokeThickness = el.StrokeThickness
                     };
-
+                    break;
+                case LabelElementType.Image:
+                    var pic = new Image { Width = w, Height = h, Stretch = Stretch.Uniform };
+                    if (!string.IsNullOrEmpty(el.ImageBase64))
+                        pic.Source = BitmapFromBase64(el.ImageBase64);
+                    return pic;
+                    
                 default:
-                    return new Border { Width = w, Height = h };
+                    visual = new Border { Width = w, Height = h };
+                    break;
             }
+
+            if (el.Rotation != 0)
+            {
+                visual.RenderTransform = new RotateTransform(el.Rotation, visual.Width / 2, visual.Height / 2);
+            }
+
+            return visual;
         }
 
         public static Brush ToBrush(string? hex)
         {
             try { return hex is null ? Brushes.Transparent : (Brush)new BrushConverter().ConvertFromString(hex)!; }
             catch { return Brushes.Black; }
+        }
+        public static BitmapImage? BitmapFromBase64(string base64)
+        {
+            try
+            {
+                var bytes = System.Convert.FromBase64String(base64);
+                using var ms = new System.IO.MemoryStream(bytes);
+                var bmp = new BitmapImage();
+                bmp.BeginInit();
+                bmp.CacheOption = BitmapCacheOption.OnLoad; // load fully, then release the stream
+                bmp.StreamSource = ms;
+                bmp.EndInit();
+                bmp.Freeze(); // makes it usable across threads / avoids leaks
+                return bmp;
+            }
+            catch
+            {
+                return null;
+            }
         }
     }
 }

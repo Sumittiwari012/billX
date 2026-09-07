@@ -4,6 +4,7 @@ using MyWPFCRUDApp.Services;
 using System;
 using System.Collections.Generic;
 using System.Collections.ObjectModel;
+using System.ComponentModel;
 using System.Linq;
 using System.Printing;
 using System.Windows;
@@ -30,6 +31,24 @@ namespace MyWPFCRUDApp.Views
                     .Where(i => !string.IsNullOrWhiteSpace(i.Barcode))
                     .Select(BuildRow));
 
+            // Keep the "N selected" label live as individual "Print?" checkboxes
+            // are toggled, not just when Select All/Unselect All are clicked.
+            // This only wires up if BarcodeLabelRow implements
+            // INotifyPropertyChanged (it should, since IsSelected is already a
+            // two-way DataGrid binding) — if it doesn't, this loop is a no-op
+            // and only the two bulk buttons will update the count.
+            foreach (var row in _rows)
+            {
+                if (row is INotifyPropertyChanged notifying)
+                {
+                    notifying.PropertyChanged += (_, args) =>
+                    {
+                        if (args.PropertyName == nameof(BarcodeLabelRow.IsSelected))
+                            UpdateSelectedCountText();
+                    };
+                }
+            }
+
             LabelsGrid.ItemsSource = _rows;
 
             _columnOptions = BuildColumnOptions();
@@ -45,6 +64,7 @@ namespace MyWPFCRUDApp.Views
 
             TemplateList.SelectedIndex = 0;
             UpdatePreviewVisibility();
+            UpdateSelectedCountText();
         }
 
         private BarcodeLabelRow BuildRow(MPurchaseDetail item)
@@ -75,7 +95,10 @@ namespace MyWPFCRUDApp.Views
                 CGST = product?.CGST ?? (double)item.CGST,
                 SGST = product?.SGST ?? (double)item.SGST,
                 IGST = product?.IGST ?? (double)item.IGST,
-                CESS = product?.CESS ?? 0
+                CESS = product?.CESS ?? 0,
+                // Nothing pre-checked — the user opts in per row, or uses
+                // "Select All" in the toolbar above the grid.
+                IsSelected = false
             };
         }
 
@@ -125,7 +148,7 @@ namespace MyWPFCRUDApp.Views
             if (!string.IsNullOrEmpty(opt.StringFormat))
                 binding.StringFormat = "{0:" + opt.StringFormat + "}";
 
-            var column = new DataGridTextColumn { Header = opt.Header, Binding = binding, Width = opt.Width };
+            var column = new DataGridTextColumn { Header = opt.Header, Binding = binding, Width = opt.Width, IsReadOnly = true };
             LabelsGrid.Columns.Add(column);
             _activeOptionalColumns[opt] = column;
         }
@@ -137,6 +160,26 @@ namespace MyWPFCRUDApp.Views
                 LabelsGrid.Columns.Remove(column);
                 _activeOptionalColumns.Remove(opt);
             }
+        }
+
+        // ── Select all / unselect all ────────────────────────────────────────
+        private void SelectAllButton_Click(object sender, RoutedEventArgs e)
+        {
+            foreach (var row in _rows) row.IsSelected = true;
+            UpdateSelectedCountText();
+        }
+
+        private void UnselectAllButton_Click(object sender, RoutedEventArgs e)
+        {
+            foreach (var row in _rows) row.IsSelected = false;
+            UpdateSelectedCountText();
+        }
+
+        private void UpdateSelectedCountText()
+        {
+            if (SelectedCountText == null) return; // not constructed yet
+            int count = _rows.Count(r => r.IsSelected);
+            SelectedCountText.Text = count == 0 ? "" : $"{count} selected";
         }
 
         // ── Custom templates ─────────────────────────────────────────────────

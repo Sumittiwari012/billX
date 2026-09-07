@@ -33,6 +33,7 @@
                 <Button Content="▭ Rect" Width="65" Margin="0,0,6,0" Click="AddRectangle_Click"/>
                 <Button Content="◯ Ellipse" Width="75" Margin="0,0,6,0" Click="AddEllipse_Click"/>
                 <Button Content="─ Line" Width="55" Margin="0,0,18,0" Click="AddLine_Click"/>
+                <Button Content="🖼 Image" Width="65" Margin="0,0,6,0" Click="AddImage_Click"/>
 
                 <Button Content="Delete Selected" Width="110" Click="DeleteSelected_Click"/>
             </StackPanel>

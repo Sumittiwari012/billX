@@ -28,6 +28,15 @@ namespace MyWPFCRUDApp.Views
     {
         private const double PxPerMm = TemplateRenderer.PxPerMm;
 
+        // Nudge distances for arrow-key movement, in mm.
+        private const double NudgeStep = 0.5;
+        private const double NudgeStepFast = 5.0; // with Shift held
+
+        // How far above the element's top edge the rotate handle floats, in px.
+        private const double RotateHandleOffset = 22;
+        // Rotation snaps to this many degrees when Shift is held while rotating.
+        private const double RotateSnapDegrees = 15;
+
         private readonly LabelTemplate _template;
         private readonly BarcodeLabelRow _sampleRow;
         private readonly Dictionary<LabelElement, Border> _visuals = new();
@@ -35,12 +44,14 @@ namespace MyWPFCRUDApp.Views
 
         private bool _isDraggingElement;
         private bool _isResizingElement;
+        private bool _isRotatingElement;
         private Point _dragStartMouse;
-        private double _dragStartX, _dragStartY, _dragStartW, _dragStartH;
+        private double _dragStartX, _dragStartY, _dragStartW, _dragStartH, _dragStartRotation;
 
-        // Direct refs to the position/size boxes currently shown in the property
-        // panel, so drag/resize on the canvas can push live values back into them.
-        private TextBox? _xBox, _yBox, _wBox, _hBox;
+        // Direct refs to the position/size/rotation boxes currently shown in the
+        // property panel, so drag/resize/rotate on the canvas can push live
+        // values back into them.
+        private TextBox? _xBox, _yBox, _wBox, _hBox, _rotBox;
 
         // Handed back to BarcodeLabelsWindow after a successful save.
         public LabelTemplate? SavedTemplate { get; private set; }
@@ -85,7 +96,10 @@ namespace MyWPFCRUDApp.Views
             foreach (var el in _template.Elements)
                 AddVisual(el);
 
-            PreviewKeyDown += (_, e) => { if (e.Key == Key.Delete) DeleteSelected(); };
+            // Tunnels from the Window down, so it sees every keystroke first —
+            // arrow keys nudge the selected element, Delete removes it. Skipped
+            // when a TextBox has focus (see Window_PreviewKeyDown).
+            PreviewKeyDown += Window_PreviewKeyDown;
         }
 
         private static List<TemplateFieldOption> BuildFieldOptions() => new()
@@ -163,6 +177,51 @@ namespace MyWPFCRUDApp.Views
             Height = 10
         });
 
+        private void AddImage_Click(object sender, RoutedEventArgs e)
+        {
+            var dlg = new Microsoft.Win32.OpenFileDialog
+            {
+                Filter = "PNG Images (*.png)|*.png",
+                Title = "Select an image"
+            };
+            if (dlg.ShowDialog(this) != true) return;
+
+            byte[] bytes;
+            try
+            {
+                bytes = System.IO.File.ReadAllBytes(dlg.FileName);
+            }
+            catch (Exception ex)
+            {
+                MessageBox.Show(this, $"Couldn't read that file: {ex.Message}", "Error",
+                    MessageBoxButton.OK, MessageBoxImage.Error);
+                return;
+            }
+
+            string base64 = Convert.ToBase64String(bytes);
+
+            // Default size: preserve the image's aspect ratio within a ~25mm box
+            double widthMm = 25, heightMm = 25;
+            var bmp = TemplateRenderer.BitmapFromBase64(base64);
+            if (bmp != null && bmp.PixelWidth > 0 && bmp.PixelHeight > 0)
+            {
+                double aspect = (double)bmp.PixelWidth / bmp.PixelHeight;
+                if (aspect >= 1) heightMm = widthMm / aspect;
+                else widthMm = heightMm * aspect;
+            }
+
+            AddNewElement(new LabelElement
+            {
+                Type = LabelElementType.Image,
+                DisplayName = "Image",
+                ImageBase64 = base64,
+                X = 2,
+                Y = 2,
+                Width = widthMm,
+                Height = heightMm
+            });
+        }
+
         private void AddEllipse_Click(object sender, RoutedEventArgs e) => AddNewElement(new LabelElement
         {
             Type = LabelElementType.Ellipse,
@@ -224,11 +283,23 @@ namespace MyWPFCRUDApp.Views
             {
                 Width = el.Width * PxPerMm,
                 Height = el.Height * PxPerMm,
+                // Transparent (not null) is intentional: WPF hit-tests a
+                // Transparent background across the whole element, so the
+                // entire box is draggable even where the rendered content
+                // (e.g. an unfilled Rectangle/Ellipse outline, or a thin
+                // Line) leaves gaps that wouldn't otherwise catch a click.
                 Background = Brushes.Transparent,
+                Cursor = Cursors.SizeAll,
                 Child = TemplateRenderer.BuildVisual(el, _sampleRow),
                 Tag = el
             };
-            border.MouseLeftButtonDown += ElementVisual_MouseLeftButtonDown;
+            ApplyRotation(border, el);
+
+            // Preview (tunneling) instead of the bubbling MouseLeftButtonDown:
+            // guarantees this fires the instant the mouse goes down anywhere
+            // inside the border's bounds, before any child content could end
+            // up as the "real" hit target and change bubble-routing behavior.
+            border.PreviewMouseLeftButtonDown += ElementVisual_MouseLeftButtonDown;
 
             Canvas.SetLeft(border, el.X * PxPerMm);
             Canvas.SetTop(border, el.Y * PxPerMm);
@@ -246,6 +317,17 @@ namespace MyWPFCRUDApp.Views
             border.Height = el.Height * PxPerMm;
             Canvas.SetLeft(border, el.X * PxPerMm);
             Canvas.SetTop(border, el.Y * PxPerMm);
+            ApplyRotation(border, el);
+        }
+
+        // Rotates the element visual around its own center, in place. Doesn't
+        // change X/Y/Width/Height — those still describe the un-rotated
+        // bounding box, exactly as before rotation support was added.
+        private static void ApplyRotation(Border border, LabelElement el)
+        {
+            border.RenderTransform = el.Rotation == 0
+                ? Transform.Identity
+                : new RotateTransform(el.Rotation, border.Width / 2, border.Height / 2);
         }
 
         // ── Selection + drag-to-move ─────────────────────────────────────────
@@ -261,8 +343,8 @@ namespace MyWPFCRUDApp.Views
             _dragStartY = el.Y;
 
             border.CaptureMouse();
-            border.MouseMove += ElementVisual_MouseMove;
-            border.MouseLeftButtonUp += ElementVisual_MouseLeftButtonUp;
+            border.PreviewMouseMove += ElementVisual_MouseMove;
+            border.PreviewMouseLeftButtonUp += ElementVisual_MouseLeftButtonUp;
             e.Handled = true;
         }
 
@@ -292,8 +374,8 @@ namespace MyWPFCRUDApp.Views
             if (sender is not Border border) return;
             _isDraggingElement = false;
             border.ReleaseMouseCapture();
-            border.MouseMove -= ElementVisual_MouseMove;
-            border.MouseLeftButtonUp -= ElementVisual_MouseLeftButtonUp;
+            border.PreviewMouseMove -= ElementVisual_MouseMove;
+            border.PreviewMouseLeftButtonUp -= ElementVisual_MouseLeftButtonUp;
         }
 
         private void Select(LabelElement el)
@@ -303,10 +385,9 @@ namespace MyWPFCRUDApp.Views
             BuildPropertyPanel(el);
         }
 
-        // ── Selection outline + resize handle ───────────────────────────────
+        // ── Selection outline + resize/rotate handles ───────────────────────
         private enum HandlePos { TopLeft, TopRight, BottomLeft, BottomRight }
 
-        // ── Selection outline + resize handles (all 4 corners) ──────────────────
         private void DrawAdorner(LabelElement el)
         {
             AdornerCanvas.Children.Clear();
@@ -314,6 +395,14 @@ namespace MyWPFCRUDApp.Views
 
             double left = el.X * PxPerMm, top = el.Y * PxPerMm;
             double w = el.Width * PxPerMm, h = el.Height * PxPerMm;
+            double centerX = left + w / 2, centerY = top + h / 2;
+
+            // All adorner visuals (outline, resize handles, rotate handle/line)
+            // are children of one group so a single RotateTransform spins the
+            // whole selection UI in sync with the element itself. Their
+            // Canvas.Left/Top below are plain, un-rotated coordinates — the
+            // group transform is what makes them appear rotated on screen.
+            var adornerGroup = new Canvas { IsHitTestVisible = true };
 
             var outline = new Shapes.Rectangle
             {
@@ -327,15 +416,36 @@ namespace MyWPFCRUDApp.Views
             };
             Canvas.SetLeft(outline, left);
             Canvas.SetTop(outline, top);
-            AdornerCanvas.Children.Add(outline);
+            adornerGroup.Children.Add(outline);
 
-            AddResizeHandle(left, top, HandlePos.TopLeft, Cursors.SizeNWSE);
-            AddResizeHandle(left + w, top, HandlePos.TopRight, Cursors.SizeNESW);
-            AddResizeHandle(left, top + h, HandlePos.BottomLeft, Cursors.SizeNESW);
-            AddResizeHandle(left + w, top + h, HandlePos.BottomRight, Cursors.SizeNWSE);
+            // Line from the top-center of the element up to the rotate handle,
+            // purely visual — makes the handle's purpose obvious at a glance.
+            var rotateLine = new Shapes.Line
+            {
+                X1 = centerX,
+                Y1 = top,
+                X2 = centerX,
+                Y2 = top - RotateHandleOffset,
+                Stroke = Brushes.DodgerBlue,
+                StrokeThickness = 1,
+                IsHitTestVisible = false
+            };
+            adornerGroup.Children.Add(rotateLine);
+
+            AddResizeHandle(adornerGroup, left, top, HandlePos.TopLeft, Cursors.SizeNWSE);
+            AddResizeHandle(adornerGroup, left + w, top, HandlePos.TopRight, Cursors.SizeNESW);
+            AddResizeHandle(adornerGroup, left, top + h, HandlePos.BottomLeft, Cursors.SizeNESW);
+            AddResizeHandle(adornerGroup, left + w, top + h, HandlePos.BottomRight, Cursors.SizeNWSE);
+
+            AddRotateHandle(adornerGroup, centerX, top - RotateHandleOffset);
+
+            if (el.Rotation != 0)
+                adornerGroup.RenderTransform = new RotateTransform(el.Rotation, centerX, centerY);
+
+            AdornerCanvas.Children.Add(adornerGroup);
         }
 
-        private void AddResizeHandle(double centerX, double centerY, HandlePos pos, Cursor cursor)
+        private void AddResizeHandle(Canvas group, double centerX, double centerY, HandlePos pos, Cursor cursor)
         {
             var handle = new Shapes.Rectangle
             {
@@ -349,12 +459,28 @@ namespace MyWPFCRUDApp.Views
             };
             Canvas.SetLeft(handle, centerX - 5);
             Canvas.SetTop(handle, centerY - 5);
-            handle.MouseLeftButtonDown += ResizeHandle_MouseLeftButtonDown;
-            AdornerCanvas.Children.Add(handle);
+            handle.PreviewMouseLeftButtonDown += ResizeHandle_MouseLeftButtonDown;
+            group.Children.Add(handle);
+        }
+
+        private void AddRotateHandle(Canvas group, double centerX, double centerY)
+        {
+            var handle = new Shapes.Ellipse
+            {
+                Width = 12,
+                Height = 12,
+                Fill = Brushes.White,
+                Stroke = Brushes.DodgerBlue,
+                StrokeThickness = 1.5,
+                Cursor = Cursors.Hand
+            };
+            Canvas.SetLeft(handle, centerX - 6);
+            Canvas.SetTop(handle, centerY - 6);
+            handle.PreviewMouseLeftButtonDown += RotateHandle_MouseLeftButtonDown;
+            group.Children.Add(handle);
         }
 
         private HandlePos _activeHandle;
-        private double _dragStartElX, _dragStartElY;
 
         private void ResizeHandle_MouseLeftButtonDown(object sender, MouseButtonEventArgs e)
         {
@@ -368,9 +494,17 @@ namespace MyWPFCRUDApp.Views
             _dragStartW = _selected.Width;
             _dragStartH = _selected.Height;
 
-            handle.CaptureMouse();
-            handle.MouseMove += ResizeHandle_MouseMove;
-            handle.MouseLeftButtonUp += ResizeHandle_MouseLeftButtonUp;
+            // Capture on AdornerCanvas, not the handle itself: DrawAdorner
+            // clears and rebuilds all handle shapes on every mouse move
+            // (see ResizeHandle_MouseMove -> DrawAdorner), and capturing the
+            // mouse on an element that then gets removed from the visual
+            // tree silently drops the capture mid-drag. That was causing the
+            // resize/rotate motion to keep stopping. AdornerCanvas itself is
+            // never destroyed — only its children are — so capturing here
+            // survives every rebuild.
+            AdornerCanvas.CaptureMouse();
+            AdornerCanvas.PreviewMouseMove += ResizeHandle_MouseMove;
+            AdornerCanvas.PreviewMouseLeftButtonUp += ResizeHandle_MouseLeftButtonUp;
             e.Handled = true;
         }
 
@@ -379,8 +513,21 @@ namespace MyWPFCRUDApp.Views
             if (!_isResizingElement || _selected == null) return;
 
             var pos = e.GetPosition(DesignCanvas);
-            double dxMm = (pos.X - _dragStartMouse.X) / PxPerMm;
-            double dyMm = (pos.Y - _dragStartMouse.Y) / PxPerMm;
+            double rawDx = pos.X - _dragStartMouse.X;
+            double rawDy = pos.Y - _dragStartMouse.Y;
+
+            // The mouse delta above is in absolute canvas coordinates, but the
+            // handles themselves are drawn rotated with the element. Rotate the
+            // delta back by -Rotation so it lines up with the element's own
+            // (un-rotated) local axes — otherwise dragging a handle on a
+            // rotated shape would resize the wrong edge.
+            double rad = -_selected.Rotation * Math.PI / 180.0;
+            double cos = Math.Cos(rad), sin = Math.Sin(rad);
+            double localDx = rawDx * cos - rawDy * sin;
+            double localDy = rawDx * sin + rawDy * cos;
+
+            double dxMm = localDx / PxPerMm;
+            double dyMm = localDy / PxPerMm;
 
             double newX = _dragStartX, newY = _dragStartY, newW = _dragStartW, newH = _dragStartH;
 
@@ -432,11 +579,62 @@ namespace MyWPFCRUDApp.Views
 
         private void ResizeHandle_MouseLeftButtonUp(object sender, MouseButtonEventArgs e)
         {
-            if (sender is not Shapes.Rectangle handle) return;
             _isResizingElement = false;
-            handle.ReleaseMouseCapture();
-            handle.MouseMove -= ResizeHandle_MouseMove;
-            handle.MouseLeftButtonUp -= ResizeHandle_MouseLeftButtonUp;
+            AdornerCanvas.ReleaseMouseCapture();
+            AdornerCanvas.PreviewMouseMove -= ResizeHandle_MouseMove;
+            AdornerCanvas.PreviewMouseLeftButtonUp -= ResizeHandle_MouseLeftButtonUp;
+        }
+
+        // ── Rotate-to-drag ───────────────────────────────────────────────────
+        private void RotateHandle_MouseLeftButtonDown(object sender, MouseButtonEventArgs e)
+        {
+            if (_selected == null || sender is not Shapes.Ellipse handle) return;
+
+            _isRotatingElement = true;
+            _dragStartRotation = _selected.Rotation;
+
+            // Same reasoning as the resize handle above: capture on
+            // AdornerCanvas so the capture survives DrawAdorner rebuilding
+            // the rotate handle shape on every mouse move.
+            AdornerCanvas.CaptureMouse();
+            AdornerCanvas.PreviewMouseMove += RotateHandle_MouseMove;
+            AdornerCanvas.PreviewMouseLeftButtonUp += RotateHandle_MouseLeftButtonUp;
+            e.Handled = true;
+        }
+
+        private void RotateHandle_MouseMove(object sender, MouseEventArgs e)
+        {
+            if (!_isRotatingElement || _selected == null) return;
+
+            var pos = e.GetPosition(DesignCanvas);
+
+            double centerX = (_selected.X + _selected.Width / 2) * PxPerMm;
+            double centerY = (_selected.Y + _selected.Height / 2) * PxPerMm;
+
+            // Angle of the mouse relative to the element's center. A vector
+            // pointing straight up (the handle's rest position) corresponds
+            // to 0°, so add 90 to atan2's "pointing right = 0°" convention.
+            double angle = Math.Atan2(pos.Y - centerY, pos.X - centerX) * 180.0 / Math.PI + 90.0;
+
+            angle %= 360;
+            if (angle < 0) angle += 360;
+
+            if (Keyboard.Modifiers.HasFlag(ModifierKeys.Shift))
+                angle = Math.Round(angle / RotateSnapDegrees) * RotateSnapDegrees % 360;
+
+            _selected.Rotation = angle;
+
+            RefreshVisual(_selected);
+            DrawAdorner(_selected);
+            UpdateRotationField(_selected);
+        }
+
+        private void RotateHandle_MouseLeftButtonUp(object sender, MouseButtonEventArgs e)
+        {
+            _isRotatingElement = false;
+            AdornerCanvas.ReleaseMouseCapture();
+            AdornerCanvas.PreviewMouseMove -= RotateHandle_MouseMove;
+            AdornerCanvas.PreviewMouseLeftButtonUp -= RotateHandle_MouseLeftButtonUp;
         }
 
         // Clicking empty canvas space (not an element) clears the selection.
@@ -479,6 +677,52 @@ namespace MyWPFCRUDApp.Views
             });
         }
 
+        // ── Keyboard: arrow-key nudge + Delete ───────────────────────────────
+        private void Window_PreviewKeyDown(object sender, KeyEventArgs e)
+        {
+            // Don't hijack arrow keys / Delete while the user is typing in a
+            // property TextBox (moving the text caret should win there).
+            if (Keyboard.FocusedElement is TextBox) return;
+
+            if (e.Key == Key.Delete)
+            {
+                DeleteSelected();
+                e.Handled = true;
+                return;
+            }
+
+            if (_selected == null) return;
+
+            double step = Keyboard.Modifiers.HasFlag(ModifierKeys.Shift) ? NudgeStepFast : NudgeStep;
+            double dx = 0, dy = 0;
+
+            switch (e.Key)
+            {
+                case Key.Left: dx = -step; break;
+                case Key.Right: dx = step; break;
+                case Key.Up: dy = -step; break;
+                case Key.Down: dy = step; break;
+                default: return; // not an arrow key — let it bubble normally
+            }
+
+            var el = _selected;
+            double newX = Math.Max(0, Math.Min(el.X + dx, _template.WidthMm - el.Width));
+            double newY = Math.Max(0, Math.Min(el.Y + dy, _template.HeightMm - el.Height));
+
+            el.X = newX;
+            el.Y = newY;
+
+            if (_visuals.TryGetValue(el, out var border))
+            {
+                Canvas.SetLeft(border, el.X * PxPerMm);
+                Canvas.SetTop(border, el.Y * PxPerMm);
+            }
+
+            DrawAdorner(el);
+            UpdatePositionFields(el);
+            e.Handled = true;
+        }
+
         private void UpdatePositionFields(LabelElement el)
         {
             if (_xBox != null) _xBox.Text = el.X.ToString("0.#", CultureInfo.InvariantCulture);
@@ -489,6 +733,11 @@ namespace MyWPFCRUDApp.Views
         {
             if (_wBox != null) _wBox.Text = el.Width.ToString("0.#", CultureInfo.InvariantCulture);
             if (_hBox != null) _hBox.Text = el.Height.ToString("0.#", CultureInfo.InvariantCulture);
+        }
+
+        private void UpdateRotationField(LabelElement el)
+        {
+            if (_rotBox != null) _rotBox.Text = el.Rotation.ToString("0.#", CultureInfo.InvariantCulture);
         }
 
         // ── Property panel ───────────────────────────────────────────────────
@@ -518,10 +767,79 @@ namespace MyWPFCRUDApp.Views
             _hBox = AddLabeledNumberBox(grid, 2, 1, "H:", el.Height, v => { el.Height = Math.Max(3, v); RefreshVisual(el); DrawAdorner(el); });
             PropertyPanel.Children.Add(grid);
 
+            BuildRotationProperties(el);
+
             if (el.Type is LabelElementType.Text or LabelElementType.Barcode)
                 BuildTextProperties(el);
+            else if (el.Type == LabelElementType.Image)
+                BuildImageProperties(el);
             else
                 BuildShapeProperties(el);
+        }
+
+        private void BuildImageProperties(LabelElement el)
+        {
+            AddSectionHeader("IMAGE");
+
+            var replaceBtn = new Button { Content = "Replace Image…", Margin = new Thickness(0, 0, 0, 10) };
+            replaceBtn.Click += (_, _) =>
+            {
+                var dlg = new Microsoft.Win32.OpenFileDialog { Filter = "PNG Images (*.png)|*.png" };
+                if (dlg.ShowDialog(this) != true) return;
+                try
+                {
+                    el.ImageBase64 = Convert.ToBase64String(System.IO.File.ReadAllBytes(dlg.FileName));
+                    RefreshVisual(el);
+                }
+                catch (Exception ex)
+                {
+                    MessageBox.Show(this, $"Couldn't read that file: {ex.Message}", "Error",
+                        MessageBoxButton.OK, MessageBoxImage.Error);
+                }
+            };
+            PropertyPanel.Children.Add(replaceBtn);
+        }
+
+        private void BuildRotationProperties(LabelElement el)
+        {
+            AddSectionHeader("ROTATION (°)");
+
+            var row = new StackPanel { Orientation = Orientation.Horizontal, Margin = new Thickness(0, 0, 0, 6) };
+            _rotBox = new TextBox { Width = 55, Text = el.Rotation.ToString("0.#", CultureInfo.InvariantCulture) };
+            _rotBox.TextChanged += (_, _) =>
+            {
+                if (double.TryParse(_rotBox.Text, NumberStyles.Float, CultureInfo.InvariantCulture, out var v))
+                {
+                    v %= 360;
+                    if (v < 0) v += 360;
+                    el.Rotation = v;
+                    RefreshVisual(el);
+                    DrawAdorner(el);
+                }
+            };
+            row.Children.Add(_rotBox);
+            PropertyPanel.Children.Add(row);
+
+            var quickRow = new StackPanel { Orientation = Orientation.Horizontal, Margin = new Thickness(0, 0, 0, 10) };
+
+            void AddQuickButton(string label, Action apply)
+            {
+                var btn = new Button { Content = label, Width = 50, Margin = new Thickness(0, 0, 4, 0), Padding = new Thickness(0, 2, 0, 2) };
+                btn.Click += (_, _) =>
+                {
+                    apply();
+                    RefreshVisual(el);
+                    DrawAdorner(el);
+                    UpdateRotationField(el);
+                };
+                quickRow.Children.Add(btn);
+            }
+
+            AddQuickButton("-90°", () => el.Rotation = (el.Rotation - 90 + 360) % 360);
+            AddQuickButton("+90°", () => el.Rotation = (el.Rotation + 90) % 360);
+            AddQuickButton("Reset", () => el.Rotation = 0);
+
+            PropertyPanel.Children.Add(quickRow);
         }
 
         private void BuildTextProperties(LabelElement el)

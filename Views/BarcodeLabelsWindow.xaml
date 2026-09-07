@@ -29,6 +29,7 @@
             <Grid Grid.Column="0" Margin="0,0,12,0">
                 <Grid.RowDefinitions>
                     <RowDefinition Height="Auto"/>
+                    <RowDefinition Height="Auto"/>
                     <RowDefinition Height="*"/>
                 </Grid.RowDefinitions>
 
@@ -54,10 +55,19 @@
                     </StackPanel>
                 </Border>
 
-                <DataGrid Grid.Row="1"
+                <!-- Select All / Unselect All — rows start unselected by default
+                     (see BuildRow in code-behind), these give a quick way to
+                     bulk-select instead of checking every "Print?" box by hand. -->
+                <StackPanel Grid.Row="1" Orientation="Horizontal" Margin="0,0,0,8">
+                    <Button Content="Select All" Padding="8,4" Margin="0,0,6,0" Click="SelectAllButton_Click"/>
+                    <Button Content="Unselect All" Padding="8,4" Click="UnselectAllButton_Click"/>
+                    <TextBlock x:Name="SelectedCountText" VerticalAlignment="Center" Margin="12,0,0,0"
+                               FontSize="11" Foreground="#868E96"/>
+                </StackPanel>
+
+                <DataGrid Grid.Row="2"
                           x:Name="LabelsGrid"
                           AutoGenerateColumns="False"
-                          IsReadOnly="True"
                           CanUserAddRows="False"
                           HeadersVisibility="Column"
                           GridLinesVisibility="Horizontal"
@@ -67,12 +77,20 @@
                           SelectionUnit="FullRow"
                           SelectionChanged="LabelsGrid_SelectionChanged">
                     <DataGrid.Columns>
-                        <!-- Mandatory base columns — always present -->
+                        <!-- Mandatory base columns — always present.
+                             NOTE: grid-level IsReadOnly was removed above —
+                             it disabled editing on every column including
+                             this checkbox, which is why individual rows
+                             couldn't be toggled by clicking (only the
+                             Select All / Unselect All buttons worked, since
+                             those set IsSelected in code-behind, bypassing
+                             the UI edit lock). Read-only is now applied only
+                             to the columns below that should stay display-only. -->
                         <DataGridCheckBoxColumn Header="Print?"
                                                  Binding="{Binding IsSelected, UpdateSourceTrigger=PropertyChanged}"
                                                  Width="55"/>
 
-                        <DataGridTextColumn Header="Barcode" Binding="{Binding Barcode}" Width="130">
+                        <DataGridTextColumn Header="Barcode" Binding="{Binding Barcode}" Width="130" IsReadOnly="True">
                             <DataGridTextColumn.ElementStyle>
                                 <Style TargetType="TextBlock">
                                     <Setter Property="FontFamily" Value="Consolas"/>
@@ -83,7 +101,7 @@
                             </DataGridTextColumn.ElementStyle>
                         </DataGridTextColumn>
 
-                        <DataGridTextColumn Header="Product Name" Binding="{Binding ProductName}" Width="*">
+                        <DataGridTextColumn Header="Product Name" Binding="{Binding ProductName}" Width="*" IsReadOnly="True">
                             <DataGridTextColumn.ElementStyle>
                                 <Style TargetType="TextBlock">
                                     <Setter Property="FontWeight" Value="SemiBold"/>
@@ -92,7 +110,7 @@
                             </DataGridTextColumn.ElementStyle>
                         </DataGridTextColumn>
 
-                        <DataGridTextColumn Header="Qty" Binding="{Binding Quantity}" Width="70">
+                        <DataGridTextColumn Header="Qty" Binding="{Binding Quantity}" Width="70" IsReadOnly="True">
                             <DataGridTextColumn.ElementStyle>
                                 <Style TargetType="TextBlock">
                                     <Setter Property="TextAlignment" Value="Center"/>
