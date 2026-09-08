@@ -1,0 +1,34 @@
+<Window x:Class="MyWPFCRUDApp.Views.BulkEditColumnsWindow"
+        xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        Title="Update Columns for Selected Products"
+        Width="560" Height="440"
+        WindowStartupLocation="CenterOwner"
+        Background="#FFFDF8F0">
+    <Grid Margin="16">
+        <Grid.RowDefinitions>
+            <RowDefinition Height="Auto"/>
+            <RowDefinition Height="*"/>
+            <RowDefinition Height="Auto"/>
+            <RowDefinition Height="Auto"/>
+        </Grid.RowDefinitions>
+
+        <TextBlock Grid.Row="0"
+                   Text="Choose which columns to update, and the value to set for every selected product. Category, SubCategory, and Unit are picked from the existing lists."
+                   TextWrapping="Wrap" Margin="0,0,0,12" Foreground="#495057"/>
+
+        <Border Grid.Row="1" BorderBrush="#E0D5C4" BorderThickness="1" CornerRadius="6" Background="White" Padding="10">
+            <ScrollViewer VerticalScrollBarVisibility="Auto">
+                <StackPanel x:Name="RowsPanel"/>
+            </ScrollViewer>
+        </Border>
+
+        <Button Grid.Row="2" Content="+ Add Field" HorizontalAlignment="Left" Padding="10,5"
+                Margin="0,8,0,0" Click="AddFieldButton_Click"/>
+
+        <StackPanel Grid.Row="3" Orientation="Horizontal" HorizontalAlignment="Right" Margin="0,16,0,0">
+            <Button Content="Cancel" Width="90" Height="34" Margin="0,0,8,0" Background="#EEEEEE" Click="CancelButton_Click"/>
+            <Button Content="Apply to Selected" Width="150" Height="34" Background="#1971C2" Foreground="White" Click="ApplyButton_Click"/>
+        </StackPanel>
+    </Grid>
+</Window>

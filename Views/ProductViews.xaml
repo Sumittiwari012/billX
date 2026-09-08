@@ -112,7 +112,7 @@
                 Margin="0,0,0,8"/>
 
         <!-- ═══════════════════════════════════════════════
-             ROW 2 · Multi-select notice bar (with bulk discount)
+             ROW 2 · Multi-select notice bar (bulk column update)
         ═══════════════════════════════════════════════ -->
         <Border Grid.Row="5"
                 Background="#FFFFEEBA"
@@ -127,14 +127,13 @@
                            FontWeight="SemiBold"
                            VerticalAlignment="Center"
                            Margin="0,0,12,0"/>
-                <TextBlock Text="Discount %:"
-                           VerticalAlignment="Center"
-                           Margin="0,0,4,0"/>
-                <TextBox Width="60"
-                         Margin="0,0,8,0"
-                         Text="{Binding BulkDiscountPercentage, UpdateSourceTrigger=PropertyChanged}"/>
-                <Button Content="Apply Discount"
-                        Command="{Binding ApplyBulkDiscountCommand}"
+                <!-- Opens BulkEditColumnsWindow: pick any number of columns
+                     to update (Category/SubCategory/Unit as dropdowns from
+                     the existing lists, everything else as a typed value)
+                     and apply them to every checked row at once. Replaces
+                     the old single-purpose Discount % controls. -->
+                <Button Content="⚙ Update Columns"
+                        Click="UpdateColumnsButton_Click"
                         Background="#FF1F3A5F"
                         Foreground="White"
                         FontWeight="Bold"

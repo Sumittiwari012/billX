@@ -1,9 +1,11 @@
 using MyWPFCRUDApp.Helpers;
 using MyWPFCRUDApp.ViewModels;
+using System.Collections.Generic;
 using System.Linq;
 using System.Windows;
 using System.Windows.Controls;
 using static MyWPFCRUDApp.Services.ProductService;
+
 namespace MyWPFCRUDApp.Views
 {
     public partial class ProductViews : UserControl
@@ -69,7 +71,6 @@ namespace MyWPFCRUDApp.Views
                     "No Products Selected", MessageBoxButton.OK, MessageBoxImage.Information);
                 return;
             }
-
             // Resolve the saved default printer once for the whole batch
             var queue = PrinterSettingsService.GetDefaultPrintQueue();
             if (queue == null)
@@ -78,12 +79,35 @@ namespace MyWPFCRUDApp.Views
                     "Printer Not Set", MessageBoxButton.OK, MessageBoxImage.Warning);
                 return;
             }
-
             foreach (var product in selected)
             {
                 var win = new ProductLabelPrintWindow(product, queue);
-                win.ShowDialog();   // blocks here � next window opens only after this one is closed
+                win.ShowDialog();   // blocks here — next window opens only after this one is closed
             }
+        }
+
+        // Opens the bulk-edit panel (BulkEditColumnsWindow), where the user
+        // picks any number of columns and a value for each — Category,
+        // SubCategory, and Unit are dropdowns sourced from the same lists
+        // the entry form uses, everything else is typed directly. On
+        // confirm, hands the picked (field, value) pairs to the view model
+        // to apply across every checked row.
+        private void UpdateColumnsButton_Click(object sender, RoutedEventArgs e)
+        {
+            if (!_vm.CheckedProducts.Any())
+            {
+                MessageBox.Show("Please select at least one product to update.",
+                    "No Products Selected", MessageBoxButton.OK, MessageBoxImage.Information);
+                return;
+            }
+
+            var dlg = new BulkEditColumnsWindow(_vm.Categories, _vm.AllSubCategories, _vm.Units)
+            {
+                Owner = Window.GetWindow(this)
+            };
+
+            if (dlg.ShowDialog() == true)
+                _vm.ApplyBulkColumnUpdates(dlg.FieldUpdates);
         }
     }
 }

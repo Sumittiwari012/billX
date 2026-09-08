@@ -341,6 +341,12 @@ namespace MyWPFCRUDApp.ViewModels
         // ─── SubCategory Dropdown ──────────────────────────────────────────────
         private List<MSubCategory> _allSubCategories = new();
 
+        // Full, unfiltered SubCategory list (every subcategory across every
+        // category) — used by the bulk-edit panel, which lets the user pick
+        // any subcategory directly rather than only ones under the current
+        // form's selected Category.
+        public IReadOnlyList<MSubCategory> AllSubCategories => _allSubCategories;
+
         private ObservableCollection<MSubCategory> _filteredSubCategories;
         public ObservableCollection<MSubCategory> FilteredSubCategories
         {
@@ -690,53 +696,97 @@ namespace MyWPFCRUDApp.ViewModels
                 MessageBox.Show("Export failed: " + ex.Message);
             }
         }
-        // ─── Bulk Discount ─────────────────────────────────────────────────────
-        private double _bulkDiscountPercentage;
-        public double BulkDiscountPercentage
+
+        // ─── Bulk Column Update ─────────────────────────────────────────────────
+        // Replaces the old single-purpose "bulk discount" feature. Applies any
+        // number of (field, value) pairs — picked in BulkEditColumnsWindow — to
+        // every currently-checked product. Category/SubCategory/Unit come in
+        // as MCategory/MSubCategory/MUnit picked from a list; everything else
+        // comes in as a plain string parsed to the right numeric type here.
+        public void ApplyBulkColumnUpdates(List<BulkFieldUpdate> updates)
         {
-            get => _bulkDiscountPercentage;
-            set => SetProperty(ref _bulkDiscountPercentage, value);
-        }
+            if (updates == null || !updates.Any() || !_checkedProducts.Any()) return;
 
-        public ICommand ApplyBulkDiscountCommand =>
-            new RelayCommand(_ => ApplyBulkDiscount(), _ => CheckedProducts.Any());
+            var quantityUpdate = updates.FirstOrDefault(u => u.FieldKey == "Quantity");
+            var productFieldUpdates = updates.Where(u => u.FieldKey != "Quantity").ToList();
 
-        private void ApplyBulkDiscount()
-        {
-            if (!_checkedProducts.Any())
-            {
-                MessageBox.Show("Please select at least one product.");
-                return;
-            }
-
-            if (BulkDiscountPercentage < 0 || BulkDiscountPercentage > 100)
-            {
-                MessageBox.Show("Please enter a discount percentage between 0 and 100.");
-                return;
-            }
-
-            var result = MessageBox.Show(
-                $"Apply a {BulkDiscountPercentage}% discount to {_checkedProducts.Count} selected product(s)? " +
-                "This will overwrite their current Sale price.",
-                "Confirm Bulk Discount", MessageBoxButton.YesNo, MessageBoxImage.Question);
-
-            if (result != MessageBoxResult.Yes) return;
-
-            int updated = 0;
+            int updatedCount = 0;
             foreach (var p in _checkedProducts.ToList())
             {
-                // sale = mrp - mrp * discount%
-                var newSalePrice = p.MRP - (p.MRP * ((decimal)BulkDiscountPercentage / 100m));
+                // Load the FULL row (every MProducts column) rather than
+                // building one from ProductDisplayModel — ProductDisplayModel
+                // only carries a subset of fields, and calling UpdateProduct
+                // with a partially-populated object would blank out anything
+                // it's missing (e.g. Description, Batch, MfgDate).
+                var full = _productService.GetByBarcode(p.Barcode);
+                if (full == null) continue;
 
-                if (_productService.UpdateDiscountAndSalePrice(p.Id, BulkDiscountPercentage, newSalePrice))
-                    updated++;
+                foreach (var upd in productFieldUpdates)
+                {
+                    switch (upd.FieldKey)
+                    {
+                        case "CategoryId":
+                            if (upd.Value is MCategory cat) full.CategoryId = cat.Id;
+                            break;
+                        case "SubCategoryId":
+                            if (upd.Value is MSubCategory sub) full.SubCategoryId = sub.Id;
+                            break;
+                        case "UnitId":
+                            if (upd.Value is MUnit unit) full.UnitId = unit.Id;
+                            break;
+                        case "PurchasePrice":
+                            if (decimal.TryParse(upd.Value?.ToString(), out var pp)) full.PurchasePrice = pp;
+                            break;
+                        case "RetailSalePrice":
+                            if (decimal.TryParse(upd.Value?.ToString(), out var rsp)) full.RetailSalePrice = rsp;
+                            break;
+                        case "MRP":
+                            if (decimal.TryParse(upd.Value?.ToString(), out var mrp)) full.MRP = mrp;
+                            break;
+                        case "CGST":
+                            if (double.TryParse(upd.Value?.ToString(), out var cgst)) full.CGST = cgst;
+                            break;
+                        case "SGST":
+                            if (double.TryParse(upd.Value?.ToString(), out var sgst)) full.SGST = sgst;
+                            break;
+                        case "IGST":
+                            if (double.TryParse(upd.Value?.ToString(), out var igst)) full.IGST = igst;
+                            break;
+                        case "DiscountPercentage":
+                            if (double.TryParse(upd.Value?.ToString(), out var disc)) full.DiscountPercentage = disc;
+                            break;
+                        case "Size":
+                            full.Size = upd.Value?.ToString();
+                            break;
+                        case "Colour":
+                            full.Colour = upd.Value?.ToString();
+                            break;
+                        case "Rack":
+                            full.Rack = upd.Value?.ToString();
+                            break;
+                        case "HSNCode":
+                            full.HSNCode = upd.Value?.ToString();
+                            break;
+                    }
+                }
+
+                if (_productService.UpdateProduct(full))
+                {
+                    updatedCount++;
+
+                    // Quantity lives in ProductQuantity, not MProducts — same
+                    // separate persistence path Save() already uses.
+                    if (quantityUpdate != null && long.TryParse(quantityUpdate.Value?.ToString(), out var qty))
+                        _productService.SetProductQuantity(full.Barcode, qty);
+                }
             }
 
-            MessageBox.Show($"Discount applied to {updated} product(s).",
-                "Bulk Discount Applied", MessageBoxButton.OK, MessageBoxImage.Information);
+            MessageBox.Show($"Updated {updatedCount} product(s).", "Bulk Update Applied",
+                MessageBoxButton.OK, MessageBoxImage.Information);
 
-            LoadData(); // refresh grid so updated Sale/Discount values show immediately
+            LoadData(); // refresh grid so updated values show immediately
         }
+
         // ─── Import from Excel (unchanged logic) ───────────────────────────────
         private void ExecuteImportWizard()
         {
