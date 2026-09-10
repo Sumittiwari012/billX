@@ -1,4 +1,4 @@
-﻿using MyWPFCRUDApp.Helpers;
+using MyWPFCRUDApp.Helpers;
 using MyWPFCRUDApp.Models;
 using MyWPFCRUDApp.Services;
 using System;
@@ -36,6 +36,14 @@ namespace MyWPFCRUDApp.Views
         private const double RotateHandleOffset = 22;
         // Rotation snaps to this many degrees when Shift is held while rotating.
         private const double RotateSnapDegrees = 15;
+
+        // Extra workspace around the physical label where elements can be
+        // parked temporarily without being clamped onto the printable area.
+        // DesignCanvas/AdornerCanvas are sized to (label + 2 * this buffer),
+        // and the label surface itself is drawn offset by OffsetPx so it sits
+        // centered inside that larger canvas.
+        private const double StagingBufferMm = 25;
+        private double OffsetPx => StagingBufferMm * PxPerMm;
 
         private readonly LabelTemplate _template;
         private readonly BarcodeLabelRow _sampleRow;
@@ -139,12 +147,19 @@ namespace MyWPFCRUDApp.Views
             _template.HeightMm = h;
 
             double pxW = w * PxPerMm, pxH = h * PxPerMm;
+            double totalW = pxW + 2 * OffsetPx, totalH = pxH + 2 * OffsetPx;
+
+            // The physical label surface, sized in mm → px, sitting inside
+            // the larger staging canvas at a fixed offset.
             LabelSurfaceBorder.Width = pxW;
             LabelSurfaceBorder.Height = pxH;
-            DesignCanvas.Width = pxW;
-            DesignCanvas.Height = pxH;
-            AdornerCanvas.Width = pxW;
-            AdornerCanvas.Height = pxH;
+            Canvas.SetLeft(LabelSurfaceBorder, OffsetPx);
+            Canvas.SetTop(LabelSurfaceBorder, OffsetPx);
+
+            DesignCanvas.Width = totalW;
+            DesignCanvas.Height = totalH;
+            AdornerCanvas.Width = totalW;
+            AdornerCanvas.Height = totalH;
 
             if (_selected != null) DrawAdorner(_selected);
         }
@@ -301,8 +316,8 @@ namespace MyWPFCRUDApp.Views
             // up as the "real" hit target and change bubble-routing behavior.
             border.PreviewMouseLeftButtonDown += ElementVisual_MouseLeftButtonDown;
 
-            Canvas.SetLeft(border, el.X * PxPerMm);
-            Canvas.SetTop(border, el.Y * PxPerMm);
+            Canvas.SetLeft(border, el.X * PxPerMm + OffsetPx);
+            Canvas.SetTop(border, el.Y * PxPerMm + OffsetPx);
             Panel.SetZIndex(border, el.ZIndex);
 
             DesignCanvas.Children.Add(border);
@@ -315,8 +330,8 @@ namespace MyWPFCRUDApp.Views
             border.Child = TemplateRenderer.BuildVisual(el, _sampleRow);
             border.Width = el.Width * PxPerMm;
             border.Height = el.Height * PxPerMm;
-            Canvas.SetLeft(border, el.X * PxPerMm);
-            Canvas.SetTop(border, el.Y * PxPerMm);
+            Canvas.SetLeft(border, el.X * PxPerMm + OffsetPx);
+            Canvas.SetTop(border, el.Y * PxPerMm + OffsetPx);
             ApplyRotation(border, el);
         }
 
@@ -356,15 +371,17 @@ namespace MyWPFCRUDApp.Views
             double newX = _dragStartX + (pos.X - _dragStartMouse.X) / PxPerMm;
             double newY = _dragStartY + (pos.Y - _dragStartMouse.Y) / PxPerMm;
 
-            // Clamp so an element can't be dragged off the physical label.
-            newX = Math.Max(0, Math.Min(newX, _template.WidthMm - el.Width));
-            newY = Math.Max(0, Math.Min(newY, _template.HeightMm - el.Height));
+            // Clamp to the label PLUS the surrounding staging margin, so an
+            // element can be dragged off the physical label to be parked out
+            // of the way, but not off the edge of the workspace entirely.
+            newX = Math.Max(-StagingBufferMm, Math.Min(newX, _template.WidthMm + StagingBufferMm - el.Width));
+            newY = Math.Max(-StagingBufferMm, Math.Min(newY, _template.HeightMm + StagingBufferMm - el.Height));
 
             el.X = newX;
             el.Y = newY;
 
-            Canvas.SetLeft(border, el.X * PxPerMm);
-            Canvas.SetTop(border, el.Y * PxPerMm);
+            Canvas.SetLeft(border, el.X * PxPerMm + OffsetPx);
+            Canvas.SetTop(border, el.Y * PxPerMm + OffsetPx);
             DrawAdorner(el);
             UpdatePositionFields(el);
         }
@@ -393,7 +410,7 @@ namespace MyWPFCRUDApp.Views
             AdornerCanvas.Children.Clear();
             if (!_visuals.ContainsKey(el)) return;
 
-            double left = el.X * PxPerMm, top = el.Y * PxPerMm;
+            double left = el.X * PxPerMm + OffsetPx, top = el.Y * PxPerMm + OffsetPx;
             double w = el.Width * PxPerMm, h = el.Height * PxPerMm;
             double centerX = left + w / 2, centerY = top + h / 2;
 
@@ -560,11 +577,13 @@ namespace MyWPFCRUDApp.Views
             if (newW < minSize) { if (_activeHandle is HandlePos.TopLeft or HandlePos.BottomLeft) newX = _dragStartX + _dragStartW - minSize; newW = minSize; }
             if (newH < minSize) { if (_activeHandle is HandlePos.TopLeft or HandlePos.TopRight) newY = _dragStartY + _dragStartH - minSize; newH = minSize; }
 
-            // Clamp to the physical label so nothing can be dragged off the page.
-            newX = Math.Max(0, Math.Min(newX, _template.WidthMm - minSize));
-            newY = Math.Max(0, Math.Min(newY, _template.HeightMm - minSize));
-            newW = Math.Min(newW, _template.WidthMm - newX);
-            newH = Math.Min(newH, _template.HeightMm - newY);
+            // Clamp to the label PLUS the surrounding staging margin, so a
+            // resized element can extend into the margin but not off the
+            // edge of the workspace entirely.
+            newX = Math.Max(-StagingBufferMm, Math.Min(newX, _template.WidthMm + StagingBufferMm - minSize));
+            newY = Math.Max(-StagingBufferMm, Math.Min(newY, _template.HeightMm + StagingBufferMm - minSize));
+            newW = Math.Min(newW, _template.WidthMm + StagingBufferMm - newX);
+            newH = Math.Min(newH, _template.HeightMm + StagingBufferMm - newY);
 
             _selected.X = newX;
             _selected.Y = newY;
@@ -608,8 +627,8 @@ namespace MyWPFCRUDApp.Views
 
             var pos = e.GetPosition(DesignCanvas);
 
-            double centerX = (_selected.X + _selected.Width / 2) * PxPerMm;
-            double centerY = (_selected.Y + _selected.Height / 2) * PxPerMm;
+            double centerX = (_selected.X + _selected.Width / 2) * PxPerMm + OffsetPx;
+            double centerY = (_selected.Y + _selected.Height / 2) * PxPerMm + OffsetPx;
 
             // Angle of the mouse relative to the element's center. A vector
             // pointing straight up (the handle's rest position) corresponds
@@ -706,16 +725,17 @@ namespace MyWPFCRUDApp.Views
             }
 
             var el = _selected;
-            double newX = Math.Max(0, Math.Min(el.X + dx, _template.WidthMm - el.Width));
-            double newY = Math.Max(0, Math.Min(el.Y + dy, _template.HeightMm - el.Height));
+            // Clamp to the label PLUS the surrounding staging margin.
+            double newX = Math.Max(-StagingBufferMm, Math.Min(el.X + dx, _template.WidthMm + StagingBufferMm - el.Width));
+            double newY = Math.Max(-StagingBufferMm, Math.Min(el.Y + dy, _template.HeightMm + StagingBufferMm - el.Height));
 
             el.X = newX;
             el.Y = newY;
 
             if (_visuals.TryGetValue(el, out var border))
             {
-                Canvas.SetLeft(border, el.X * PxPerMm);
-                Canvas.SetTop(border, el.Y * PxPerMm);
+                Canvas.SetLeft(border, el.X * PxPerMm + OffsetPx);
+                Canvas.SetTop(border, el.Y * PxPerMm + OffsetPx);
             }
 
             DrawAdorner(el);
@@ -904,14 +924,60 @@ namespace MyWPFCRUDApp.Views
             sizeRow.Children.Add(italicBtn);
             PropertyPanel.Children.Add(sizeRow);
 
-            var alignCombo = new ComboBox { Margin = new Thickness(0, 0, 0, 10) };
-            foreach (var a in new[] { "Left", "Center", "Right" }) alignCombo.Items.Add(a);
-            alignCombo.SelectedItem = el.TextAlign;
-            if (alignCombo.SelectedIndex < 0) alignCombo.SelectedIndex = 0;
-            alignCombo.SelectionChanged += (_, _) => { el.TextAlign = alignCombo.SelectedItem as string ?? "Left"; RefreshVisual(el); };
-            PropertyPanel.Children.Add(alignCombo);
+            // Alignment applies identically whether the text comes from a
+            // bound product field or is typed directly into the static-text
+            // box above: TextAlign is a plain property on the element,
+            // independent of where its content comes from.
+            AddSectionHeader("ALIGNMENT");
+            PropertyPanel.Children.Add(BuildAlignmentRow(el));
 
             AddColorPicker("Text Color", el.TextColor, hex => { el.TextColor = hex; RefreshVisual(el); });
+        }
+
+        // Three mutually-exclusive toggle buttons for Left/Center/Right,
+        // in place of a dropdown so alignment is a single click. ToggleButton
+        // (not RadioButton) is used so no shared visual-tree GroupName is
+        // needed — mutual exclusion is enforced manually below instead.
+        private StackPanel BuildAlignmentRow(LabelElement el)
+        {
+            var row = new StackPanel { Orientation = Orientation.Horizontal, Margin = new Thickness(0, 0, 0, 10) };
+            ToggleButton leftBtn = null!, centerBtn = null!, rightBtn = null!;
+
+            ToggleButton MakeButton(string label, string value)
+            {
+                var btn = new ToggleButton
+                {
+                    Content = label,
+                    Width = 60,
+                    Height = 26,
+                    Margin = new Thickness(0, 0, 4, 0),
+                    IsChecked = el.TextAlign == value
+                };
+                // Subscribed after the initial IsChecked is set above, so
+                // construction-time state doesn't fire this and touch the
+                // not-yet-assigned sibling button references below.
+                btn.Checked += (_, _) =>
+                {
+                    el.TextAlign = value;
+                    RefreshVisual(el);
+                    if (leftBtn != btn) leftBtn.IsChecked = false;
+                    if (centerBtn != btn) centerBtn.IsChecked = false;
+                    if (rightBtn != btn) rightBtn.IsChecked = false;
+                };
+                // Prevent unchecking the active button by clicking it again —
+                // exactly one alignment should always be selected.
+                btn.Unchecked += (_, _) => { if (el.TextAlign == value) btn.IsChecked = true; };
+                return btn;
+            }
+
+            leftBtn = MakeButton("Left", "Left");
+            centerBtn = MakeButton("Center", "Center");
+            rightBtn = MakeButton("Right", "Right");
+
+            row.Children.Add(leftBtn);
+            row.Children.Add(centerBtn);
+            row.Children.Add(rightBtn);
+            return row;
         }
 
         private void BuildShapeProperties(LabelElement el)

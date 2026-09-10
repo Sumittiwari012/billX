@@ -108,6 +108,12 @@ namespace MyWPFCRUDApp.Services
                 case LabelElementType.Line:
                     visual = new System.Windows.Shapes.Line
                     {
+                        // Width/Height must be set explicitly: Shape's own
+                        // Width/Height default to NaN ("Auto") when unset, and
+                        // the rotation center below would then evaluate to
+                        // NaN, silently making the whole element invisible.
+                        Width = w,
+                        Height = h,
                         X1 = 0,
                         Y1 = h / 2,
                         X2 = w,
@@ -116,12 +122,14 @@ namespace MyWPFCRUDApp.Services
                         StrokeThickness = el.StrokeThickness
                     };
                     break;
+
                 case LabelElementType.Image:
                     var pic = new Image { Width = w, Height = h, Stretch = Stretch.Uniform };
                     if (!string.IsNullOrEmpty(el.ImageBase64))
                         pic.Source = BitmapFromBase64(el.ImageBase64);
-                    return pic;
-                    
+                    visual = pic;
+                    break;
+
                 default:
                     visual = new Border { Width = w, Height = h };
                     break;
@@ -129,7 +137,11 @@ namespace MyWPFCRUDApp.Services
 
             if (el.Rotation != 0)
             {
-                visual.RenderTransform = new RotateTransform(el.Rotation, visual.Width / 2, visual.Height / 2);
+                // Use the known w/h locals, not visual.Width/Height: some
+                // shapes (e.g. Line) don't have those FrameworkElement
+                // properties set explicitly, so they'd read back as NaN and
+                // produce an invalid transform that hides the element.
+                visual.RenderTransform = new RotateTransform(el.Rotation, w / 2, h / 2);
             }
 
             return visual;
