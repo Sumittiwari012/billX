@@ -14,23 +14,32 @@ namespace MyWPFCRUDApp.Services
     /// login/logout, and product-quantity rows from the cloud database into the
     /// local database.
     ///
-    /// For MCustomer / MCustomerPurchaseMaster / MCustomerPurchaseDetail /
-    /// MCustomerPayment / MCustomerReturnMaster / MCustomerReturnDetail /
-    /// MPettyCash / MLoginLogout: this is a FULL REPLACE. Every row currently in
-    /// the local table is deleted, and every row from the cloud table is copied
-    /// in as-is (including the cloud's own Id values - they are NOT remapped).
-    /// The cloud is treated as the sole source of truth for these tables.
+    /// ADDITIVE ONLY: for MCustomer / MCustomerPurchaseMaster /
+    /// MCustomerPurchaseDetail / MCustomerPayment / MCustomerReturnMaster /
+    /// MCustomerReturnDetail / MPettyCash / MLoginLogout, nothing is deleted.
+    /// For each table we read the cloud's rows, work out which Ids don't exist
+    /// locally yet, and INSERT only those. Existing local rows - including their
+    /// current field values - are left completely untouched.
     ///
-    /// Because Id values are carried over unchanged, foreign keys between these
-    /// tables (e.g. MCustomerPurchaseDetail.PurchaseMasterId) line up naturally
-    /// and need no translation. Foreign key checks are disabled for the duration
-    /// of the pull so tables can be cleared/reloaded without worrying about
-    /// delete/insert ordering across them.
+    /// CAVEAT: because this is additive-only, a row that gets mutated on another
+    /// terminal AFTER it was already pulled once will NOT have that mutation
+    /// reflected locally (e.g. MCustomerPurchaseMaster.IsReturned/ReturnDate set
+    /// later, MPettyCash.Accepted flipped later, MLoginLogout.logoutTime/
+    /// Settlement filled in later). If any of those need to stay in sync, add a
+    /// small targeted "upsert just these columns" pass for that specific table -
+    /// there's a clearly marked spot below for it.
     ///
-    /// For ProductQuantity: rows are matched by the natural key Barcode instead,
-    /// and this table is NOT wiped. If a barcode doesn't exist locally yet, the
-    /// row is inserted. If it already exists locally, its Quantity (and
-    /// MinimumSellingQuantity) is UPDATED to the cloud's value.
+    /// PRODUCT QUANTITY IS NEVER OVERWRITTEN FROM THE CLOUD. Instead: whatever
+    /// rows were just newly inserted into MCustomerPurchaseDetail /
+    /// MCustomerReturnDetail (found via the additive-insert step above - no
+    /// separate snapshot/diff needed anymore, since "missing locally" already
+    /// *is* "new") are used to compute a per-barcode quantity delta:
+    ///   - new MCustomerPurchaseDetail rows  -> Quantity -= sold qty
+    ///   - new MCustomerReturnDetail rows    -> Quantity += returned qty
+    /// ProductQuantity itself is only ever touched to INSERT a row for a barcode
+    /// that doesn't exist locally at all yet (e.g. a brand new product created on
+    /// another terminal). Existing local ProductQuantity rows are never
+    /// overwritten by that step.
     ///
     /// NOT pulled here (sync direction wasn't established for these, so they're
     /// left untouched to avoid guessing wrong): MCounterNew, MCounterUser,
@@ -42,23 +51,23 @@ namespace MyWPFCRUDApp.Services
     public static class CloudPullService
     {
         /// <summary>
-        /// Tables that are fully replaced from the cloud (deleted locally, then
-        /// re-copied verbatim, Id included). Order matters only in that it's a
-        /// sensible "parent before child" read/insert order for reporting
-        /// purposes - actual FK enforcement is disabled during the pull, so the
-        /// order does not need to satisfy dependency constraints.
+        /// Tables that are pulled additively (only rows missing locally, by Id,
+        /// are inserted). Listed parent-before-child for FK-friendly insert order.
         /// </summary>
-        private static readonly (string Table, string IdColumn)[] FullReplaceTables = new[]
+        private static readonly string[] AdditiveTables =
         {
-            ("MCustomer", "Id"),
-            ("MCustomerPurchaseMaster", "Id"),
-            ("MCustomerPurchaseDetail", "Id"),
-            ("MCustomerPayment", "Id"),
-            ("MCustomerReturnMaster", "Id"),
-            ("MCustomerReturnDetail", "Id"),
-            ("MPettyCash", "Id"),
-            ("MLoginLogout", "Id"),
+            "MCustomer",
+            "MCustomerPurchaseMaster",
+            "MCustomerPurchaseDetail",
+            "MCustomerPayment",
+            "MCustomerReturnMaster",
+            "MCustomerReturnDetail",
+            "MPettyCash",
+            "MLoginLogout",
         };
+
+        private const string PurchaseDetailTable = "MCustomerPurchaseDetail";
+        private const string ReturnDetailTable = "MCustomerReturnDetail";
 
         public static async Task PullCustomerDataFromCloudAsync(
             IProgress<string>? progress = null,
@@ -78,23 +87,54 @@ namespace MyWPFCRUDApp.Services
 
             try
             {
-                // Disabled so tables can be cleared/reloaded in any order without
-                // tripping FK constraints between them (Ids are carried over
-                // unchanged from the cloud, so relationships stay intact once all
-                // tables are reloaded).
+                // Off during the additive inserts purely so table order below
+                // doesn't have to be perfectly dependency-safe; it already is,
+                // but this keeps us from getting bitten later if the list order
+                // changes.
                 await SetForeignKeyChecksAsync(localConn, transaction, enabled: false, cancellationToken);
 
-                foreach (var (table, idColumn) in FullReplaceTables)
+                // Rows newly inserted into the two detail tables, captured as we
+                // go, so we can compute quantity deltas from exactly those rows -
+                // no separate "what's new" comparison needed, since additive
+                // insert already tells us that directly.
+                List<(long ProductId, double Quantity)> newSaleRows = new();
+                List<(long ProductId, double Quantity)> newReturnRows = new();
+
+                foreach (var table in AdditiveTables)
                 {
                     progress?.Report($"Pulling {table}...");
-                    await PullTableFullReplaceAsync(
-                        cloudConn, localConn, transaction, table, idColumn, progress, cancellationToken);
+                    var inserted = await InsertMissingRowsAsync(
+                        cloudConn, localConn, transaction, table, progress, cancellationToken);
+
+                    if (table == PurchaseDetailTable)
+                        newSaleRows = ExtractProductQuantityPairs(inserted);
+                    else if (table == ReturnDetailTable)
+                        newReturnRows = ExtractProductQuantityPairs(inserted);
                 }
 
                 await SetForeignKeyChecksAsync(localConn, transaction, enabled: true, cancellationToken);
 
-                progress?.Report("Pulling product quantities...");
-                await PullProductQuantitiesAsync(cloudConn, localConn, transaction, progress, cancellationToken);
+                // ---- OPTIONAL SPOT: targeted upsert of specific mutable columns ----
+                // e.g. sync MCustomerPurchaseMaster.IsReturned/ReturnDate,
+                // MPettyCash.Accepted, MLoginLogout.logoutTime/Settlement for rows
+                // that already exist locally. Not implemented - additive-only per
+                // request. Add a small UpdateMutableColumnsAsync(...) call here per
+                // table if/when needed.
+
+                // ---- Quantity adjustment based on newly-inserted sale/return rows ----
+                progress?.Report("Working out quantity adjustments from new transactions...");
+
+                var productBarcodeMap = await GetProductBarcodeMapAsync(localConn, transaction, cancellationToken);
+
+                await ApplyQuantityAdjustmentsAsync(
+                    localConn, transaction, newSaleRows, productBarcodeMap, sign: -1,
+                    label: "sale", progress, cancellationToken);
+                await ApplyQuantityAdjustmentsAsync(
+                    localConn, transaction, newReturnRows, productBarcodeMap, sign: +1,
+                    label: "return", progress, cancellationToken);
+
+                progress?.Report("Pulling missing product quantity rows (new barcodes only)...");
+                await InsertMissingProductQuantitiesAsync(cloudConn, localConn, transaction, progress, cancellationToken);
 
                 await transaction.CommitAsync(cancellationToken);
                 progress?.Report("Pull complete.");
@@ -114,12 +154,184 @@ namespace MyWPFCRUDApp.Services
         }
 
         /// <summary>
-        /// Upserts ProductQuantity by Barcode: inserts any barcode from the cloud
-        /// that doesn't exist locally yet, and updates Quantity /
-        /// MinimumSellingQuantity for any barcode that already exists locally so it
-        /// matches the cloud's current value. Does not touch ProductCode or Id.
+        /// Reads every row from the cloud's copy of <paramref name="table"/>,
+        /// works out which Ids are not already present locally, and inserts only
+        /// those rows (Id included, unchanged) into the local table. Existing
+        /// local rows are never touched. Returns the rows that were inserted, as
+        /// column-name -> value dictionaries, so callers can pull out whatever
+        /// fields they need (e.g. ProductId/Quantity for quantity deltas) without
+        /// a second round trip.
         /// </summary>
-        private static async Task PullProductQuantitiesAsync(
+        private static async Task<List<Dictionary<string, object?>>> InsertMissingRowsAsync(
+            MySqlConnection cloudConn,
+            MySqlConnection localConn,
+            MySqlTransaction localTx,
+            string table,
+            IProgress<string>? progress,
+            CancellationToken cancellationToken)
+        {
+            var localIds = await GetLocalIdsAsync(localConn, localTx, table, cancellationToken);
+
+            var cloudRows = new DataTable();
+            using (var adapter = new MySqlDataAdapter($"SELECT * FROM `{table}`;", cloudConn))
+            {
+                adapter.Fill(cloudRows);
+            }
+
+            var insertedRows = new List<Dictionary<string, object?>>();
+
+            if (cloudRows.Rows.Count == 0)
+            {
+                progress?.Report($"{table}: nothing in the cloud.");
+                return insertedRows;
+            }
+
+            var localColumns = await GetLocalColumnsAsync(localConn, localTx, table, cancellationToken);
+
+            var columnsToInsert = cloudRows.Columns
+                .Cast<DataColumn>()
+                .Select(c => c.ColumnName)
+                .Where(c => localColumns.Contains(c))
+                .ToList();
+
+            foreach (DataRow row in cloudRows.Rows)
+            {
+                cancellationToken.ThrowIfCancellationRequested();
+
+                var id = Convert.ToInt64(row["Id"]);
+                if (localIds.Contains(id))
+                    continue; // already have it locally - leave it alone.
+
+                var values = new Dictionary<string, object?>();
+                foreach (var col in columnsToInsert)
+                {
+                    values[col] = row[col] == DBNull.Value ? null : row[col];
+                }
+
+                await InsertRowAsync(localConn, localTx, table, values, cancellationToken);
+                insertedRows.Add(values);
+            }
+
+            progress?.Report($"{table}: {insertedRows.Count} new row(s) inserted, existing rows untouched.");
+            return insertedRows;
+        }
+
+        private static List<(long ProductId, double Quantity)> ExtractProductQuantityPairs(
+            List<Dictionary<string, object?>> rows)
+        {
+            var result = new List<(long, double)>();
+
+            foreach (var row in rows)
+            {
+                if (row.TryGetValue("ProductId", out var pidObj) && pidObj != null &&
+                    row.TryGetValue("Quantity", out var qtyObj) && qtyObj != null)
+                {
+                    var productId = Convert.ToInt64(pidObj);
+                    var quantity = Convert.ToDouble(qtyObj);
+                    result.Add((productId, quantity));
+                }
+            }
+
+            return result;
+        }
+
+        private static async Task<HashSet<long>> GetLocalIdsAsync(
+            MySqlConnection conn, MySqlTransaction tx, string table, CancellationToken cancellationToken)
+        {
+            var ids = new HashSet<long>();
+
+            using var cmd = new MySqlCommand($"SELECT Id FROM `{table}`;", conn, tx);
+            using var reader = await cmd.ExecuteReaderAsync(cancellationToken);
+            while (await reader.ReadAsync(cancellationToken))
+                ids.Add(reader.GetInt64(0));
+
+            return ids;
+        }
+
+        private static async Task<Dictionary<long, string>> GetProductBarcodeMapAsync(
+            MySqlConnection conn, MySqlTransaction tx, CancellationToken cancellationToken)
+        {
+            var map = new Dictionary<long, string>();
+
+            using var cmd = new MySqlCommand("SELECT Id, Barcode FROM MProducts;", conn, tx);
+            using var reader = await cmd.ExecuteReaderAsync(cancellationToken);
+            while (await reader.ReadAsync(cancellationToken))
+                map[reader.GetInt64(0)] = reader.GetString(1);
+
+            return map;
+        }
+
+        /// <summary>
+        /// Aggregates the given rows by barcode and applies
+        /// Quantity = GREATEST(0, Quantity + sign * summedQty) for each barcode,
+        /// one UPDATE per barcode. Rows referencing an unknown ProductId, or a
+        /// barcode with no local ProductQuantity row, are skipped and reported.
+        /// </summary>
+        private static async Task ApplyQuantityAdjustmentsAsync(
+            MySqlConnection conn, MySqlTransaction tx,
+            IEnumerable<(long ProductId, double Quantity)> rows,
+            Dictionary<long, string> productBarcodeMap,
+            int sign,
+            string label,
+            IProgress<string>? progress,
+            CancellationToken cancellationToken)
+        {
+            var deltas = new Dictionary<string, double>();
+            var skippedUnknownProduct = 0;
+
+            foreach (var (productId, quantity) in rows)
+            {
+                if (!productBarcodeMap.TryGetValue(productId, out var barcode))
+                {
+                    skippedUnknownProduct++;
+                    continue;
+                }
+
+                deltas.TryGetValue(barcode, out var existing);
+                deltas[barcode] = existing + sign * quantity;
+            }
+
+            if (deltas.Count == 0)
+            {
+                progress?.Report($"Quantity adjustment ({label}): no new rows.");
+                return;
+            }
+
+            var adjusted = 0;
+            var missingLocally = 0;
+
+            foreach (var (barcode, delta) in deltas)
+            {
+                cancellationToken.ThrowIfCancellationRequested();
+
+                using var cmd = new MySqlCommand(@"
+                    UPDATE ProductQuantity
+                    SET Quantity = GREATEST(0, Quantity + @delta),
+                        ModifiedBy = 'CloudSync',
+                        ModifiedDate = CURRENT_TIMESTAMP
+                    WHERE Barcode = @barcode;", conn, tx);
+                cmd.Parameters.AddWithValue("@delta", delta);
+                cmd.Parameters.AddWithValue("@barcode", barcode);
+
+                var affected = await cmd.ExecuteNonQueryAsync(cancellationToken);
+                if (affected == 0)
+                    missingLocally++;
+                else
+                    adjusted++;
+            }
+
+            progress?.Report(
+                $"Quantity adjustment ({label}): {adjusted} barcode(s) adjusted from {deltas.Count} affected barcode(s)"
+                + (missingLocally > 0 ? $", {missingLocally} skipped (no local ProductQuantity row)" : "")
+                + (skippedUnknownProduct > 0 ? $", {skippedUnknownProduct} row(s) skipped (unknown ProductId)" : "")
+                + ".");
+        }
+
+        /// <summary>
+        /// Inserts a ProductQuantity row for any cloud barcode that doesn't exist
+        /// locally yet. Existing local rows are left completely untouched.
+        /// </summary>
+        private static async Task InsertMissingProductQuantitiesAsync(
             MySqlConnection cloudConn,
             MySqlConnection localConn,
             MySqlTransaction localTx,
@@ -136,11 +348,13 @@ namespace MyWPFCRUDApp.Services
 
             if (cloudRows.Rows.Count == 0)
             {
-                progress?.Report($"{table}: nothing in the cloud to pull.");
+                progress?.Report($"{table}: nothing in the cloud to check.");
                 return;
             }
 
-            int inserted = 0, updated = 0, unchanged = 0;
+            var localBarcodes = await GetLocalBarcodesAsync(localConn, localTx, cancellationToken);
+
+            var inserted = 0;
 
             foreach (DataRow row in cloudRows.Rows)
             {
@@ -150,6 +364,9 @@ namespace MyWPFCRUDApp.Services
                     continue;
 
                 var barcode = row["Barcode"].ToString()!;
+                if (localBarcodes.Contains(barcode))
+                    continue; // already exists locally - leave its quantity alone.
+
                 var quantity = row["Quantity"] == DBNull.Value ? 0L : Convert.ToInt64(row["Quantity"]);
                 var minSelling = row["MinimumSellingQuantity"] == DBNull.Value
                     ? 1L
@@ -158,42 +375,25 @@ namespace MyWPFCRUDApp.Services
                     ? row["ProductCode"].ToString()
                     : null;
 
-                var existing = await TryGetLocalProductQuantityAsync(localConn, localTx, barcode, cancellationToken);
-
-                if (existing == null)
-                {
-                    await InsertProductQuantityAsync(
-                        localConn, localTx, barcode, productCode, minSelling, quantity, cancellationToken);
-                    inserted++;
-                }
-                else if (existing.Value.Quantity != quantity || existing.Value.MinimumSellingQuantity != minSelling)
-                {
-                    await UpdateProductQuantityAsync(
-                        localConn, localTx, barcode, minSelling, quantity, cancellationToken);
-                    updated++;
-                }
-                else
-                {
-                    unchanged++;
-                }
+                await InsertProductQuantityAsync(
+                    localConn, localTx, barcode, productCode, minSelling, quantity, cancellationToken);
+                inserted++;
             }
 
-            progress?.Report(
-                $"{table}: {inserted} new barcode(s) added, {updated} updated, {unchanged} already up to date.");
+            progress?.Report($"{table}: {inserted} new barcode(s) added (no existing rows were modified).");
         }
 
-        private static async Task<(long Quantity, long MinimumSellingQuantity)?> TryGetLocalProductQuantityAsync(
-            MySqlConnection conn, MySqlTransaction tx, string barcode, CancellationToken cancellationToken)
+        private static async Task<HashSet<string>> GetLocalBarcodesAsync(
+            MySqlConnection conn, MySqlTransaction tx, CancellationToken cancellationToken)
         {
-            const string sql = "SELECT Quantity, MinimumSellingQuantity FROM ProductQuantity WHERE Barcode = @barcode LIMIT 1;";
-            using var cmd = new MySqlCommand(sql, conn, tx);
-            cmd.Parameters.AddWithValue("@barcode", barcode);
+            var barcodes = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
 
+            using var cmd = new MySqlCommand("SELECT Barcode FROM ProductQuantity;", conn, tx);
             using var reader = await cmd.ExecuteReaderAsync(cancellationToken);
-            if (!await reader.ReadAsync(cancellationToken))
-                return null;
+            while (await reader.ReadAsync(cancellationToken))
+                barcodes.Add(reader.GetString(0));
 
-            return (reader.GetInt64(0), reader.GetInt64(1));
+            return barcodes;
         }
 
         private static async Task InsertProductQuantityAsync(
@@ -209,88 +409,6 @@ namespace MyWPFCRUDApp.Services
             cmd.Parameters.AddWithValue("@barcode", barcode);
             cmd.Parameters.AddWithValue("@minSelling", minSelling);
             cmd.Parameters.AddWithValue("@quantity", quantity);
-            await cmd.ExecuteNonQueryAsync(cancellationToken);
-        }
-
-        private static async Task UpdateProductQuantityAsync(
-            MySqlConnection conn, MySqlTransaction tx, string barcode,
-            long minSelling, long quantity, CancellationToken cancellationToken)
-        {
-            const string sql = @"
-                UPDATE ProductQuantity
-                SET Quantity = @quantity,
-                    MinimumSellingQuantity = @minSelling,
-                    ModifiedBy = 'CloudSync',
-                    ModifiedDate = CURRENT_TIMESTAMP
-                WHERE Barcode = @barcode;";
-
-            using var cmd = new MySqlCommand(sql, conn, tx);
-            cmd.Parameters.AddWithValue("@quantity", quantity);
-            cmd.Parameters.AddWithValue("@minSelling", minSelling);
-            cmd.Parameters.AddWithValue("@barcode", barcode);
-            await cmd.ExecuteNonQueryAsync(cancellationToken);
-        }
-
-        /// <summary>
-        /// Deletes every row currently in the local <paramref name="table"/> and
-        /// replaces it with an exact copy of the cloud table's rows, including the
-        /// cloud's own <paramref name="idColumn"/> values (no remapping, no
-        /// tracking - the cloud is the source of truth for this table).
-        /// </summary>
-        private static async Task PullTableFullReplaceAsync(
-            MySqlConnection cloudConn,
-            MySqlConnection localConn,
-            MySqlTransaction localTx,
-            string table,
-            string idColumn,
-            IProgress<string>? progress,
-            CancellationToken cancellationToken)
-        {
-            await DeleteAllRowsAsync(localConn, localTx, table, cancellationToken);
-
-            var cloudRows = new DataTable();
-            using (var adapter = new MySqlDataAdapter($"SELECT * FROM `{table}`;", cloudConn))
-            {
-                adapter.Fill(cloudRows);
-            }
-
-            if (cloudRows.Rows.Count == 0)
-            {
-                progress?.Report($"{table}: local table cleared, nothing in the cloud to copy.");
-                return;
-            }
-
-            var localColumns = await GetLocalColumnsAsync(localConn, localTx, table, cancellationToken);
-
-            var columnsToInsert = cloudRows.Columns
-                .Cast<DataColumn>()
-                .Select(c => c.ColumnName)
-                .Where(c => localColumns.Contains(c)) // idColumn included - Ids are carried over as-is.
-                .ToList();
-
-            int inserted = 0;
-
-            foreach (DataRow row in cloudRows.Rows)
-            {
-                cancellationToken.ThrowIfCancellationRequested();
-
-                var values = new Dictionary<string, object?>();
-                foreach (var col in columnsToInsert)
-                {
-                    values[col] = row[col] == DBNull.Value ? null : row[col];
-                }
-
-                await InsertRowAsync(localConn, localTx, table, values, cancellationToken);
-                inserted++;
-            }
-
-            progress?.Report($"{table}: local table cleared, {inserted} row(s) copied from cloud.");
-        }
-
-        private static async Task DeleteAllRowsAsync(
-            MySqlConnection conn, MySqlTransaction tx, string table, CancellationToken cancellationToken)
-        {
-            using var cmd = new MySqlCommand($"DELETE FROM `{table}`;", conn, tx);
             await cmd.ExecuteNonQueryAsync(cancellationToken);
         }
 

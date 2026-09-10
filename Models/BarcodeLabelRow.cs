@@ -13,17 +13,43 @@ namespace MyWPFCRUDApp.Views
     //
     // NOTE: this is the single canonical BarcodeLabelRow for the project. A
     // second, incompatible class with the same name used to also exist in
-    // MyWPFCRUDApp.Models — that one should be deleted (or renamed) since a
-    // duplicate type name across namespaces is a silent-bug trap: whichever
-    // namespace a file already belongs to wins name resolution over a `using`
-    // import, with no compiler warning.
+    // MyWPFCRUDApp.Models — that one has been deleted (see the comment left in
+    // its place) since a duplicate type name across namespaces is a silent-bug
+    // trap: whichever namespace a file already belongs to wins name resolution
+    // over a `using` import, with no compiler warning.
     // ════════════════════════════════════════════════════════════════════════
     public class BarcodeLabelRow : INotifyPropertyChanged
     {
         public string Barcode { get; set; } = string.Empty;
-        public double Quantity { get; set; }
         public string ProductName { get; set; } = string.Empty;
         public BitmapSource? BarcodeImage { get; set; }
+
+        // ── Quantity ─────────────────────────────────────────────────────────
+        // Quantity: the original invoice quantity for this line. Read-only in
+        // the grid — kept purely as reference so the user can see what was
+        // actually purchased.
+        public double Quantity { get; set; }
+
+        // PrintQuantity: how many labels to actually print for this row.
+        // Seeded from Quantity in BuildRow(), but independently editable in
+        // the "Print Qty" grid column, so printing fewer labels than were
+        // purchased (e.g. only 5 of 20 units still need a fresh barcode)
+        // no longer wastes label stock. Clamped to >= 0 — negative counts
+        // don't mean anything for a print run.
+        private double _printQuantity;
+        public double PrintQuantity
+        {
+            get => _printQuantity;
+            set
+            {
+                double clamped = value < 0 ? 0 : value;
+                if (_printQuantity != clamped)
+                {
+                    _printQuantity = clamped;
+                    OnPropertyChanged();
+                }
+            }
+        }
 
         // ── Pricing ──────────────────────────────────────────────────────────
         public decimal MRP { get; set; }
@@ -72,9 +98,10 @@ namespace MyWPFCRUDApp.Views
 
     // ════════════════════════════════════════════════════════════════════════
     // BarcodeColumnOption — one checkbox in the "Columns" picker on the left
-    // panel. IsMandatory columns (Barcode/Product Name/Quantity) are always on
-    // and rendered directly in XAML — this list is only the OPTIONAL columns
-    // that get added to / removed from LabelsGrid.Columns as they're toggled.
+    // panel. IsMandatory columns (Barcode/Product Name/Inv. Qty/Print Qty) are
+    // always on and rendered directly in XAML — this list is only the OPTIONAL
+    // columns that get added to / removed from LabelsGrid.Columns as they're
+    // toggled.
     // ════════════════════════════════════════════════════════════════════════
     public class BarcodeColumnOption : INotifyPropertyChanged
     {
@@ -104,3 +131,15 @@ namespace MyWPFCRUDApp.Views
             => PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(name));
     }
 }
+
+// ════════════════════════════════════════════════════════════════════════════
+// DELETE MyWPFCRUDApp/Models/BarcodeLabelRow.cs
+// ════════════════════════════════════════════════════════════════════════════
+// That file previously contained a second, incompatible `BarcodeLabelRow`
+// class in the `MyWPFCRUDApp.Models` namespace (Barcode/Quantity/ProductName/
+// MRP/Retail/BarcodeImage/IsLabelVisible, no PrintQuantity). It was never
+// constructed anywhere — BuildRow() in BarcodeLabelsWindow.xaml.cs always
+// builds the Views.BarcodeLabelRow above — so it was dead code sitting in the
+// project as a silent-bug trap (a duplicate type name across namespaces wins
+// or loses `using` resolution unpredictably, with zero compiler warning).
+// Simply delete that file from the project; nothing references it.

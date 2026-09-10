@@ -79,7 +79,16 @@ namespace MyWPFCRUDApp.Views
             }
         }
 
-        private async void PullFromCloud_Click(object sender, RoutedEventArgs e)
+        /// <summary>
+        /// Single-button sync: pulls whatever's new from the cloud first (additive,
+        /// non-destructive to local data), then pushes the resulting local state up
+        /// to the cloud (which replaces the cloud's data entirely). If the pull
+        /// fails, the push is skipped - no point pushing before we know local is
+        /// caught up. If the pull succeeds but the push fails, local already has
+        /// the pulled data (that part committed on its own), only the push is
+        /// rolled back.
+        /// </summary>
+        private async void SyncWithCloud_Click(object sender, RoutedEventArgs e)
         {
             if (string.IsNullOrWhiteSpace(CloudSyncService.CloudConnectionString))
             {
@@ -92,79 +101,38 @@ namespace MyWPFCRUDApp.Views
             }
 
             var confirm = MessageBox.Show(
-                "This will add any new customers, purchases, payments, and product " +
-                "quantities from the cloud into your local database. Existing local " +
-                "data is not changed or removed. Continue?",
-                "Confirm Pull From Cloud",
-                MessageBoxButton.YesNo,
-                MessageBoxImage.Question);
-
-            if (confirm != MessageBoxResult.Yes)
-                return;
-
-            BtnPushToCloud.IsEnabled = false;
-            BtnPullFromCloud.IsEnabled = false;
-            BtnSaveSettings.IsEnabled = false;
-            var progress = new Progress<string>(msg => StatusText.Text = msg);
-
-            try
-            {
-                await CloudPullService.PullCustomerDataFromCloudAsync(progress);
-                MessageBox.Show(
-                    "Pull from cloud completed successfully.",
-                    "Done",
-                    MessageBoxButton.OK,
-                    MessageBoxImage.Information);
-            }
-            catch (Exception ex)
-            {
-                MessageBox.Show(
-                    $"Pull failed and was rolled back:\n{ex.Message}",
-                    "Pull Error",
-                    MessageBoxButton.OK,
-                    MessageBoxImage.Error);
-            }
-            finally
-            {
-                BtnPushToCloud.IsEnabled = true;
-                BtnPullFromCloud.IsEnabled = true;
-                BtnSaveSettings.IsEnabled = true;
-            }
-        }
-
-        private async void PushToCloud_Click(object sender, RoutedEventArgs e)
-        {
-            // Make sure we actually have a connection string to use - either just
-            // saved in this session, or loaded at app startup from a previous save.
-            if (string.IsNullOrWhiteSpace(CloudSyncService.CloudConnectionString))
-            {
-                MessageBox.Show(
-                    "Save your cloud connection settings first.",
-                    "Missing Settings",
-                    MessageBoxButton.OK,
-                    MessageBoxImage.Warning);
-                return;
-            }
-
-            var confirm = MessageBox.Show(
-                "This will permanently erase all data currently in the cloud database " +
-                "and replace it with your local data. This cannot be undone. Continue?",
-                "Confirm Cloud Sync",
+                "This will first pull any new customers, purchases, payments, and " +
+                "product quantities from the cloud into your local database " +
+                "(existing local data is not changed or removed), and then push the " +
+                "resulting local data up to the cloud, permanently erasing whatever " +
+                "is currently in the cloud database and replacing it. This cannot be " +
+                "undone. Continue?",
+                "Confirm Sync With Cloud",
                 MessageBoxButton.YesNo,
                 MessageBoxImage.Warning);
 
             if (confirm != MessageBoxResult.Yes)
                 return;
 
-            BtnPushToCloud.IsEnabled = false;
+            BtnSyncWithCloud.IsEnabled = false;
             BtnSaveSettings.IsEnabled = false;
-            var progress = new Progress<string>(msg => StatusText.Text = msg);
+
+            // Declared as IProgress<string> (not var/Progress<string>) so .Report(...)
+            // is visible below - Progress<T> only implements Report via the explicit
+            // interface IProgress<T>.Report, it's not a public instance method.
+            IProgress<string> progress = new Progress<string>(msg => StatusText.Text = msg);
 
             try
             {
+                progress.Report("Starting sync: pulling from cloud...");
+                await CloudPullService.PullCustomerDataFromCloudAsync(progress);
+
+                progress.Report("Pull complete. Pushing local data to cloud...");
                 await CloudSyncService.SyncLocalToCloudAsync(progress);
+
                 MessageBox.Show(
-                    "Cloud sync completed successfully.",
+                    "Sync completed successfully: pulled new data from the cloud, " +
+                    "then pushed the local database up to the cloud.",
                     "Done",
                     MessageBoxButton.OK,
                     MessageBoxImage.Information);
@@ -179,7 +147,7 @@ namespace MyWPFCRUDApp.Views
             }
             finally
             {
-                BtnPushToCloud.IsEnabled = true;
+                BtnSyncWithCloud.IsEnabled = true;
                 BtnSaveSettings.IsEnabled = true;
             }
         }

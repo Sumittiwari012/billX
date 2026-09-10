@@ -33,18 +33,11 @@
                     Background="#EDE8DC" Foreground="#1B2A4A"
                     BorderBrush="#C4B99A" Cursor="Hand"/>
 
-            <Button x:Name="BtnPushToCloud"
-                    Content="Push Local Data to Cloud"
-                    Click="PushToCloud_Click"
-                    Padding="12,8" Margin="0,0,10,0"
-                    Background="#1B2A4A" Foreground="White"
-                    BorderThickness="0" Cursor="Hand"/>
-
-            <Button x:Name="BtnPullFromCloud"
-                    Content="Pull New Sales From Cloud"
-                    Click="PullFromCloud_Click"
+            <Button x:Name="BtnSyncWithCloud"
+                    Content="Sync With Cloud"
+                    Click="SyncWithCloud_Click"
                     Padding="12,8"
-                    Background="#2C6B4B" Foreground="White"
+                    Background="#1B2A4A" Foreground="White"
                     BorderThickness="0" Cursor="Hand"/>
         </StackPanel>
 

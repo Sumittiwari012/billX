@@ -57,10 +57,13 @@
 
                 <!-- Select All / Unselect All — rows start unselected by default
                      (see BuildRow in code-behind), these give a quick way to
-                     bulk-select instead of checking every "Print?" box by hand. -->
+                     bulk-select instead of checking every "Print?" box by hand.
+                     "Reset Print Qty" restores Print Qty back to the invoice
+                     quantity for every row, undoing any manual edits at once. -->
                 <StackPanel Grid.Row="1" Orientation="Horizontal" Margin="0,0,0,8">
                     <Button Content="Select All" Padding="8,4" Margin="0,0,6,0" Click="SelectAllButton_Click"/>
-                    <Button Content="Unselect All" Padding="8,4" Click="UnselectAllButton_Click"/>
+                    <Button Content="Unselect All" Padding="8,4" Margin="0,0,6,0" Click="UnselectAllButton_Click"/>
+                    <Button Content="Reset Print Qty" Padding="8,4" Click="ResetPrintQuantityButton_Click"/>
                     <TextBlock x:Name="SelectedCountText" VerticalAlignment="Center" Margin="12,0,0,0"
                                FontSize="11" Foreground="#868E96"/>
                 </StackPanel>
@@ -110,7 +113,24 @@
                             </DataGridTextColumn.ElementStyle>
                         </DataGridTextColumn>
 
-                        <DataGridTextColumn Header="Qty" Binding="{Binding Quantity}" Width="70" IsReadOnly="True">
+                        <!-- Read-only reference: what the invoice actually recorded. -->
+                        <DataGridTextColumn Header="Inv. Qty" Binding="{Binding Quantity}" Width="65" IsReadOnly="True">
+                            <DataGridTextColumn.ElementStyle>
+                                <Style TargetType="TextBlock">
+                                    <Setter Property="TextAlignment" Value="Center"/>
+                                    <Setter Property="VerticalAlignment" Value="Center"/>
+                                    <Setter Property="Foreground" Value="#868E96"/>
+                                </Style>
+                            </DataGridTextColumn.ElementStyle>
+                        </DataGridTextColumn>
+
+                        <!-- Editable: how many labels to actually print for this row.
+                             Defaults to Inv. Qty (see BuildRow) but the user can lower
+                             it — e.g. only 5 of 20 units still need a fresh barcode —
+                             without that meaning fewer units were purchased. -->
+                        <DataGridTextColumn Header="Print Qty"
+                                             Binding="{Binding PrintQuantity, UpdateSourceTrigger=PropertyChanged}"
+                                             Width="75" IsReadOnly="False">
                             <DataGridTextColumn.ElementStyle>
                                 <Style TargetType="TextBlock">
                                     <Setter Property="TextAlignment" Value="Center"/>
@@ -118,6 +138,11 @@
                                     <Setter Property="FontWeight" Value="Bold"/>
                                 </Style>
                             </DataGridTextColumn.ElementStyle>
+                            <DataGridTextColumn.EditingElementStyle>
+                                <Style TargetType="TextBox">
+                                    <Setter Property="TextAlignment" Value="Center"/>
+                                </Style>
+                            </DataGridTextColumn.EditingElementStyle>
                         </DataGridTextColumn>
 
                         <!-- Optional columns are inserted here at runtime, in

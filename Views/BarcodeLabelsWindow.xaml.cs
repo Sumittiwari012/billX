@@ -74,6 +74,11 @@ namespace MyWPFCRUDApp.Views
             {
                 Barcode = item.Barcode,
                 Quantity = item.Quantity,
+                // Print Qty starts equal to the invoice quantity — the common
+                // case is "print one label per unit purchased" — but it's a
+                // separate, editable field so the user can dial it down (or up)
+                // per row without touching the invoice record itself.
+                PrintQuantity = item.Quantity,
                 ProductName = item.ProductName,
                 MRP = item.MRP,
                 Retail = item.Retail,
@@ -162,7 +167,7 @@ namespace MyWPFCRUDApp.Views
             }
         }
 
-        // ── Select all / unselect all ────────────────────────────────────────
+        // ── Select all / unselect all / reset print qty ────────────────────
         private void SelectAllButton_Click(object sender, RoutedEventArgs e)
         {
             foreach (var row in _rows) row.IsSelected = true;
@@ -173,6 +178,17 @@ namespace MyWPFCRUDApp.Views
         {
             foreach (var row in _rows) row.IsSelected = false;
             UpdateSelectedCountText();
+        }
+
+        // Restores Print Qty back to each row's original invoice Quantity,
+        // undoing any manual per-row edits in one click.
+        private void ResetPrintQuantityButton_Click(object sender, RoutedEventArgs e)
+        {
+            // Commit any pending in-progress cell edit first, so a value the
+            // user is still typing doesn't clobber the reset a moment later.
+            LabelsGrid.CommitEdit(DataGridEditingUnit.Cell, true);
+
+            foreach (var row in _rows) row.PrintQuantity = row.Quantity;
         }
 
         private void UpdateSelectedCountText()
@@ -266,6 +282,10 @@ namespace MyWPFCRUDApp.Views
         // ── Print selected ───────────────────────────────────────────────────
         private void PrintSelectedButton_Click(object sender, RoutedEventArgs e)
         {
+            // Commit any Print Qty cell the user is mid-edit on, so a value
+            // that hasn't left the TextBox yet still gets used for this run.
+            LabelsGrid.CommitEdit(DataGridEditingUnit.Cell, true);
+
             var rows = _rows.Where(r => r.IsSelected).ToList();
 
             if (rows.Count == 0)
@@ -293,6 +313,13 @@ namespace MyWPFCRUDApp.Views
 
             foreach (var row in rows)
             {
+                // Print Qty drives how many copies go out — not the invoice
+                // Quantity — so a row checked "Print?" but set to 0 is
+                // deliberately skipped rather than defaulting back to "print
+                // everything that was purchased".
+                int copies = (int)Math.Round(row.PrintQuantity, MidpointRounding.AwayFromZero);
+                if (copies <= 0) continue;
+
                 var (visual, widthPx, heightPx) = BuildPrintVisual(row, builtIn, customTemplate);
 
                 pd.PrintTicket.PageMediaSize = new PageMediaSize(widthPx, heightPx);
@@ -300,14 +327,18 @@ namespace MyWPFCRUDApp.Views
                 visual.Arrange(new Rect(0, 0, widthPx, heightPx));
                 visual.UpdateLayout();
 
-                double copies = row.Quantity;
-                if (copies < 1) copies = 1;
-
                 for (int i = 0; i < copies; i++)
                 {
                     pd.PrintVisual(visual, $"Barcode Label – {row.ProductName} [{row.Barcode}]");
                     printed++;
                 }
+            }
+
+            if (printed == 0)
+            {
+                MessageBox.Show(this, "All selected rows have a Print Qty of 0 — nothing was sent to the printer.",
+                    "Nothing printed", MessageBoxButton.OK, MessageBoxImage.Information);
+                return;
             }
 
             MessageBox.Show(this, $"{printed} label(s) sent to \"{queue.FullName}\".",
