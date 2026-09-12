@@ -12,7 +12,7 @@ namespace MyWPFCRUDApp.ViewModels
 {
     public class SubOption
     {
-        
+
         public string Name { get; set; }
         public string Section { get; set; }
         public string Icon { get; set; }
@@ -120,6 +120,7 @@ namespace MyWPFCRUDApp.ViewModels
             ["WhatsApp"] = "💬",
             ["Printer Setting"] = "🖨️",
             ["Payment Setting"] = "💰",
+            ["Backup Settings"] = "🗄️",
             // Tax
             ["Tax Type"] = "🏷️",
             ["GSTR1"] = "📜",
@@ -133,9 +134,9 @@ namespace MyWPFCRUDApp.ViewModels
             ["inventory"] = ("Inventory", new[] { "Stock Entry", "Stock Adjustment", "Branch Stock Inward", "Branch Stock Outward" }),
             ["banking"] = ("Banking", new[] { "Bank Master", "Branch Master", "Bank Account Registration", "Fund Deposit", "Fund Transfer", "Payment Withdrawal", "Account Statement" }),
             ["reports"] = ("Reports", new[] { "Supplier Ledger", "Customer Ledger", "Cash Ledger", "Income Report", "Expense Report", "Sales Report", "Purchase Report", "Balance Sheet", "Profit & Loss", "Trial Balance", "Low Stock Item" }),
-            ["settings"] = ("Settings", new[] {"Add Company", "Terminal Settings", "Sales Invoice Settings", "Auto Round Off", "WhatsApp", "Printer Setting", "Payment Setting", "Cloud Sync" }),
+            ["settings"] = ("Settings", new[] { "Add Company", "Terminal Settings", "Sales Invoice Settings", "Auto Round Off", "WhatsApp", "Printer Setting", "Payment Setting", "Backup Settings", "Cloud Sync" }),
             ["tax"] = ("Tax", new[] { "Tax Type", "GSTR1", "GSTR3B" }),
-            ["user"]= ("User", new[] { "User Type", "User", "Counter Settings","Petty Cash","Login/Logout" })
+            ["user"] = ("User", new[] { "User Type", "User", "Counter Settings", "Petty Cash", "Login/Logout" })
         };
 
         public MainViewModel()
@@ -223,6 +224,9 @@ namespace MyWPFCRUDApp.ViewModels
                         break;
                     case "Printer Setting":
                         viewType = typeof(PrinterSetting);
+                        break;
+                    case "Backup Settings":
+                        viewType = typeof(BackupSettingsViews);
                         break;
                     case "Cloud Sync":
                         viewType = typeof(CloudSyncSettingsView);
