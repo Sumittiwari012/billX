@@ -18,7 +18,9 @@ namespace MyWPFCRUDApp.Views
 {
     // ────────────────────────────────────────────────────────────────────────
     // One row in the bulk-edit grid. Wraps a real MProducts instance (for
-    // existing products, the SAME instance that will be sent to UpdateProduct;
+    // existing products, a CLONE of the DB record overlaid with whatever the
+    // invoice line's live values are — see BuildRows/CloneProduct — so the
+    // grid always shows what's currently on the invoice, not stale DB data;
     // for brand-new/added-by-variety products, a fresh MProducts with
     // ProductId == 0-equivalent, i.e. IsNew == true, sent to InsertProduct
     // on Save).
@@ -285,10 +287,48 @@ namespace MyWPFCRUDApp.Views
             {
                 if (item.ProductId > 0)
                 {
-                    var existing = allProducts.FirstOrDefault(p => p.Id == item.ProductId)
-                                   ?? _productService.GetByBarcode(item.Barcode);
-                    if (existing != null)
+                    var master = allProducts.FirstOrDefault(p => p.Id == item.ProductId)
+                                 ?? _productService.GetByBarcode(item.Barcode);
+                    if (master != null)
                     {
+                        // FIX: previously this row was built straight from
+                        // `master` — whatever is currently saved in the
+                        // database — completely ignoring any edits the user
+                        // just made directly in the Purchase invoice grid
+                        // (Product Name / Wholesale / MRP / Retail / Price).
+                        // That meant opening Bulk Edit right after editing a
+                        // value in the invoice always showed the OLD,
+                        // pre-edit value, and the user had to SAVE INVOICE
+                        // first just to see their own edit reflected here.
+                        //
+                        // Clone the master (never mutate the shared instance
+                        // other parts of the app — dropdowns, Products list —
+                        // may still be holding), then overlay the invoice
+                        // line's live, currently-edited values on top. The
+                        // row shown in Bulk Edit now matches exactly what's
+                        // sitting in the Purchase Views grid at the moment
+                        // the user clicked ✏ Edit — nothing needs to be saved
+                        // first for it to show up here.
+                        var existing = CloneProduct(master);
+
+                        existing.ProductName = string.IsNullOrWhiteSpace(item.ProductName)
+                            ? existing.ProductName : item.ProductName;
+                        existing.PurchasePrice = item.PurchasePrice;
+                        existing.WholesalePrice = item.WholesalePrice;
+                        existing.MRP = item.MRP;
+                        existing.RetailSalePrice = item.Retail;
+
+                        // HSNCode/Size/Colour aren't populated on
+                        // MPurchaseDetail for a plain barcode-scanned/cart-
+                        // added item (only Excel Import fills them), so only
+                        // overlay these when the invoice line actually
+                        // carries a value — otherwise we'd blank out real
+                        // master data with empty defaults for the common
+                        // "just scanned it" case.
+                        if (!string.IsNullOrWhiteSpace(item.HSNCode)) existing.HSNCode = item.HSNCode;
+                        if (!string.IsNullOrWhiteSpace(item.Size)) existing.Size = item.Size;
+                        if (!string.IsNullOrWhiteSpace(item.Colour)) existing.Colour = item.Colour;
+
                         AddRow(existing, isNew: false, sourceInvoiceItem: item);
                         continue;
                     }
@@ -318,6 +358,44 @@ namespace MyWPFCRUDApp.Views
                 AddRow(skeleton, isNew: true, sourceInvoiceItem: item);
             }
         }
+
+        // Shallow copy of every field Bulk Edit / Add Copies / Save cares
+        // about. Used so overlaying the invoice line's live values onto a row
+        // never mutates the actual MProducts instance the rest of the app
+        // (Products list, dropdowns, etc.) might still be referencing.
+        // NOTE: if MProducts has other properties beyond what's listed here,
+        // add them too so they survive into the Bulk Edit grid unchanged.
+        private static MProducts CloneProduct(MProducts source) => new MProducts
+        {
+            Id = source.Id,
+            ProductName = source.ProductName,
+            Barcode = source.Barcode,
+            ProductCode = source.ProductCode,
+            HSNCode = source.HSNCode,
+            PartGroup = source.PartGroup,
+            Description = source.Description,
+            CategoryId = source.CategoryId,
+            SubCategoryId = source.SubCategoryId,
+            UnitId = source.UnitId,
+            PurchasePrice = source.PurchasePrice,
+            RetailSalePrice = source.RetailSalePrice,
+            WholesalePrice = source.WholesalePrice,
+            MRP = source.MRP,
+            DiscountPercentage = source.DiscountPercentage,
+            CGST = source.CGST,
+            SGST = source.SGST,
+            IGST = source.IGST,
+            CESS = source.CESS,
+            Godown = source.Godown,
+            Rack = source.Rack,
+            Batch = source.Batch,
+            MfgDate = source.MfgDate,
+            ExpDate = source.ExpDate,
+            Size = source.Size,
+            Colour = source.Colour,
+            IMEI1 = source.IMEI1,
+            IMEI2 = source.IMEI2
+        };
 
         // insertIndex == null -> append at the end (used when first building
         // the grid from the invoice). Otherwise the row is inserted at that

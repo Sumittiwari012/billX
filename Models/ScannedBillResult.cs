@@ -1,14 +1,15 @@
 using MyWPFCRUDApp.ViewModels;
 using System.Collections.Generic;
+using System.Linq;
 
 namespace MyWPFCRUDApp.Models
 {
-    public class ScannedBillResult:BaseViewModel
+    public class ScannedBillResult : BaseViewModel
     {
         public string InvoiceNumber { get; set; } = "";
-        public string InvoiceDate   { get; set; } = "";
-        public string SupplierName  { get; set; } = "";
-        
+        public string InvoiceDate { get; set; } = "";
+        public string SupplierName { get; set; } = "";
+
         private decimal _grandTotal;
         public decimal GrandTotal
         {
@@ -32,6 +33,15 @@ namespace MyWPFCRUDApp.Models
         {
             get => _description;
             set => SetProperty(ref _description, value);
+        }
+
+        // HSN/SAC code — filled by the AI scan when confident, blank otherwise.
+        // Always editable here since it's a best-effort guess, not authoritative.
+        private string _hsnCode = "";
+        public string HsnCode
+        {
+            get => _hsnCode;
+            set => SetProperty(ref _hsnCode, value);
         }
 
         private double _quantity;

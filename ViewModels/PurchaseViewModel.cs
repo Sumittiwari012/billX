@@ -31,6 +31,23 @@ namespace MyWPFCRUDApp.ViewModels
         // a successful save.
         private bool _invoiceSaved = false;
 
+        // ══════════════════════════════════════════════════════════════════
+        // NEW — snapshot of what THIS invoice's total was worth to the
+        // supplier's wallet at the moment it was loaded:
+        //   • Brand-new invoice (InitializeData)      -> 0
+        //   • Invoice reopened via History             -> master.TotalAmount
+        //     (its previously-saved total, before any edits made this session)
+        //
+        // On SAVE, only the DIFFERENCE between this and the freshly
+        // recalculated PurchaseMaster.TotalAmount is applied to the
+        // supplier's wallet — not a blind full recalculation. If you raise
+        // the invoice total, the wallet balance goes up by exactly that much
+        // more; if you lower it, the wallet goes down by exactly that much
+        // less. This only ever runs inside SavePurchase(), which is only
+        // ever triggered by clicking SAVE.
+        // ══════════════════════════════════════════════════════════════════
+        private decimal _originalInvoiceTotal = 0m;
+
         // Product-master changes staged by Bulk Edit — nothing here hits the
         // database until SavePurchase() runs (SAVE INVOICE), matching the
         // rule that Bulk Edit itself never writes to the DB.
@@ -693,6 +710,14 @@ namespace MyWPFCRUDApp.ViewModels
             // again (until it's actually saved once via this session).
             _invoiceSaved = false;
 
+            // NEW — snapshot this invoice's PREVIOUSLY SAVED total, before any
+            // edits in this session. On Save, only the difference between
+            // this and the newly recalculated total moves the supplier's
+            // wallet — not the invoice's full amount again (that would double
+            // count what was already applied when this invoice was first
+            // saved).
+            _originalInvoiceTotal = master.TotalAmount;
+
             _editingMasterId = master.Id;
             PurchaseMaster.InvoiceNumber = master.InvoiceNumber;
             PurchaseMaster.VendorInvoiceNumber = master.VendorInvoiceNumber;
@@ -772,9 +797,26 @@ namespace MyWPFCRUDApp.ViewModels
             }
             catch (Exception ex)
             {
+                bool looksLikeAuthError =
+                    ex.Message.Contains("Unauthorized", StringComparison.OrdinalIgnoreCase) ||
+                    ex.Message.Contains("expired_api_key", StringComparison.OrdinalIgnoreCase) ||
+                    ex.Message.Contains("invalid_api_key", StringComparison.OrdinalIgnoreCase) ||
+                    ex.Message.Contains("invalid_request_error", StringComparison.OrdinalIgnoreCase);
+
+                if (looksLikeAuthError)
+                {
+                    MessageBox.Show(ex.Message, "Bill Scan Failed",
+        MessageBoxButton.OK, MessageBoxImage.Warning);
+
+                    var keyWin = new ApiKeySetupWindow { Owner = Application.Current.MainWindow };
+                    keyWin.ShowDialog();
+                    return; // let the user click Scan Bill again after fixing the key
+                }
+
                 MessageBox.Show(
                     $"AI scan failed:\n\n{ex.Message}\n\n" +
-                    "Check your internet connection and Gemini API key (gemini_key.txt).",
+                    "If this keeps happening, click the ⚙ icon next to AI BILL SCAN " +
+                    "to check or update your Groq API key.",
                     "Scan Error", MessageBoxButton.OK, MessageBoxImage.Error);
                 return;
             }
@@ -805,10 +847,20 @@ namespace MyWPFCRUDApp.ViewModels
                     null, System.Globalization.DateTimeStyles.None, out DateTime d))
                 PurchaseMaster.PurchaseDate = d;
 
-            // ── Determine next barcode by reading the LAST product's barcode and
-            //    incrementing its numeric suffix — not by counting total products,
-            //    which breaks if any product was ever deleted or barcodes don't
-            //    start at 1. e.g. last barcode "M10" → next items get M11, M12, ...
+            // ── Determine next barcode ────────────────────────────────────────────
+            // FIX: GetLastBarcode() only sees what's already SAVED in the database.
+            // Scanned items aren't saved until SAVE INVOICE is clicked, so a second
+            // scan (before saving) used to see the same "last barcode" as the first
+            // scan and generate colliding numbers. Now we seed a used-barcode set
+            // from BOTH the product master AND whatever's already sitting in
+            // PurchaseItems (including earlier scans/imports this session), same
+            // approach as ImportItemsFromExcel.
+            var usedBarcodes = new System.Collections.Generic.HashSet<string>(
+                Products.Select(p => p.Barcode).Where(b => !string.IsNullOrWhiteSpace(b)),
+                StringComparer.OrdinalIgnoreCase);
+            foreach (var pi in PurchaseItems)
+                if (!string.IsNullOrWhiteSpace(pi.Barcode)) usedBarcodes.Add(pi.Barcode);
+
             string lastBarcode = _productService.GetLastBarcode();
             string prefix = "GR";
             long nextNumber = 1;
@@ -823,6 +875,18 @@ namespace MyWPFCRUDApp.ViewModels
                 }
             }
 
+            string GenerateBarcode()
+            {
+                string candidate;
+                do
+                {
+                    candidate = $"{prefix}{nextNumber}";
+                    nextNumber++;
+                } while (usedBarcodes.Contains(candidate));
+                usedBarcodes.Add(candidate);
+                return candidate;
+            }
+
             int added = 0;
 
             foreach (var item in approved.Items)
@@ -830,7 +894,7 @@ namespace MyWPFCRUDApp.ViewModels
                 double qty = item.Quantity > 0 ? item.Quantity : 1;
                 decimal price = item.PurchasePrice;
                 decimal netAmt = (decimal)qty * price;
-                string barcode = $"{prefix}{nextNumber + added}";
+                string barcode = GenerateBarcode();
 
                 PurchaseItems.Add(new MPurchaseDetail
                 {
@@ -1023,6 +1087,11 @@ namespace MyWPFCRUDApp.ViewModels
         {
             // NEW — a brand-new / blank invoice is always save-able.
             _invoiceSaved = false;
+
+            // NEW — a brand-new invoice hasn't contributed anything to any
+            // supplier's wallet yet, so the entire computed total (once
+            // Save succeeds) counts as the "difference" to apply.
+            _originalInvoiceTotal = 0m;
 
             string nextInvoice = "";
             string nextVendorInvoice = "";          // ← NEW
@@ -1259,6 +1328,12 @@ namespace MyWPFCRUDApp.ViewModels
                 }
             }
 
+            // NEW — make sure PurchaseMaster.TotalAmount reflects every edit
+            // made in this session (including any new products just created
+            // above) before we snapshot it for the wallet-difference
+            // calculation and persist it to the DB.
+            RecalculateTotal();
+
             PurchaseMaster.PaymentMode = PaymentMethod;
             PurchaseMaster.AmountPaid = AmountPaid;
             PurchaseMaster.SupplierId = SelectedSupplier.Id;
@@ -1275,12 +1350,17 @@ namespace MyWPFCRUDApp.ViewModels
             {
                 if (_editingMasterId > 0)
                 {
-                    // UPDATE existing invoice — no supplier balance change
+                    // UPDATE existing invoice — supplier wallet is adjusted
+                    // below by the DIFFERENCE in total, not recalculated
+                    // from scratch.
                     success = _purchaseService.UpdatePurchase(_editingMasterId, PurchaseMaster);
                 }
                 else
                 {
-                    // INSERT new invoice + adjust supplier balance
+                    // INSERT new invoice — supplier wallet is adjusted below
+                    // too; since _originalInvoiceTotal is 0 for a new
+                    // invoice, the "difference" applied is simply the full
+                    // invoice total, same net effect as before.
                     success = _purchaseService.AddPurchase(PurchaseMaster);
                 }
             }
@@ -1298,9 +1378,35 @@ namespace MyWPFCRUDApp.ViewModels
                 _pendingProductUpdates.Clear();
                 _pendingProductDeletes.Clear();
 
-                decimal newBalance = _supplierService.RecalculateAndUpdateSupplierBalance(SelectedSupplier.Id);
+                // ══════════════════════════════════════════════════════════
+                // NEW — supplier wallet adjustment, ONLY on a successful
+                // SAVE, and ONLY by the amount this invoice's total actually
+                // changed by:
+                //   • If the new total is HIGHER than what this invoice was
+                //     last saved as (or 0, for a brand-new invoice), the
+                //     positive difference is ADDED to the wallet.
+                //   • If the new total is LOWER, the (negative) difference
+                //     is subtracted — i.e. the wallet goes down.
+                //   • No change in total → no wallet call at all.
+                // ══════════════════════════════════════════════════════════
+                decimal totalDifference = PurchaseMaster.TotalAmount - _originalInvoiceTotal;
+
+                decimal newBalance = SupplierBalance;
+                if (totalDifference != 0)
+                {
+                    newBalance = _supplierService.AdjustSupplierBalance(
+                        SelectedSupplier.Id, totalDifference);
+                }
+
                 SupplierBalance = newBalance;
                 SelectedSupplier.CurrentBalance = newBalance;
+
+                // This invoice's total is now the new baseline — if the user
+                // saves again in the same session (edits it further, then
+                // clicks SAVE again — normally blocked by _invoiceSaved, but
+                // kept correct in case that flow ever changes), future diffs
+                // are computed from this point.
+                _originalInvoiceTotal = PurchaseMaster.TotalAmount;
 
                 // NEW — lock this invoice against further saves until Reset /
                 // a new invoice / a history invoice is loaded.
@@ -1442,7 +1548,7 @@ namespace MyWPFCRUDApp.ViewModels
             _pendingProductInserts.Clear();
             _pendingProductUpdates.Clear();
             _pendingProductDeletes.Clear();
-            InitializeData();
+            InitializeData();       // also resets _originalInvoiceTotal to 0
             SelectedSupplier = null;
             SupplierHistory = new ObservableCollection<MPurchaseMaster>();
             IsHistoryOpen = false;

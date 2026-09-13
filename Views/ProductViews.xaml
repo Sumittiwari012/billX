@@ -57,6 +57,7 @@
             <ScrollViewer HorizontalScrollBarVisibility="Auto">
                 <StackPanel>
                     <!-- Header Row -->
+                    <!-- Header Row -->
                     <StackPanel Orientation="Horizontal">
                         <TextBlock Text="Barcode"      Width="120" Margin="5" FontWeight="Bold"/>
                         <TextBlock Text="Product Code" Width="120" Margin="5" FontWeight="Bold"/>
@@ -73,6 +74,8 @@
                         <TextBlock Text="Size"         Width="80"  Margin="5" FontWeight="Bold"/>
                         <TextBlock Text="Quantity"     Width="90"  Margin="5" FontWeight="Bold"/>
                         <TextBlock Text="Colour"       Width="100" Margin="5" FontWeight="Bold"/>
+                        <TextBlock Text="Rack"         Width="100" Margin="5" FontWeight="Bold"/>
+                        <TextBlock Text="HSN Code"     Width="100" Margin="5" FontWeight="Bold"/>
                         <TextBlock Text="DiscountPercentage" Width="100" Margin="5" FontWeight="Bold"/>
                     </StackPanel>
                     <!-- Entry Controls Row -->
@@ -247,6 +250,17 @@
         Background="#FFE8F4FD"
         Foreground="#FF1565C0"
         FontWeight="Bold"/>
+            <Button Content="🔍 Filter"
+        Click="FilterButton_Click"
+        Width="100" Height="35" Margin="5"
+        Background="#FFEFEFEF"/>
+
+            <Button Content="✖ Clear Filter"
+        Click="ClearFilterButton_Click"
+        Width="120" Height="35" Margin="5"
+        Background="#FFFFE5E5"
+        Foreground="DarkRed"
+        Visibility="{Binding ClearFilterVisibility}"/>
             <Button Content="Reset"
                     Command="{Binding ProductResetCommand}"
                     Width="100" Height="35" Margin="5"

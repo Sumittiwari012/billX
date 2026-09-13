@@ -20,6 +20,18 @@ namespace MyWPFCRUDApp.Views
         private long _defaultSubCategoryId = 1;
         private long _defaultUnitId = 1;
 
+        // When true, Save_Click builds the MProducts object and hands it back
+        // via NewProduct WITHOUT inserting it into the database. Set only by
+        // the barcode-scan constructor — that flow must stage the product and
+        // let PurchaseViewModel commit it inside SavePurchase() (SAVE INVOICE),
+        // exactly like Bulk Edit and Excel Import already do. Nothing should
+        // hit the DB just because this dialog's Save button was clicked.
+        private readonly bool _deferDatabaseInsert;
+
+        // Populated only when _deferDatabaseInsert is true and Save succeeded.
+        // The caller reads this after ShowDialog() returns true.
+        public MProducts NewProduct { get; private set; }
+
         // ── Constructor: default (from Products page) ─────────────────────────
         public AddProductWindow()
         {
@@ -29,25 +41,33 @@ namespace MyWPFCRUDApp.Views
         }
 
         // ── Constructor: from barcode scan flow ───────────────────────────────
+        // Called only from PurchaseViewModel.HandleBarcodeSearch when the
+        // scanned/typed value in "SCAN BARCODE / SEARCH" doesn't match any
+        // existing product. That value IS the barcode the user is trying to
+        // register — it should never be reinterpreted as a product name or
+        // replaced with a freshly generated M-series id, no matter what
+        // characters it contains (purely numeric, alphanumeric, a vendor's
+        // own barcode format, etc.). The previous "looksLikeBarcode" digit
+        // check was wrongly routing anything non-numeric (or under 4 chars)
+        // into the Product Name box instead, then silently overwriting it
+        // with a new auto-generated barcode — losing the real scanned value
+        // and breaking the barcode reference this invoice line is keyed on.
+        //
+        // This constructor also defers the actual DB insert (see
+        // _deferDatabaseInsert) — the product is only staged in-memory and
+        // returned via NewProduct. It is only written to the database when
+        // the invoice itself is saved via SAVE INVOICE.
         public AddProductWindow(string barcodeOrName)
         {
             InitializeComponent();
             LoadInitialData();
 
+            _deferDatabaseInsert = true;
+
             if (!string.IsNullOrWhiteSpace(barcodeOrName))
             {
-                bool looksLikeBarcode = barcodeOrName.All(c => char.IsDigit(c))
-                                        && barcodeOrName.Length >= 4;
-                if (looksLikeBarcode)
-                {
-                    _autoBarcode = barcodeOrName;
-                    TxtBarcode.Text = barcodeOrName;
-                }
-                else
-                {
-                    TxtName.Text = barcodeOrName;
-                    GenerateBarcode();
-                }
+                _autoBarcode = barcodeOrName.Trim();
+                TxtBarcode.Text = _autoBarcode;
             }
             else
             {
@@ -125,6 +145,9 @@ namespace MyWPFCRUDApp.Views
                 : TxtBarcode.Text.Trim();
 
             // ── Duplicate barcode check ───────────────────────────────────────
+            // Still checked against the real DB even in deferred mode, so the
+            // user is warned up front if this barcode already exists there —
+            // even though nothing gets written yet.
             if (_productService.GetByBarcode(barcode) != null)
             {
                 MessageBox.Show(
@@ -162,6 +185,19 @@ namespace MyWPFCRUDApp.Views
                 IGST = 0,
                 CESS = 0,
             };
+
+            if (_deferDatabaseInsert)
+            {
+                // Staged only. The caller (PurchaseViewModel) decides when this
+                // actually hits the database — normally inside SavePurchase()
+                // when SAVE INVOICE is clicked. Cancelling the invoice, or
+                // never clicking SAVE INVOICE, means this product is never
+                // written anywhere.
+                NewProduct = product;
+                DialogResult = true;
+                Close();
+                return;
+            }
 
             if (_productService.InsertProduct(product))
             {

@@ -73,21 +73,18 @@
 
                     <Label Content="CGST (%)"/>
                     <TextBox Height="28"
-                 Margin="0,0,0,10"
-                 Text="{Binding MTaxCategory.CGST,
-                                UpdateSourceTrigger=PropertyChanged}" />
+         Margin="0,0,0,10"
+         Text="{Binding MTaxCategory.CGST, UpdateSourceTrigger=LostFocus}" />
 
                     <Label Content="SGST (%)"/>
                     <TextBox Height="28"
-                 Margin="0,0,0,10"
-                 Text="{Binding MTaxCategory.SGST,
-                                UpdateSourceTrigger=PropertyChanged}" />
+         Margin="0,0,0,10"
+         Text="{Binding MTaxCategory.SGST, UpdateSourceTrigger=LostFocus}" />
 
                     <Label Content="IGST (%)"/>
                     <TextBox Height="28"
-                 Margin="0,0,0,20"
-                 Text="{Binding MTaxCategory.IGST,
-                                UpdateSourceTrigger=PropertyChanged}" />
+         Margin="0,0,0,20"
+         Text="{Binding MTaxCategory.IGST, UpdateSourceTrigger=LostFocus}" />
 
                     <Button Content="Save Tax"
                 Command="{Binding TaxSaveCommand}"

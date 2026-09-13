@@ -26,6 +26,31 @@ namespace MyWPFCRUDApp.ViewModels
         public ICommand ExportExcelCommand => new RelayCommand(_ => ExportToExcel());
         public ICommand DeleteSelectedCommand => new RelayCommand(_ => DeleteSelected(), _ => CheckedProducts.Any());
         public ICommand ClearSelectionCommand => new RelayCommand(_ => ClearSelection());
+
+        // ─── Filtering ─────────────────────────────────────────────────────────
+        // The column/value pair chosen via the Filter window (FilterProductsWindow).
+        // Kept separate from the barcode search box so the two can combine instead
+        // of silently overwriting each other's result.
+        private (string FieldKey, string Value)? _activeColumnFilter;
+
+        private bool _isFilterActive;
+        public bool IsFilterActive
+        {
+            get => _isFilterActive;
+            private set
+            {
+                if (SetProperty(ref _isFilterActive, value))
+                    OnPropertyChanged(nameof(ClearFilterVisibility));
+            }
+        }
+
+        public Visibility ClearFilterVisibility =>
+            IsFilterActive ? Visibility.Visible : Visibility.Collapsed;
+
+        // Read-only view of the master list for the filter window to build its
+        // "distinct values" dropdown from — never mutated by the window itself.
+        public IReadOnlyList<ProductDisplayModel> AllProductsSnapshot => _allProducts;
+
         private long _quantity;
         public long Quantity
         {
@@ -39,8 +64,9 @@ namespace MyWPFCRUDApp.ViewModels
                 }
             }
         }
-        // Master, unfiltered list — the source of truth for the live barcode filter.
-        // Products is always derived from this, never edited directly.
+        // Master, unfiltered list — the source of truth for both the live barcode
+        // filter and the column filter. Products is always derived from this via
+        // RecomputeVisibleProducts(), never edited directly.
         private List<ProductDisplayModel> _allProducts = new();
 
         // The barcode auto-generated for the next new product. Restored into
@@ -89,7 +115,6 @@ namespace MyWPFCRUDApp.ViewModels
             _checkedProducts.Count > 1 ? Visibility.Visible : Visibility.Collapsed;
 
         // "Select All" header checkbox support
-        // "Select All" header checkbox support
         private bool? _allSelected = false;
         public bool? AllSelected
         {
@@ -122,32 +147,99 @@ namespace MyWPFCRUDApp.ViewModels
             }
         }
 
+        // Delegates to RecomputeVisibleProducts() so the barcode search combines
+        // with any active column filter instead of overwriting it.
         private void FilterProductsByBarcode(string barcodeText)
         {
             if (_allProducts == null) return;
 
             if (string.IsNullOrWhiteSpace(barcodeText))
             {
-                // Box was cleared — show every product, and bring back whatever
-                // barcode was waiting before the user started typing.
-                Products = new ObservableCollection<ProductDisplayModel>(_allProducts);
+                // Box was cleared — recompute (column filter, if any, still
+                // applies), and bring back whatever barcode was waiting before
+                // the user started typing.
+                RecomputeVisibleProducts();
 
                 if (!string.IsNullOrWhiteSpace(_lastGeneratedBarcode))
                     BarcodeInput = _lastGeneratedBarcode;   // re-enters setter once; non-empty, so no further recursion
                 return;
             }
 
-            var matches = _allProducts
-                .Where(p => !string.IsNullOrEmpty(p.Barcode) &&
-                            p.Barcode.IndexOf(barcodeText, StringComparison.OrdinalIgnoreCase) >= 0)
-                .ToList();
+            RecomputeVisibleProducts();
+        }
 
-            // Found something → narrow the grid. Found nothing → this is a brand
-            // new barcode, so show everything as-is and let the user fill in the
-            // rest of the form to add it as a new product.
-            Products = matches.Any()
-                ? new ObservableCollection<ProductDisplayModel>(matches)
-                : new ObservableCollection<ProductDisplayModel>(_allProducts);
+        // Single place that combines the column filter (Filter button) with the
+        // live barcode search box, so neither one silently undoes the other.
+        private void RecomputeVisibleProducts()
+        {
+            if (_allProducts == null) return;
+
+            IEnumerable<ProductDisplayModel> query = _allProducts;
+
+            if (_activeColumnFilter.HasValue)
+            {
+                var (fieldKey, value) = _activeColumnFilter.Value;
+                query = query.Where(p => string.Equals(GetFieldValue(p, fieldKey), value, StringComparison.OrdinalIgnoreCase));
+            }
+
+            // Only treat the barcode box as an active search when it holds
+            // something the user actually typed — NOT the auto-generated
+            // "next barcode" that GenerateNextBarcode() pre-fills for a
+            // brand-new product entry. That placeholder never matches any
+            // existing product, so treating it as a live search silently
+            // emptied the grid the instant a column filter was applied on
+            // top of it.
+            bool isUserBarcodeSearch =
+                !string.IsNullOrWhiteSpace(_barcodeInput) &&
+                !string.Equals(_barcodeInput, _lastGeneratedBarcode, StringComparison.OrdinalIgnoreCase);
+
+            if (isUserBarcodeSearch)
+                query = query.Where(p => !string.IsNullOrEmpty(p.Barcode) &&
+                                          p.Barcode.IndexOf(_barcodeInput, StringComparison.OrdinalIgnoreCase) >= 0);
+
+            var result = query.ToList();
+
+            // Same "found nothing → show everything so a new barcode can be
+            // typed" rule as before, but only when the barcode box is the
+            // active narrowing factor and no column filter is applied — a
+            // genuinely empty column-filter result should stay empty.
+            if (!result.Any() && isUserBarcodeSearch && !_activeColumnFilter.HasValue)
+                result = _allProducts;
+
+            Products = new ObservableCollection<ProductDisplayModel>(result);
+        }
+
+        // Single place that knows how to pull each filterable field off a
+        // ProductDisplayModel — keep this in sync with FilterProductsWindow's
+        // own copy of this switch.
+        private static string GetFieldValue(ProductDisplayModel p, string fieldKey) => fieldKey switch
+        {
+            "ProductName" => p.ProductName,
+            "Barcode" => p.Barcode,
+            "CategoryName" => p.CategoryName,
+            "SubCategoryName" => p.SubCategoryName,
+            "UnitName" => p.UnitName,
+            "Colour" => p.Colour,
+            "Size" => p.Size,
+            "HSNCode" => p.HSNCode,
+            "Rack" => p.Rack,
+            _ => null
+        };
+
+        public void ApplyProductFilter(string fieldKey, string value)
+        {
+            if (_allProducts == null || string.IsNullOrEmpty(fieldKey) || value == null) return;
+
+            _activeColumnFilter = (fieldKey, value);
+            IsFilterActive = true;
+            RecomputeVisibleProducts();
+        }
+
+        public void ClearProductFilter()
+        {
+            _activeColumnFilter = null;
+            IsFilterActive = false;
+            RecomputeVisibleProducts();
         }
 
         // ─── Column Visibility ─────────────────────────────────────────────────
@@ -414,7 +506,6 @@ namespace MyWPFCRUDApp.ViewModels
         }
 
         // ─── LoadData ──────────────────────────────────────────────────────────
-        // ─── LoadData ──────────────────────────────────────────────────────────
         public void LoadData()
         {
             if (_allProducts != null)
@@ -424,6 +515,12 @@ namespace MyWPFCRUDApp.ViewModels
             }
 
             _allProducts = _productService.GetProductDisplay();
+
+            // A fresh load always shows everything — any filter that was
+            // active before this reload no longer applies to the new data.
+            _activeColumnFilter = null;
+            IsFilterActive = false;
+
             Products = new ObservableCollection<ProductDisplayModel>(_allProducts);
 
             foreach (var p in _allProducts)
@@ -905,6 +1002,5 @@ namespace MyWPFCRUDApp.ViewModels
             MessageBox.Show($"{successCount} products imported successfully.");
             LoadData();
         }
-
     }
 }

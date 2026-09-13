@@ -185,5 +185,39 @@ namespace MyWPFCRUDApp.Services
             cmd.Parameters.AddWithValue("@Id", id);
             return cmd.ExecuteNonQuery() > 0;
         }
+        // ══════════════════════════════════════════════════════════════════
+        // Nudges a supplier's stored CurrentBalance by a signed delta, instead
+        // of recomputing it from scratch. Used by PurchaseViewModel.SavePurchase
+        // so that editing an invoice's total only moves the wallet by exactly
+        // what changed on THIS invoice — a positive delta (total went up) adds
+        // to the wallet, a negative delta (total went down) subtracts from it.
+        // Returns the resulting balance so the caller can update its UI-bound
+        // value without a second round-trip.
+        // ══════════════════════════════════════════════════════════════════
+        public decimal AdjustSupplierBalance(long supplierId, decimal delta)
+        {
+            using var conn = new MySqlConnection(Con);
+            conn.Open();
+
+            // Nudge CurrentBalance by the signed delta (positive = invoice total
+            // went up = supplier is owed more; negative = went down = owed less),
+            // then read the resulting value back in the same round-trip so the
+            // caller doesn't need a second query.
+            var sql = @"UPDATE MSupplier SET 
+                CurrentBalance = CurrentBalance + @Delta,
+                ModifiedBy     = 'System',
+                ModifiedDate   = @Now
+              WHERE Id = @SupplierId;
+
+            SELECT CurrentBalance FROM MSupplier WHERE Id = @SupplierId;";
+
+            using var cmd = new MySqlCommand(sql, conn);
+            cmd.Parameters.AddWithValue("@Delta", delta);
+            cmd.Parameters.AddWithValue("@Now", DateTime.Now);
+            cmd.Parameters.AddWithValue("@SupplierId", supplierId);
+
+            var result = cmd.ExecuteScalar();
+            return result != null && result != DBNull.Value ? Convert.ToDecimal(result) : 0m;
+        }
     }
 }

@@ -587,7 +587,12 @@ namespace MyWPFCRUDApp.Services
                 {"customer_purchasemaster_updated","ALTER TABLE MCustomerPurchaseMaster ADD COLUMN CounterId DOUBLE NOT NULL DEFAULT 1;" },
                 {"customer_returndetail_updated","ALTER TABLE MCustomerReturnDetail ADD COLUMN CounterId DOUBLE NOT NULL DEFAULT 1;" },
                 {"customer_returnMaster_updated","ALTER TABLE MCustomerReturnMaster ADD COLUMN CounterId DOUBLE NOT NULL DEFAULT 1;" },
-                {"customer_pettycashloginid_updated","ALTER TABLE MPettyCash ADD COLUMN LoginLogoutId DOUBLE NOT NULL DEFAULT 1;" }
+                {"customer_pettycashloginid_updated","ALTER TABLE MPettyCash ADD COLUMN LoginLogoutId DOUBLE NOT NULL DEFAULT 1;" },
+                {"convert_taxcategory_percentages_to_decimal","ALTER TABLE MTaxCategory " +
+    "MODIFY COLUMN CGST DECIMAL(5,2) NOT NULL DEFAULT 0.00, " +
+    "MODIFY COLUMN SGST DECIMAL(5,2) NOT NULL DEFAULT 0.00, " +
+    "MODIFY COLUMN IGST DECIMAL(5,2) NOT NULL DEFAULT 0.00;"
+}
 
 
         // Future changes go here:

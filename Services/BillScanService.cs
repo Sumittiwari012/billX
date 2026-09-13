@@ -1,6 +1,8 @@
 using MyWPFCRUDApp.Models;
 using System;
+using System.Collections.Generic;
 using System.IO;
+using System.Linq;
 using System.Net.Http;
 using System.Net.Http.Headers;
 using System.Text;
@@ -11,8 +13,10 @@ using System.Threading.Tasks;
 namespace MyWPFCRUDApp.Services
 {
     /// <summary>
-    /// Sends a purchase bill (image or PDF→image) to Groq's
-    /// llama-3.2-11b-vision-preview model and returns a parsed ScannedBillResult.
+    /// Sends a purchase bill (one or more images, or a PDF's pages→images) to
+    /// Groq's qwen/qwen3.6-27b vision model and returns a parsed ScannedBillResult.
+    /// Supports multi-page / multi-photo bills (up to 5 images per Groq's limit)
+    /// so long bills split across several photos or PDF pages can be read as one document.
     /// Key is read from ApiKeyManager — never hardcoded.
     /// </summary>
     public class BillScanService
@@ -20,17 +24,33 @@ namespace MyWPFCRUDApp.Services
         private const string GroqEndpoint =
             "https://api.groq.com/openai/v1/chat/completions";
 
-        private const string Model = "meta-llama/llama-4-scout-17b-16e-instruct";
+        // qwen3.6-27b: current production Groq vision model (llama-4-scout/maverick
+        // are deprecated). Supports up to 5 images/request and native JSON mode.
+        private const string Model = "qwen/qwen3.6-27b";
+
+        // Groq's hard limit for this model.
+        private const int MaxImagesPerRequest = 5;
+
+        // Bills with many rows produce large JSON. 1000 tokens was truncating
+        // mid-array on long bills, and Groq's json_object validator rejects
+        // a truncated response outright (json_validate_failed) before our
+        // finish_reason=="length" fallback below ever gets a chance to run.
+        // Raised to give plenty of headroom for long item lists.
+        private const int MaxCompletionTokens = 900;
 
         private static readonly HttpClient _http = new HttpClient
         {
-            Timeout = TimeSpan.FromSeconds(60)
+            Timeout = TimeSpan.FromSeconds(120)
         };
 
         // ── Smart prompt ──────────────────────────────────────────────────────
         private const string Prompt = @"
 You are a purchase bill parser for an Indian retail billing app.
-Extract all line items from this bill image.
+You may be given MULTIPLE images (photos of one bill from different
+angles, or consecutive pages of the same bill/PDF). Treat them as ONE
+document and merge all line items into a single list, in the order they
+appear across the images. Do not skip or summarize rows — extract every
+single line item, no matter how many there are.
 
 RULES FOR AMBIGUOUS BILLS (no column headers, just numbers):
 - Numbers in range 1–500 are most likely QUANTITY (pieces/units)
@@ -39,54 +59,97 @@ RULES FOR AMBIGUOUS BILLS (no column headers, just numbers):
 - If only 2 numbers per row: first is quantity, second is rate
 - Ignore grand total / subtotal rows at the bottom
 
+HSN CODE:
+- If the bill already prints an HSN/SAC code for a row, use it exactly.
+- If no HSN code is printed, infer the most likely HSN code for that item
+  from its description ONLY if you are reasonably confident (common,
+  well-known goods, e.g. rice, cement, mobile phones, apparel).
+- If you are not confident, leave hsn_code as an empty string. Never
+  fabricate a plausible-looking code — an empty string is preferred over
+  a wrong guess.
+
 Return ONLY valid JSON, no markdown, no backticks, no explanation:
 {
   ""invoice_number"": ""string or empty"",
   ""invoice_date"":   ""DD-MM-YYYY or empty"",
   ""supplier_name"":  ""string or empty"",
   ""items"": [
-    { ""description"": ""string"", ""quantity"": 48, ""purchase_price"": 600, ""amount"": 28800 },
-    { ""description"": ""string"", ""quantity"": 44, ""purchase_price"": 380, ""amount"": 16720 }
+    { ""description"": ""string"", ""hsn_code"": ""string or empty"", ""quantity"": 48, ""purchase_price"": 600, ""amount"": 28800 },
+    { ""description"": ""string"", ""hsn_code"": ""string or empty"", ""quantity"": 44, ""purchase_price"": 380, ""amount"": 16720 }
   ],
   ""grand_total"": 45520
 }";
 
-        // ── Main entry ────────────────────────────────────────────────────────
-        public async Task<ScannedBillResult> ScanBillAsync(string filePath)
+        // ── Main entry: single image (kept for backward compatibility) ────────
+        public Task<ScannedBillResult> ScanBillAsync(string filePath)
+            => ScanBillAsync(new List<string> { filePath });
+
+        // ── Main entry: one or more images / PDF pages of the SAME bill ───────
+        public async Task<ScannedBillResult> ScanBillAsync(IReadOnlyList<string> filePaths)
         {
+            if (filePaths == null || filePaths.Count == 0)
+                throw new ArgumentException("At least one file must be provided.");
+
+            if (filePaths.Count > MaxImagesPerRequest)
+                throw new Exception(
+                    $"This bill has {filePaths.Count} images, but the model only " +
+                    $"accepts {MaxImagesPerRequest} per request. Please split it into " +
+                    $"batches of {MaxImagesPerRequest} or fewer and merge the results.");
+
             string apiKey = ApiKeyManager.GetKey();
             if (string.IsNullOrWhiteSpace(apiKey))
                 throw new Exception("No Groq API key found. Please set it up first.");
 
-            string ext      = Path.GetExtension(filePath).ToLowerInvariant();
-            byte[] bytes    = await File.ReadAllBytesAsync(filePath);
-            string base64   = Convert.ToBase64String(bytes);
-            string mimeType = GetMimeType(ext);
-
-            // Groq vision requires an image — convert PDF page 1 to PNG if needed
-            if (ext == ".pdf")
+            var imageContentBlocks = new List<object>();
+            foreach (var path in filePaths)
             {
-                (base64, mimeType) = await ConvertPdfFirstPageAsync(filePath);
+                string ext = Path.GetExtension(path).ToLowerInvariant();
+                string base64;
+                string mimeType;
+
+                if (ext == ".pdf")
+                {
+                    (base64, mimeType) = await ConvertPdfFirstPageAsync(path);
+                }
+                else
+                {
+                    byte[] bytes = await File.ReadAllBytesAsync(path);
+                    base64 = Convert.ToBase64String(bytes);
+                    mimeType = GetMimeType(ext);
+                }
+
+                string imageUrl = $"data:{mimeType};base64,{base64}";
+                imageContentBlocks.Add(new
+                {
+                    type = "image_url",
+                    image_url = new { url = imageUrl }
+                });
             }
 
-            string imageUrl = $"data:{mimeType};base64,{base64}";
+            // Text prompt first, then all image blocks in order.
+            var content = new List<object> { new { type = "text", text = Prompt } };
+            content.AddRange(imageContentBlocks);
 
-            // Build OpenAI-compatible request body
             var body = new
             {
                 model = Model,
-                max_tokens = 1024,
+                max_completion_tokens = MaxCompletionTokens,
+                temperature = 0.2,
+                response_format = new { type = "json_object" },
+                // qwen3.6-27b defaults to "thinking mode" (reasoning_effort=
+                // "default"), and its chain-of-thought can leak straight into
+                // message.content as <think>...</think> text. Combined with
+                // response_format=json_object, that non-JSON content gets
+                // rejected outright as json_validate_failed (with an empty
+                // failed_generation) — this is NOT the same failure as
+                // truncation from too low a token limit. "none" disables
+                // thinking mode entirely so the model answers directly with
+                // JSON. Groq's Qwen models only accept "none" or "default"
+                // here (not "low"/"medium"/"high").
+                reasoning_effort = "none",
                 messages = new[]
                 {
-                    new
-                    {
-                        role = "user",
-                        content = new object[]
-                        {
-                            new { type = "text",      text      = Prompt },
-                            new { type = "image_url", image_url = new { url = imageUrl } }
-                        }
-                    }
+                    new { role = "user", content = content.ToArray() }
                 }
             };
 
@@ -111,34 +174,48 @@ Return ONLY valid JSON, no markdown, no backticks, no explanation:
         {
             var doc = JsonDocument.Parse(raw);
 
-            // OpenAI format: choices[0].message.content
-            string text = doc.RootElement
-                .GetProperty("choices")[0]
-                .GetProperty("message")
-                .GetProperty("content")
-                .GetString() ?? "";
+            var choice = doc.RootElement.GetProperty("choices")[0];
+            var message = choice.GetProperty("message");
+
+            // If the model was cut off, finish_reason will say "length" —
+            // surface that clearly instead of failing on broken JSON silently.
+            string finishReason = choice.TryGetProperty("finish_reason", out var fr)
+                ? fr.GetString() ?? ""
+                : "";
+
+            string text = message.GetProperty("content").GetString() ?? "";
 
             // Strip any accidental markdown fences
-            text = text
-                .Replace("```json", "")
-                .Replace("```", "")
-                .Trim();
+            text = text.Replace("```json", "").Replace("```", "").Trim();
 
             // Find the JSON object inside the text (model sometimes adds preamble)
             int start = text.IndexOf('{');
-            int end   = text.LastIndexOf('}');
+            int end = text.LastIndexOf('}');
             if (start >= 0 && end > start)
                 text = text.Substring(start, end - start + 1);
 
-            var billJson = JsonNode.Parse(text)
-                ?? throw new Exception("Model returned empty or unparseable JSON.");
+            JsonNode billJson;
+            try
+            {
+                billJson = JsonNode.Parse(text)
+                    ?? throw new Exception("Model returned empty JSON.");
+            }
+            catch (Exception ex)
+            {
+                if (finishReason == "length")
+                    throw new Exception(
+                        "The bill has more line items than fit in one response. " +
+                        "Try scanning it in smaller batches (e.g. split the photo " +
+                        "into top-half/bottom-half) and merge the results.", ex);
+                throw new Exception("Model returned unparseable JSON: " + ex.Message, ex);
+            }
 
             var result = new ScannedBillResult
             {
                 InvoiceNumber = billJson["invoice_number"]?.GetValue<string>() ?? "",
-                InvoiceDate   = billJson["invoice_date"]?.GetValue<string>()   ?? "",
-                SupplierName  = billJson["supplier_name"]?.GetValue<string>()  ?? "",
-                GrandTotal    = SafeDecimal(billJson["grand_total"])
+                InvoiceDate = billJson["invoice_date"]?.GetValue<string>() ?? "",
+                SupplierName = billJson["supplier_name"]?.GetValue<string>() ?? "",
+                GrandTotal = SafeDecimal(billJson["grand_total"])
             };
 
             var items = billJson["items"]?.AsArray();
@@ -147,17 +224,16 @@ Return ONLY valid JSON, no markdown, no backticks, no explanation:
                 foreach (var item in items)
                 {
                     if (item == null) continue;
-                    // Try "purchase_price" first (our key), then "rate" as fallback
-                    // in case the model uses the old key name
                     decimal pp = SafeDecimal(item["purchase_price"]);
                     if (pp == 0) pp = SafeDecimal(item["rate"]);
 
                     result.Items.Add(new ScannedBillItem
                     {
-                        Description   = item["description"]?.GetValue<string>() ?? "",
-                        Quantity      = SafeDouble(item["quantity"]),
+                        Description = item["description"]?.GetValue<string>() ?? "",
+                        HsnCode = item["hsn_code"]?.GetValue<string>() ?? "",
+                        Quantity = SafeDouble(item["quantity"]),
                         PurchasePrice = pp,
-                        Amount        = SafeDecimal(item["amount"])
+                        Amount = SafeDecimal(item["amount"])
                     });
                 }
             }
@@ -180,11 +256,11 @@ Return ONLY valid JSON, no markdown, no backticks, no explanation:
         // ── Helpers ───────────────────────────────────────────────────────────
         private static string GetMimeType(string ext) => ext switch
         {
-            ".jpg"  => "image/jpeg",
+            ".jpg" => "image/jpeg",
             ".jpeg" => "image/jpeg",
-            ".png"  => "image/png",
+            ".png" => "image/png",
             ".webp" => "image/webp",
-            _       => "image/jpeg"
+            _ => "image/jpeg"
         };
 
         private static decimal SafeDecimal(JsonNode node)

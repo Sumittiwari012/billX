@@ -109,5 +109,20 @@ namespace MyWPFCRUDApp.Views
             if (dlg.ShowDialog() == true)
                 _vm.ApplyBulkColumnUpdates(dlg.FieldUpdates);
         }
+        private void FilterButton_Click(object sender, RoutedEventArgs e)
+        {
+            var dlg = new FilterProductsWindow(_vm.AllProductsSnapshot)
+            {
+                Owner = Window.GetWindow(this)
+            };
+
+            if (dlg.ShowDialog() == true)
+                _vm.ApplyProductFilter(dlg.SelectedFieldKey, dlg.SelectedValue);
+        }
+
+        private void ClearFilterButton_Click(object sender, RoutedEventArgs e)
+        {
+            _vm.ClearProductFilter();
+        }
     }
 }
