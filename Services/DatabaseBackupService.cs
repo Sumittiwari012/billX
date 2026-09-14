@@ -1,8 +1,10 @@
 ﻿using MySql.Data.MySqlClient;
+using Microsoft.Win32;
 using MyWPFCRUDApp.Models;
 using System;
 using System.Diagnostics;
 using System.IO;
+using System.Linq;
 using System.Net;
 using System.Net.Mail;
 
@@ -49,9 +51,22 @@ namespace MyWPFCRUDApp.Services
             string outputPath = Path.Combine(settings.BackupFolderPath,
                 string.IsNullOrWhiteSpace(settings.BackupFileName) ? "LatestBackup.sql" : settings.BackupFileName);
 
+            // Auto-locate mysqldump.exe instead of assuming it's on PATH or
+            // relying on a fixed configured path — MySQL's install location
+            // (and even whether it's on PATH at all) varies machine to
+            // machine, which is exactly what caused "The system cannot find
+            // the file specified" here: the app's own working directory was
+            // being searched instead of anywhere MySQL is actually installed.
             string mysqldumpExe = string.IsNullOrWhiteSpace(settings.MySqlDumpExePath)
-                ? "mysqldump" // rely on PATH
+                ? FindMySqlDumpExe()
                 : settings.MySqlDumpExePath;
+
+            if (string.IsNullOrWhiteSpace(mysqldumpExe))
+                return Fail(
+                    "Could not find mysqldump.exe anywhere on this computer (checked PATH, the " +
+                    "Windows registry, and common MySQL/XAMPP/WAMP install folders). " +
+                    "Install MySQL Server (or make sure mysqldump.exe is reachable), " +
+                    "or set its exact path manually in Settings → Backup.");
 
             // Credentials go into a short-lived "defaults extra file" rather
             // than straight onto the command line, so the MySQL password
@@ -75,6 +90,15 @@ namespace MyWPFCRUDApp.Services
                         "--single-transaction --routines --triggers --events " +
                         $"--result-file=\"{outputPath}\" " +
                         $"\"{database}\"",
+                    // Explicit working directory so mysqldump.exe never
+                    // inherits the app's own folder (e.g. "C:\Program Files
+                    // (x86)\HP\BillIX") as its working directory. Use the
+                    // exe's own folder when we resolved a full path to it;
+                    // otherwise fall back to the Windows system directory,
+                    // which always exists.
+                    WorkingDirectory = Path.IsPathRooted(mysqldumpExe)
+                        ? (Path.GetDirectoryName(mysqldumpExe) ?? Environment.SystemDirectory)
+                        : Environment.SystemDirectory,
                     UseShellExecute = false,
                     RedirectStandardError = true,
                     RedirectStandardOutput = true,
@@ -166,6 +190,139 @@ namespace MyWPFCRUDApp.Services
         }
 
         private static BackupResult Fail(string message) => new() { Success = false, Message = message };
+
+        // ════════════════════════════════════════════════════════════════
+        // FindMySqlDumpExe — locates mysqldump.exe without assuming any
+        // fixed install path, since that varies by machine (different MySQL
+        // versions, XAMPP/WAMP instead of a standalone MySQL install,
+        // 32-bit vs 64-bit Program Files, etc). Tried in order, cheapest
+        // and most-likely-correct first:
+        //
+        //   1. Already on PATH — the simplest case, if it works just use it.
+        //   2. The registry, where the official MySQL installer records its
+        //      own install location — the most reliable source when present.
+        //   3. A search across common install root folders for any
+        //      "mysqldump.exe" under them (handles MySQL Server installed
+        //      under Program Files, XAMPP, WAMP, or bundled with tools like
+        //      HeidiSQL/Workbench that ship their own copy).
+        //
+        // Returns empty string if nothing is found anywhere, so the caller
+        // can show a clear "couldn't find it, here's what I checked" error
+        // instead of a cryptic Win32 "file not found" from Process.Start.
+        // ════════════════════════════════════════════════════════════════
+        private static string FindMySqlDumpExe()
+        {
+            // 1) Already on PATH?
+            string? onPath = FindOnPath("mysqldump.exe");
+            if (!string.IsNullOrEmpty(onPath)) return onPath;
+
+            // 2) Ask the registry where MySQL Server installed itself.
+            string? fromRegistry = FindViaRegistry();
+            if (!string.IsNullOrEmpty(fromRegistry)) return fromRegistry;
+
+            // 3) Fall back to scanning common install roots.
+            string[] rootsToScan =
+            {
+                @"C:\Program Files\MySQL",
+                @"C:\Program Files (x86)\MySQL",
+                @"C:\xampp\mysql\bin",
+                @"C:\wamp64\bin\mysql",
+                @"C:\wamp\bin\mysql",
+                @"C:\MySQL",
+            };
+
+            foreach (var root in rootsToScan)
+            {
+                var found = SearchForFile(root, "mysqldump.exe", maxDepth: 3);
+                if (found != null) return found;
+            }
+
+            return string.Empty;
+        }
+
+        // Checks every folder on the PATH environment variable for the file,
+        // same resolution order Windows itself would use to run a bare
+        // command name.
+        private static string? FindOnPath(string fileName)
+        {
+            string? pathVar = Environment.GetEnvironmentVariable("PATH");
+            if (string.IsNullOrEmpty(pathVar)) return null;
+
+            foreach (var dir in pathVar.Split(Path.PathSeparator))
+            {
+                try
+                {
+                    string candidate = Path.Combine(dir.Trim(), fileName);
+                    if (File.Exists(candidate)) return candidate;
+                }
+                catch
+                {
+                    // Malformed PATH entry — skip it and keep checking the rest.
+                }
+            }
+            return null;
+        }
+
+        // The official MySQL Installer writes its install location under
+        // this registry key. Not every install goes through the official
+        // installer (XAMPP/WAMP/portable installs won't have this), which is
+        // why this is tried before, not instead of, the folder scan below.
+        private static string? FindViaRegistry()
+        {
+            try
+            {
+                using var key = Registry.LocalMachine.OpenSubKey(
+                    @"SOFTWARE\MySQL AB", writable: false)
+                    ?? Registry.LocalMachine.OpenSubKey(@"SOFTWARE\WOW6432Node\MySQL AB", writable: false);
+
+                if (key == null) return null;
+
+                foreach (var subKeyName in key.GetSubKeyNames())
+                {
+                    using var subKey = key.OpenSubKey(subKeyName);
+                    string? location = subKey?.GetValue("Location") as string;
+                    if (string.IsNullOrWhiteSpace(location)) continue;
+
+                    string candidate = Path.Combine(location, "bin", "mysqldump.exe");
+                    if (File.Exists(candidate)) return candidate;
+                }
+            }
+            catch
+            {
+                // Registry access can fail for all sorts of environment
+                // reasons — just fall through to the folder scan.
+            }
+            return null;
+        }
+
+        // Depth-limited recursive search so this can't accidentally walk an
+        // entire huge drive tree — MySQL installs are never more than a
+        // couple of folders deep from the roots we scan (e.g.
+        // "MySQL\MySQL Server 8.0\bin\mysqldump.exe" is 2 levels deep).
+        private static string? SearchForFile(string rootDir, string fileName, int maxDepth)
+        {
+            if (!Directory.Exists(rootDir)) return null;
+
+            try
+            {
+                var direct = Directory.GetFiles(rootDir, fileName, SearchOption.TopDirectoryOnly);
+                if (direct.Length > 0) return direct[0];
+
+                if (maxDepth <= 0) return null;
+
+                foreach (var subDir in Directory.GetDirectories(rootDir))
+                {
+                    var found = SearchForFile(subDir, fileName, maxDepth - 1);
+                    if (found != null) return found;
+                }
+            }
+            catch
+            {
+                // Permission-denied or similar on some subfolder — skip it,
+                // don't let one bad folder abort the whole search.
+            }
+            return null;
+        }
 
         // Reads host/port/database/user/password straight out of
         // DatabaseHelper.ConnectionString, the same connection string every
