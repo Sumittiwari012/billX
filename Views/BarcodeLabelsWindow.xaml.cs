@@ -323,13 +323,23 @@ namespace MyWPFCRUDApp.Views
                 var (visual, widthPx, heightPx) = BuildPrintVisual(row, builtIn, customTemplate);
 
                 pd.PrintTicket.PageMediaSize = new PageMediaSize(widthPx, heightPx);
-                visual.Measure(new Size(widthPx, heightPx));
-                visual.Arrange(new Rect(0, 0, widthPx, heightPx));
-                visual.UpdateLayout();
+
+                // Ask the driver what it will ACTUALLY give us at that page size.
+                // Many label/thermal printers have hardware margins (a printable
+                // area inset from the physical page edges). If we ignore that and
+                // just arrange our visual to fill (0,0)→(width,height), the driver
+                // either clips whatever falls outside its real printable rectangle
+                // or shifts our content into it — which is what was pushing
+                // prints to the left and clipping the left edge.
+                var pageVisual = WrapForImageableArea(visual, queue, pd.PrintTicket, widthPx, heightPx);
+
+                pageVisual.Measure(new Size(widthPx, heightPx));
+                pageVisual.Arrange(new Rect(0, 0, widthPx, heightPx));
+                pageVisual.UpdateLayout();
 
                 for (int i = 0; i < copies; i++)
                 {
-                    pd.PrintVisual(visual, $"Barcode Label – {row.ProductName} [{row.Barcode}]");
+                    pd.PrintVisual(pageVisual, $"Barcode Label – {row.ProductName} [{row.Barcode}]");
                     printed++;
                 }
             }
@@ -343,6 +353,38 @@ namespace MyWPFCRUDApp.Views
 
             MessageBox.Show(this, $"{printed} label(s) sent to \"{queue.FullName}\".",
                 "Print", MessageBoxButton.OK, MessageBoxImage.Information);
+        }
+
+        // Wraps the label content in a container the size of the physical page
+        // and offsets it by the printer's reported imageable-area origin, so
+        // the content lands inside the driver's real printable rectangle
+        // instead of being clipped/shifted by hardware margins. Falls back to
+        // the visual as-is if the driver can't report capabilities.
+        private static FrameworkElement WrapForImageableArea(
+            FrameworkElement visual, PrintQueue queue, PrintTicket ticket, double pageWidth, double pageHeight)
+        {
+            PrintCapabilities? capabilities = null;
+            try
+            {
+                capabilities = queue.GetPrintCapabilities(ticket);
+            }
+            catch
+            {
+                // Some drivers throw or return incomplete capabilities — just
+                // print the visual unwrapped rather than failing the job.
+                return visual;
+            }
+
+            var imageable = capabilities?.PageImageableArea;
+            if (imageable == null)
+                return visual;
+
+            var container = new Grid { Width = pageWidth, Height = pageHeight };
+            visual.HorizontalAlignment = HorizontalAlignment.Left;
+            visual.VerticalAlignment = VerticalAlignment.Top;
+            visual.Margin = new Thickness(imageable.OriginWidth, imageable.OriginHeight, 0, 0);
+            container.Children.Add(visual);
+            return container;
         }
 
         private static (FrameworkElement Visual, double WidthPx, double HeightPx) BuildPrintVisual(
