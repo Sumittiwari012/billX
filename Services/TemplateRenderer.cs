@@ -47,6 +47,18 @@ namespace MyWPFCRUDApp.Services
                 case LabelElementType.Barcode:
                     var img = new Image { Width = w, Height = h, Stretch = Stretch.Fill, DataContext = dataContext };
                     img.SetBinding(Image.SourceProperty, new Binding(el.BindingPath ?? "BarcodeImage"));
+                    // FIX: without this, WPF's default bilinear scaling blurs
+                    // the barcode bitmap whenever it's stretched away from its
+                    // native resolution (i.e. after resizing in the template
+                    // designer). Blurred bar edges merge adjacent thin bars
+                    // into a gray gradient — the label LOOKS fine on screen
+                    // but a scanner can no longer read the bar widths, so the
+                    // printed barcode silently stops scanning. NearestNeighbor
+                    // keeps every bar edge crisp/binary (black or white) at
+                    // any size, which is what a barcode actually needs —
+                    // unlike a photo, there's no benefit to smoothing it.
+                    RenderOptions.SetBitmapScalingMode(img, BitmapScalingMode.NearestNeighbor);
+                    RenderOptions.SetEdgeMode(img, EdgeMode.Aliased);
                     visual = img;
                     break;
 

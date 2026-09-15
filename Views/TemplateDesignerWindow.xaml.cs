@@ -572,16 +572,34 @@ namespace MyWPFCRUDApp.Views
                     break;
             }
 
-            // Enforce a sane minimum and stop the opposite edge from flipping past it.
-            const double minSize = 3;
-            if (newW < minSize) { if (_activeHandle is HandlePos.TopLeft or HandlePos.BottomLeft) newX = _dragStartX + _dragStartW - minSize; newW = minSize; }
-            if (newH < minSize) { if (_activeHandle is HandlePos.TopLeft or HandlePos.TopRight) newY = _dragStartY + _dragStartH - minSize; newH = minSize; }
+            // ══════════════════════════════════════════════════════════════
+            // Enforce a sane minimum and stop the opposite edge from flipping
+            // past it.
+            //
+            // FIX: Barcode elements now get a much higher floor than plain
+            // text/shapes (was sharing the generic 3mm minSize with
+            // everything else). Shrinking a Code128 barcode down to just a
+            // few mm squeezes its narrowest bar below what a scanner can
+            // resolve — even with crisp NearestNeighbor rendering (see
+            // TemplateRenderer), there's a real physical limit to how narrow
+            // a bar can get before a handheld/POS scanner can't distinguish
+            // it from its neighbor. 15mm width / 8mm height is a practical
+            // floor for Code128 at typical label print resolutions. This is
+            // just a floor on the drag gesture — still fine to type a larger
+            // value directly into the W/H boxes for a bigger label.
+            // ══════════════════════════════════════════════════════════════
+            bool isBarcode = _selected.Type == LabelElementType.Barcode;
+            double minW = isBarcode ? 15 : 3;
+            double minH = isBarcode ? 8 : 3;
+
+            if (newW < minW) { if (_activeHandle is HandlePos.TopLeft or HandlePos.BottomLeft) newX = _dragStartX + _dragStartW - minW; newW = minW; }
+            if (newH < minH) { if (_activeHandle is HandlePos.TopLeft or HandlePos.TopRight) newY = _dragStartY + _dragStartH - minH; newH = minH; }
 
             // Clamp to the label PLUS the surrounding staging margin, so a
             // resized element can extend into the margin but not off the
             // edge of the workspace entirely.
-            newX = Math.Max(-StagingBufferMm, Math.Min(newX, _template.WidthMm + StagingBufferMm - minSize));
-            newY = Math.Max(-StagingBufferMm, Math.Min(newY, _template.HeightMm + StagingBufferMm - minSize));
+            newX = Math.Max(-StagingBufferMm, Math.Min(newX, _template.WidthMm + StagingBufferMm - minW));
+            newY = Math.Max(-StagingBufferMm, Math.Min(newY, _template.HeightMm + StagingBufferMm - minH));
             newW = Math.Min(newW, _template.WidthMm + StagingBufferMm - newX);
             newH = Math.Min(newH, _template.HeightMm + StagingBufferMm - newY);
 
