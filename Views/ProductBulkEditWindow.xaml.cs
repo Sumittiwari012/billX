@@ -115,8 +115,9 @@ namespace MyWPFCRUDApp.Views
 
         // ── Barcode parsing for "Add Copies" — splits a barcode into its
         //    non-numeric prefix and trailing numeric suffix, e.g. "GR78450"
-        //    -> ("GR", 78450), so copies can be numbered relative to the row
-        //    they were copied from instead of a global running counter. ──
+        //    -> ("GR", 78450). Used both to pick the family/prefix a copy
+        //    should belong to, and to scan for the current max number
+        //    already in use for that prefix. ──
         private (string prefix, long number) ParseBarcode(string? barcode)
         {
             var match = Regex.Match(barcode ?? "", @"^(.*?)(\d+)$");
@@ -130,8 +131,8 @@ namespace MyWPFCRUDApp.Views
 
         // True if `barcode` already belongs to some other product — either
         // a row already in this grid (other than `exclude`) or an existing
-        // DB product — so shifted/new barcodes from Add Copies never
-        // collide with something else.
+        // DB product — so a freshly generated barcode never collides with
+        // something else.
         private bool BarcodeTakenElsewhere(string barcode, MProducts? exclude)
         {
             if (Rows.Any(r => r.Product != exclude && r.Product.Barcode == barcode))
@@ -140,6 +141,56 @@ namespace MyWPFCRUDApp.Views
             var dbMatch = _productService.GetByBarcode(barcode);
             if (dbMatch == null) return false;
             return exclude == null || dbMatch.Id != exclude.Id;
+        }
+
+        // ══════════════════════════════════════════════════════════════════
+        // Next barcode for "Add Copies" — same rule as Quick Add on the
+        // Purchase screen (GetNextQuickAddBarcode): always APPEND after the
+        // true current maximum for this prefix, never touch/renumber any
+        // barcode that already exists. The maximum is taken from whichever
+        // is higher of:
+        //   • every row currently in THIS grid (covers an old invoice's
+        //     existing items plus any copies already added this session —
+        //     none of that is in the DB yet if it hasn't been saved), and
+        //   • the product master's own last-known barcode for this prefix
+        //     (covers every OTHER invoice/product saved since this bill was
+        //     first created — the actual reason old bills used to collide:
+        //     the old logic numbered relative to the base row's own barcode
+        //     instead of the real, current global max).
+        // A final collision-check loop is a safety net only; it should
+        // rarely need to advance past maxNumber + 1.
+        // ══════════════════════════════════════════════════════════════════
+        private string GetNextBarcodeForPrefix(string prefix)
+        {
+            long maxNumber = 0;
+
+            foreach (var r in Rows)
+            {
+                var (p, n) = ParseBarcode(r.Product.Barcode);
+                if (p == prefix && n > maxNumber) maxNumber = n;
+            }
+
+            try
+            {
+                string? dbLast = _productService.GetLastBarcode();
+                var (dbPrefix, dbNum) = ParseBarcode(dbLast);
+                if (dbPrefix == prefix && dbNum > maxNumber) maxNumber = dbNum;
+            }
+            catch
+            {
+                // If the lookup fails, fall back to whatever's visible in
+                // this grid — still correct, just not aware of barcodes
+                // used by invoices that aren't loaded right now.
+            }
+
+            long candidate = maxNumber + 1;
+            string barcode = $"{prefix}{candidate}";
+            while (BarcodeTakenElsewhere(barcode, null))
+            {
+                candidate++;
+                barcode = $"{prefix}{candidate}";
+            }
+            return barcode;
         }
 
         // Result handed back to PurchaseViewModel after a successful Save.
@@ -758,11 +809,21 @@ namespace MyWPFCRUDApp.Views
         // ── Add Copies (variety): blank Size/Colour, everything else cloned
         //    from the base row. Copies are inserted directly under the row
         //    they were copied from — NOT appended at the bottom of the grid,
-        //    which was hard to spot in a long list. To keep barcodes unique
-        //    and sequential, anything already sitting in the numbers the new
-        //    copies need gets pushed forward by `count`, e.g. base row is
-        //    M101 and you add 2 copies: the copies become M102/M103, and
-        //    whatever used to be M102/M103/... becomes M104/M105/... ──
+        //    which was hard to spot in a long list.
+        //
+        //    FIX: barcodes for the new copies are now allocated via
+        //    GetNextBarcodeForPrefix — i.e. the same "always append after
+        //    the true current max, never touch what already exists" rule
+        //    Quick Add already uses correctly. The previous version numbered
+        //    copies relative to the BASE ROW's own barcode (baseNum + 1, +2…)
+        //    and then actively shifted/renumbered every other row that fell
+        //    in that range. That was fine for a brand-new invoice where
+        //    nothing else existed yet, but broke on an OLD invoice: other,
+        //    unrelated products saved by different invoices in the meantime
+        //    could already occupy those numbers, so reopening an old bill
+        //    and adding a variance copy could renumber or collide with
+        //    barcodes that had nothing to do with this invoice. No row's
+        //    existing barcode is ever modified here anymore. ──
         private void AddCopies_Click(object sender, RoutedEventArgs e)
         {
             var selectedRows = Rows.Where(r => r.IsSelected).ToList();
@@ -783,40 +844,18 @@ namespace MyWPFCRUDApp.Views
             int totalAdded = 0;
 
             // selectedRows is already in on-screen (top-to-bottom) order.
-            // Each iteration re-reads the row's live position/barcode via
-            // Rows.IndexOf / ParseBarcode, so earlier insertions/shifts in
-            // this same click are automatically accounted for.
+            // Each iteration re-reads the row's live position via
+            // Rows.IndexOf, so earlier insertions in this same click are
+            // automatically accounted for when placing the NEXT base row's
+            // copies directly beneath it.
             foreach (var baseRow in selectedRows)
             {
                 int baseIndex = Rows.IndexOf(baseRow);
-                var (prefix, baseNum) = ParseBarcode(baseRow.Product.Barcode);
-
-                // Make room: push every other row sharing this barcode
-                // "family" whose number is >= the first slot the copies
-                // need, forward by `count`, so the copies can drop straight
-                // in without colliding with what's already there.
-                foreach (var other in Rows)
-                {
-                    if (other == baseRow) continue;
-                    var (otherPrefix, otherNum) = ParseBarcode(other.Product.Barcode);
-                    if (otherPrefix != prefix || otherNum < baseNum + 1) continue;
-
-                    long shifted = otherNum + count;
-                    while (BarcodeTakenElsewhere($"{prefix}{shifted}", other.Product))
-                        shifted++;
-
-                    other.Product.Barcode = $"{prefix}{shifted}";
-                }
+                var (prefix, _) = ParseBarcode(baseRow.Product.Barcode);
 
                 for (int i = 0; i < count; i++)
                 {
-                    long newNum = baseNum + 1 + i;
-                    string newBarcode = $"{prefix}{newNum}";
-                    while (BarcodeTakenElsewhere(newBarcode, null))
-                    {
-                        newNum++;
-                        newBarcode = $"{prefix}{newNum}";
-                    }
+                    string newBarcode = GetNextBarcodeForPrefix(prefix);
 
                     var clone = new MProducts
                     {
@@ -867,9 +906,9 @@ namespace MyWPFCRUDApp.Views
 
             ProductGrid.Items.Refresh();
             MessageBox.Show(
-                $"✔ Added {totalAdded} new copy/copies directly below the row(s) you copied. " +
-                "Barcodes of any items that were in the way were renumbered to keep the list " +
-                "in order.\nFill in Size/Colour directly in the grid if needed.",
+                $"✔ Added {totalAdded} new copy/copies directly below the row(s) you copied, " +
+                "using the next available barcode(s) after your last product. " +
+                "No existing item's barcode was changed.\nFill in Size/Colour directly in the grid if needed.",
                 "Copies Added", MessageBoxButton.OK, MessageBoxImage.Information);
         }
 
