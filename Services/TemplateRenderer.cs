@@ -47,18 +47,20 @@ namespace MyWPFCRUDApp.Services
                 case LabelElementType.Barcode:
                     var img = new Image { Width = w, Height = h, Stretch = Stretch.Fill, DataContext = dataContext };
                     img.SetBinding(Image.SourceProperty, new Binding(el.BindingPath ?? "BarcodeImage"));
-                    // FIX: without this, WPF's default bilinear scaling blurs
-                    // the barcode bitmap whenever it's stretched away from its
-                    // native resolution (i.e. after resizing in the template
-                    // designer). Blurred bar edges merge adjacent thin bars
-                    // into a gray gradient — the label LOOKS fine on screen
-                    // but a scanner can no longer read the bar widths, so the
-                    // printed barcode silently stops scanning. NearestNeighbor
-                    // keeps every bar edge crisp/binary (black or white) at
-                    // any size, which is what a barcode actually needs —
-                    // unlike a photo, there's no benefit to smoothing it.
-                    RenderOptions.SetBitmapScalingMode(img, BitmapScalingMode.NearestNeighbor);
-                    RenderOptions.SetEdgeMode(img, EdgeMode.Aliased);
+                    // FIX: the barcode is almost always being DOWNSCALED here —
+                    // the source bitmap is generated at a fixed native
+                    // resolution (600x180, see BarcodeImageHelper), while most
+                    // label boxes render much smaller on screen/print. For a
+                    // downscale, NearestNeighbor is actually the wrong choice:
+                    // it picks one source pixel per output pixel and discards
+                    // the rest, which can unevenly drop or merge entire bar
+                    // columns and corrupt bar-width ratios — not just blur them.
+                    // HighQuality uses a proper resampling filter (Fant-style)
+                    // that correctly accounts for every source pixel when
+                    // shrinking, preserving relative bar widths far more
+                    // faithfully. It also produces acceptable results on the
+                    // (less common) upscale case.
+                    RenderOptions.SetBitmapScalingMode(img, BitmapScalingMode.HighQuality);
                     visual = img;
                     break;
 

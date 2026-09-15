@@ -7,7 +7,15 @@ namespace MyWPFCRUDApp.Helpers
 {
     public static class BarcodeImageHelper
     {
-        public static BitmapSource GenerateCode128(string value, int width = 400, int height = 120)
+        // FIX: bumped from 400x120 to 600x180. Label elements (both the
+        // built-in templates and custom template boxes) typically render at
+        // well under 400px wide — e.g. a 30mm custom box is only ~113px on
+        // screen at 96 DPI — so the barcode image was being downscaled quite
+        // aggressively before this change. A higher native resolution gives
+        // whatever scaling filter is applied downstream (see TemplateRenderer
+        // / BarcodeLabelsWindow) more source detail to work with, so the
+        // resulting bar-width ratios survive the downscale more faithfully.
+        public static BitmapSource GenerateCode128(string value, int width = 600, int height = 180)
         {
             if (string.IsNullOrWhiteSpace(value)) return null;
 

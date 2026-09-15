@@ -437,11 +437,10 @@ namespace MyWPFCRUDApp.Views
                 Margin = new Thickness(0, 2, 0, 4)
             });
             var standardBarcodeImg = new Image { Source = row.BarcodeImage, Width = 200, Height = 55, Stretch = Stretch.Fill };
-            // Same fix as TemplateRenderer's custom-template barcode: default
-            // bilinear scaling blurs the bar edges at print resolution,
-            // which can merge adjacent bars and make the label unscannable.
-            RenderOptions.SetBitmapScalingMode(standardBarcodeImg, BitmapScalingMode.NearestNeighbor);
-            RenderOptions.SetEdgeMode(standardBarcodeImg, EdgeMode.Aliased);
+            // Same reasoning as TemplateRenderer: this is a downscale (native
+            // bitmap is 600x180), and HighQuality resamples correctly on
+            // downscale where NearestNeighbor would drop/merge bar columns.
+            RenderOptions.SetBitmapScalingMode(standardBarcodeImg, BitmapScalingMode.HighQuality);
             panel.Children.Add(standardBarcodeImg);
             panel.Children.Add(new TextBlock
             {
@@ -466,8 +465,7 @@ namespace MyWPFCRUDApp.Views
         {
             var panel = new StackPanel { HorizontalAlignment = HorizontalAlignment.Center, Width = 220 };
             var compactBarcodeImg = new Image { Source = row.BarcodeImage, Width = 200, Height = 60, Stretch = Stretch.Fill };
-            RenderOptions.SetBitmapScalingMode(compactBarcodeImg, BitmapScalingMode.NearestNeighbor);
-            RenderOptions.SetEdgeMode(compactBarcodeImg, EdgeMode.Aliased);
+            RenderOptions.SetBitmapScalingMode(compactBarcodeImg, BitmapScalingMode.HighQuality);
             panel.Children.Add(compactBarcodeImg);
             panel.Children.Add(new TextBlock
             {
