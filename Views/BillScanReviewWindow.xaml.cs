@@ -96,6 +96,13 @@ namespace MyWPFCRUDApp.Views
         }
 
         // ── Recalculate Wholesale and MRP for all rows ─────────────────────────
+        // FIX: only calculate a field from its % markup box when the bill
+        // itself did NOT already print that price (item.*FromScan == false).
+        // Previously this always overwrote Wholesale/MRP/Retail from the %
+        // boxes, silently discarding any real MRP/Retail/Wholesale the AI
+        // scan had actually read off the bill. Tax fields (CGST/SGST/IGST)
+        // are untouched here — they only ever come from the scan or the
+        // user's manual edit in the grid, never from a % calculation.
         private void RecalculatePrices()
         {
             if (ScannedBill?.Items == null) return;
@@ -104,13 +111,23 @@ namespace MyWPFCRUDApp.Views
             {
                 if (item.PurchasePrice <= 0) continue;
 
-                item.WholesalePrice = item.PurchasePrice
-                    + (item.PurchasePrice * _wholesalePercentage / 100m);
+                if (!item.WholesalePriceFromScan)
+                {
+                    item.WholesalePrice = item.PurchasePrice
+                        + (item.PurchasePrice * _wholesalePercentage / 100m);
+                }
 
-                item.MRP = item.PurchasePrice
-                    + (item.PurchasePrice * _mrpPercentage / 100m);
-                item.RetailPrice = item.PurchasePrice
-                    + (item.PurchasePrice * _retailPercentage / 100m);
+                if (!item.MrpFromScan)
+                {
+                    item.MRP = item.PurchasePrice
+                        + (item.PurchasePrice * _mrpPercentage / 100m);
+                }
+
+                if (!item.RetailPriceFromScan)
+                {
+                    item.RetailPrice = item.PurchasePrice
+                        + (item.PurchasePrice * _retailPercentage / 100m);
+                }
             }
         }
 

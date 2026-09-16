@@ -847,14 +847,6 @@ namespace MyWPFCRUDApp.ViewModels
                     null, System.Globalization.DateTimeStyles.None, out DateTime d))
                 PurchaseMaster.PurchaseDate = d;
 
-            // ── Determine next barcode ────────────────────────────────────────────
-            // FIX: GetLastBarcode() only sees what's already SAVED in the database.
-            // Scanned items aren't saved until SAVE INVOICE is clicked, so a second
-            // scan (before saving) used to see the same "last barcode" as the first
-            // scan and generate colliding numbers. Now we seed a used-barcode set
-            // from BOTH the product master AND whatever's already sitting in
-            // PurchaseItems (including earlier scans/imports this session), same
-            // approach as ImportItemsFromExcel.
             var usedBarcodes = new System.Collections.Generic.HashSet<string>(
                 Products.Select(p => p.Barcode).Where(b => !string.IsNullOrWhiteSpace(b)),
                 StringComparer.OrdinalIgnoreCase);
@@ -906,6 +898,12 @@ namespace MyWPFCRUDApp.ViewModels
                     WholesalePrice = item.WholesalePrice,
                     MRP = item.MRP,
                     Retail = item.RetailPrice,
+                    HSNCode = item.HsnCode,   // ← now carried through (was dropped before)
+                    Size = item.Size,         // ← NEW
+                    Colour = item.Colour,     // ← NEW
+                    CGST = item.CGST,         // ← NEW
+                    SGST = item.SGST,         // ← NEW
+                    IGST = item.IGST,         // ← NEW
                     AfterTaxation = netAmt
                 });
                 added++;
