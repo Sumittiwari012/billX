@@ -279,6 +279,28 @@ namespace MyWPFCRUDApp.Views
             UpdateSelectAllCheckboxState();
         }
 
+        // ══════════════════════════════════════════════════════════════════
+        // NEW — commits any in-progress cell/row edit on ProductGrid before
+        // an action that will end up calling ProductGrid.Items.Refresh().
+        //
+        // WPF's CollectionView throws InvalidOperationException
+        // ("'Refresh' is not allowed during an AddNew or EditItem
+        // transaction") if Refresh() is called while a cell is still being
+        // edited (e.g. the user clicked "+ Add Copies of Selected" or
+        // "Apply to Selected" without first tabbing/clicking out of a
+        // TextBox cell they were mid-edit in). CommitEdit forces that
+        // pending edit to commit (or cancel, if invalid) first, so the
+        // grid is never left in an Add/Edit transaction when Refresh() is
+        // called afterward. Call this at the very start of every handler
+        // that later touches ProductGrid.Items.Refresh() — currently
+        // AddCopies_Click and ApplyBulk_Click.
+        // ══════════════════════════════════════════════════════════════════
+        private void CommitPendingGridEdit()
+        {
+            ProductGrid.CommitEdit(DataGridEditingUnit.Cell, true);
+            ProductGrid.CommitEdit(DataGridEditingUnit.Row, true);
+        }
+
         // ── Lookups (Category/SubCategory/Unit) ─────────────────────────────
         private void LoadLookups()
         {
@@ -703,6 +725,11 @@ namespace MyWPFCRUDApp.Views
 
         private void ApplyBulk_Click(object sender, RoutedEventArgs e)
         {
+            // NEW — see CommitPendingGridEdit(): this handler ends by calling
+            // ProductGrid.Items.Refresh(), which throws if a cell is still
+            // mid-edit when we get there.
+            CommitPendingGridEdit();
+
             string? fieldName = ComboBulkField.SelectedItem as string;
             if (string.IsNullOrEmpty(fieldName))
             {
@@ -826,6 +853,24 @@ namespace MyWPFCRUDApp.Views
         //    existing barcode is ever modified here anymore. ──
         private void AddCopies_Click(object sender, RoutedEventArgs e)
         {
+            // ══════════════════════════════════════════════════════════════
+            // NEW — fixes: System.InvalidOperationException: 'Refresh' is
+            // not allowed during an AddNew or EditItem transaction.
+            //
+            // This crashed whenever the user clicked "+ Add Copies of
+            // Selected" while a grid cell (e.g. a Quantity or Product Name
+            // cell) was still actively being edited — the cursor left in a
+            // TextBox that was never committed by tabbing/clicking away
+            // first. ProductGrid.Items.Refresh() at the bottom of this
+            // method then threw immediately, because WPF's CollectionView
+            // refuses to Refresh() while an edit transaction is open,
+            // taking the whole app down with an unhandled exception instead
+            // of just... adding the copies. Committing any pending edit
+            // here, before touching Rows/adding anything, guarantees the
+            // grid is never mid-transaction by the time Refresh() runs.
+            // ══════════════════════════════════════════════════════════════
+            CommitPendingGridEdit();
+
             var selectedRows = Rows.Where(r => r.IsSelected).ToList();
             if (!selectedRows.Any())
             {
@@ -917,6 +962,15 @@ namespace MyWPFCRUDApp.Views
         //    Save (see Save_Click), so Cancel undoes this cleanly. ──
         private void DeleteSelected_Click(object sender, RoutedEventArgs e)
         {
+            // NEW — same edit-transaction guard as AddCopies_Click/
+            // ApplyBulk_Click. Removing rows via Rows.Remove() while a cell
+            // is mid-edit can leave the grid's CollectionView in a bad
+            // state too (even though this handler doesn't call Refresh()
+            // itself, CollectionChanged still runs synchronously), so this
+            // is committed defensively for consistency with the other
+            // grid-mutating actions.
+            CommitPendingGridEdit();
+
             var selectedRows = Rows.Where(r => r.IsSelected).ToList();
             if (!selectedRows.Any())
             {
@@ -964,6 +1018,11 @@ namespace MyWPFCRUDApp.Views
         // always leaves the database untouched.
         private void Save_Click(object sender, RoutedEventArgs e)
         {
+            // NEW — commit any in-progress cell edit before reading Rows, so
+            // the very last thing the user typed is captured in the saved
+            // result instead of being silently dropped.
+            CommitPendingGridEdit();
+
             var toInsert = Rows.Where(r => r.IsNew).ToList();
             var toUpdate = Rows.Where(r => !r.IsNew).ToList();
 
