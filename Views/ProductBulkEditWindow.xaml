@@ -9,7 +9,7 @@
     <Grid Margin="16">
         <Grid.RowDefinitions>
             <RowDefinition Height="Auto"/>   <!-- Column picker -->
-            <RowDefinition Height="Auto"/>   <!-- Toolbar: bulk apply + add copies -->
+            <RowDefinition Height="Auto"/>   <!-- Toolbar: bulk apply + add variance -->
             <RowDefinition Height="*"/>      <!-- Grid -->
             <RowDefinition Height="Auto"/>   <!-- Save/Cancel -->
         </Grid.RowDefinitions>
@@ -39,7 +39,7 @@
             </StackPanel>
         </Border>
 
-        <!-- ══════════════ TOOLBAR: BULK APPLY + ADD COPIES ══════════════ -->
+        <!-- ══════════════ TOOLBAR: BULK APPLY + ADD VARIANCE ══════════════ -->
         <Border Grid.Row="1" Background="White" CornerRadius="8" Padding="12"
                 BorderBrush="#DEE2E6" BorderThickness="1" Margin="0,0,0,10">
             <StackPanel Orientation="Horizontal">
@@ -144,15 +144,16 @@
 
                 <Separator Width="1" Background="#DEE2E6" Margin="0,0,30,0"/>
 
-                <!-- Add copies (variety, blank Size/Colour) -->
+                <!-- Add variance (opens a dialog to pick the varying column
+                     + per-row value/quantity before any rows are added) -->
                 <StackPanel Orientation="Horizontal">
-                    <TextBlock Text="Copies:" VerticalAlignment="Center"
+                    <TextBlock Text="Total (incl. selected):" VerticalAlignment="Center"
                                FontWeight="SemiBold" Margin="0,0,8,0"/>
-                    <TextBox x:Name="TxtCopyCount" Width="50" Height="30" Text="1"
+                    <TextBox x:Name="TxtVarianceCount" Width="50" Height="30" Text="2"
                              TextAlignment="Center" VerticalContentAlignment="Center"
                              Margin="0,0,8,0"/>
-                    <Button Content="+ Add Copies of Selected"
-                            Click="AddCopies_Click"
+                    <Button Content="+ Add Variance of Selected"
+                            Click="AddVariance_Click"
                             Height="30" Padding="10,0"
                             Background="#0CA678" Foreground="White"
                             BorderThickness="0" FontWeight="SemiBold">
@@ -164,9 +165,9 @@
                     </Button>
                 </StackPanel>
 
-                <TextBlock Text="Tip: check rows using the ✓ column (click-drag to paint multiple), or use Select All / Unselect All, then use any action above. Deletes are applied when you click Save."
+                <TextBlock Text="Tip: check rows using the ✓ column (click-drag to paint multiple), or use Select All / Unselect All, then use any action above. Deletes are applied when you click Save. Variance count includes the row you're varying."
                            Foreground="#868E96" FontSize="11" VerticalAlignment="Center"
-                           Margin="30,0,0,0" TextWrapping="Wrap" MaxWidth="240"/>
+                           Margin="30,0,0,0" TextWrapping="Wrap" MaxWidth="260"/>
             </StackPanel>
         </Border>
 

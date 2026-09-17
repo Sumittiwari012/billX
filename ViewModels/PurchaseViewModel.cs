@@ -754,6 +754,20 @@ namespace MyWPFCRUDApp.ViewModels
                     WholesalePrice = d.WholesalePrice,
                     MRP = d.MRP,
                     Retail = d.Retail,
+                    // FIX: HSNCode/Size/Colour/CGST/SGST/IGST were never
+                    // copied here, so reopening a SAVED invoice (via History)
+                    // stripped these fields from the in-memory grid even
+                    // though they were correctly written to the database at
+                    // SAVE INVOICE time. Bulk Edit then reads this stripped
+                    // grid and shows everything blank, making it look like
+                    // the data was lost on save when it was actually just
+                    // lost on reload.
+                    HSNCode = d.HSNCode,
+                    Size = d.Size,
+                    Colour = d.Colour,
+                    CGST = d.CGST,
+                    SGST = d.SGST,
+                    IGST = d.IGST,
                     AfterTaxation = d.AfterTaxation,
                 });
             }
@@ -1509,6 +1523,20 @@ namespace MyWPFCRUDApp.ViewModels
                     source.MRP = product.MRP;
                     source.Retail = product.RetailSalePrice;
 
+                    // FIX: HSNCode/Size/Colour/CGST/SGST/IGST were never
+                    // copied here, so any edit made to these fields directly
+                    // in the Bulk Edit grid for an EXISTING row was silently
+                    // discarded the moment you clicked Save All Changes —
+                    // PurchaseItems kept whatever value it had before Bulk
+                    // Edit even opened. Now the invoice line actually
+                    // reflects what's shown in the grid.
+                    source.HSNCode = product.HSNCode;
+                    source.Size = product.Size;
+                    source.Colour = product.Colour;
+                    source.CGST = (decimal)product.CGST;
+                    source.SGST = (decimal)product.SGST;
+                    source.IGST = (decimal)product.IGST;
+
                     PurchaseItems.Add(source);
                 }
                 else
@@ -1531,6 +1559,22 @@ namespace MyWPFCRUDApp.ViewModels
                         WholesalePrice = newProd.WholesalePrice,
                         MRP = newProd.MRP,
                         Retail = newProd.RetailSalePrice,
+                        // FIX: this is the actual bug behind "colour isn't
+                        // copied to Add Copies rows, and sizes I typed
+                        // disappear after reopening Bulk Edit". This new
+                        // MPurchaseDetail never read HSNCode/Size/Colour/
+                        // CGST/SGST/IGST off newProd, so whatever you typed
+                        // into those cells for a new copy was thrown away
+                        // the instant you clicked Save All Changes — it
+                        // never reached PurchaseItems in the first place,
+                        // which is why BuildRows() finds nothing there the
+                        // next time Bulk Edit opens.
+                        HSNCode = newProd.HSNCode,
+                        Size = newProd.Size,
+                        Colour = newProd.Colour,
+                        CGST = (decimal)newProd.CGST,
+                        SGST = (decimal)newProd.SGST,
+                        IGST = (decimal)newProd.IGST,
                         AfterTaxation = (decimal)qty * newProd.PurchasePrice
                     });
                 }

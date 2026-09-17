@@ -113,11 +113,11 @@ namespace MyWPFCRUDApp.Views
     "ProductName"
 };
 
-        // ── Barcode parsing for "Add Copies" — splits a barcode into its
+        // ── Barcode parsing for "Add Variance" — splits a barcode into its
         //    non-numeric prefix and trailing numeric suffix, e.g. "GR78450"
-        //    -> ("GR", 78450). Used both to pick the family/prefix a copy
-        //    should belong to, and to scan for the current max number
-        //    already in use for that prefix. ──
+        //    -> ("GR", 78450). Used both to pick the family/prefix a new
+        //    variant row should belong to, and to scan for the current max
+        //    number already in use for that prefix. ──
         private (string prefix, long number) ParseBarcode(string? barcode)
         {
             var match = Regex.Match(barcode ?? "", @"^(.*?)(\d+)$");
@@ -144,13 +144,13 @@ namespace MyWPFCRUDApp.Views
         }
 
         // ══════════════════════════════════════════════════════════════════
-        // Next barcode for "Add Copies" — same rule as Quick Add on the
+        // Next barcode for "Add Variance" — same rule as Quick Add on the
         // Purchase screen (GetNextQuickAddBarcode): always APPEND after the
         // true current maximum for this prefix, never touch/renumber any
         // barcode that already exists. The maximum is taken from whichever
         // is higher of:
         //   • every row currently in THIS grid (covers an old invoice's
-        //     existing items plus any copies already added this session —
+        //     existing items plus any variants already added this session —
         //     none of that is in the DB yet if it hasn't been saved), and
         //   • the product master's own last-known barcode for this prefix
         //     (covers every OTHER invoice/product saved since this bill was
@@ -197,11 +197,11 @@ namespace MyWPFCRUDApp.Views
         public List<MProducts> SavedProducts { get; private set; } = new();
 
         // Rows with NO SourceInvoiceItem — i.e. created fresh in this session
-        // via "Add Copies". These are genuinely new invoice lines. This is now
-        // narrower than "every IsNew row": a not-yet-saved product that was
-        // already on the invoice is IsNew too, but it has a SourceInvoiceItem,
-        // so it's reported via UpdatedInvoiceLines instead — otherwise it would
-        // get added as a second, duplicate invoice line.
+        // via "Add Variance". These are genuinely new invoice lines. This is
+        // now narrower than "every IsNew row": a not-yet-saved product that
+        // was already on the invoice is IsNew too, but it has a
+        // SourceInvoiceItem, so it's reported via UpdatedInvoiceLines instead
+        // — otherwise it would get added as a second, duplicate invoice line.
         //
         // FIX: previously List<MProducts> — the quantity typed into the grid
         // for these brand-new rows (which lives on ProductEditRow._quantity,
@@ -215,8 +215,8 @@ namespace MyWPFCRUDApp.Views
         // corresponding PurchaseItems entry (existing DB products AND
         // not-yet-saved products that were already on the invoice). The caller
         // updates these invoice lines by reference — not by matching Barcode,
-        // since Add Copies can renumber a row's barcode even if the row itself
-        // was never touched.
+        // since Add Variance can renumber a row's barcode even if the row
+        // itself was never touched.
         public List<(MPurchaseDetail Source, MProducts Product)> UpdatedInvoiceLines { get; private set; } = new();
 
         public List<string> DeletedBarcodes { get; private set; } = new();
@@ -224,8 +224,8 @@ namespace MyWPFCRUDApp.Views
         // ── Staged product-master changes — NOTHING here is written to the
         //    database by this window. Bulk Edit's job is purely to shape the
         //    in-memory rows for this invoice session (bulk field edits, Add
-        //    Copies for variance, deletions). The caller (PurchaseViewModel)
-        //    is responsible for actually calling Insert/Update/DeleteProduct,
+        //    Variance, deletions). The caller (PurchaseViewModel) is
+        //    responsible for actually calling Insert/Update/DeleteProduct,
         //    and only does so when the user clicks SAVE INVOICE — so closing
         //    this dialog, or even cancelling the whole invoice afterwards,
         //    has zero DB side effects. ──
@@ -286,14 +286,14 @@ namespace MyWPFCRUDApp.Views
         // WPF's CollectionView throws InvalidOperationException
         // ("'Refresh' is not allowed during an AddNew or EditItem
         // transaction") if Refresh() is called while a cell is still being
-        // edited (e.g. the user clicked "+ Add Copies of Selected" or
+        // edited (e.g. the user clicked "+ Add Variance of Selected" or
         // "Apply to Selected" without first tabbing/clicking out of a
         // TextBox cell they were mid-edit in). CommitEdit forces that
         // pending edit to commit (or cancel, if invalid) first, so the
         // grid is never left in an Add/Edit transaction when Refresh() is
         // called afterward. Call this at the very start of every handler
         // that later touches ProductGrid.Items.Refresh() — currently
-        // AddCopies_Click and ApplyBulk_Click.
+        // AddVariance_Click and ApplyBulk_Click.
         // ══════════════════════════════════════════════════════════════════
         private void CommitPendingGridEdit()
         {
@@ -432,7 +432,7 @@ namespace MyWPFCRUDApp.Views
             }
         }
 
-        // Shallow copy of every field Bulk Edit / Add Copies / Save cares
+        // Shallow copy of every field Bulk Edit / Add Variance / Save cares
         // about. Used so overlaying the invoice line's live values onto a row
         // never mutates the actual MProducts instance the rest of the app
         // (Products list, dropdowns, etc.) might still be referencing.
@@ -472,8 +472,9 @@ namespace MyWPFCRUDApp.Views
 
         // insertIndex == null -> append at the end (used when first building
         // the grid from the invoice). Otherwise the row is inserted at that
-        // exact position — used by Add Copies so a copy lands directly under
-        // the row it was copied from rather than at the bottom of the list.
+        // exact position — used by Add Variance so a new row lands directly
+        // under the row it was created from rather than at the bottom of the
+        // list.
         private ProductEditRow AddRow(MProducts product, bool isNew, int? insertIndex = null,
             MPurchaseDetail? sourceInvoiceItem = null)
         {
@@ -626,7 +627,7 @@ namespace MyWPFCRUDApp.Views
         }
 
         // Keeps row PropertyChanged subscriptions and the header checkbox
-        // correct as rows are added (Add Copies) or removed (Delete
+        // correct as rows are added (Add Variance) or removed (Delete
         // Selected) after the window has already loaded.
         private void Rows_CollectionChanged(object? sender, NotifyCollectionChangedEventArgs e)
         {
@@ -650,7 +651,7 @@ namespace MyWPFCRUDApp.Views
 
         private static readonly string[] ExcludedFromBulk =
         {
-            "Id", "Barcode", "ProductName", "createdBy", "createdDate", "modifiedBy", "modifiedDate",
+            "Id", "Barcode", "createdBy", "createdDate", "modifiedBy", "modifiedDate",
             "CGST", "SGST", "IGST"
         };
 
@@ -833,136 +834,186 @@ namespace MyWPFCRUDApp.Views
                 "Bulk Update Applied", MessageBoxButton.OK, MessageBoxImage.Information);
         }
 
-        // ── Add Copies (variety): blank Size/Colour, everything else cloned
-        //    from the base row. Copies are inserted directly under the row
-        //    they were copied from — NOT appended at the bottom of the grid,
-        //    which was hard to spot in a long list.
+        // ── Add Variance ─────────────────────────────────────────────────────
+        //   TxtVarianceCount is a TOTAL count INCLUDING the selected product
+        //   itself (not "copies to add"). Before any row is touched,
+        //   ProductVarianceWindow opens and asks:
+        //     1. which MProducts field the variance is based on (Size,
+        //        Colour, HSNCode, etc — any string field except
+        //        Barcode/ProductName, which stay the same across variants),
+        //     2. a value for that field for each of the `total` rows (slot 0
+        //        pre-filled with the base row's current value — it maps back
+        //        onto the product you selected), and
+        //     3. a quantity for each row, pre-split evenly from the base
+        //        row's current Quantity (remainder to the earliest slots —
+        //        e.g. qty 6 / 4 rows -> 2,2,1,1), fully editable.
+        //   On confirm: slot 0 is applied back onto the selected row itself,
+        //   slots 1..N-1 become new rows inserted directly beneath it, each
+        //   with a fresh, non-colliding barcode (GetNextBarcodeForPrefix —
+        //   same rule as before: only ever appends, never renumbers an
+        //   existing barcode).
         //
-        //    FIX: barcodes for the new copies are now allocated via
-        //    GetNextBarcodeForPrefix — i.e. the same "always append after
-        //    the true current max, never touch what already exists" rule
-        //    Quick Add already uses correctly. The previous version numbered
-        //    copies relative to the BASE ROW's own barcode (baseNum + 1, +2…)
-        //    and then actively shifted/renumbered every other row that fell
-        //    in that range. That was fine for a brand-new invoice where
-        //    nothing else existed yet, but broke on an OLD invoice: other,
-        //    unrelated products saved by different invoices in the meantime
-        //    could already occupy those numbers, so reopening an old bill
-        //    and adding a variance copy could renumber or collide with
-        //    barcodes that had nothing to do with this invoice. No row's
-        //    existing barcode is ever modified here anymore. ──
-        private void AddCopies_Click(object sender, RoutedEventArgs e)
+        //   Multiple rows selected -> the dialog runs once per selected row,
+        //   one after another; cancelling one doesn't affect the others.
+        private void AddVariance_Click(object sender, RoutedEventArgs e)
         {
             // ══════════════════════════════════════════════════════════════
-            // NEW — fixes: System.InvalidOperationException: 'Refresh' is
-            // not allowed during an AddNew or EditItem transaction.
-            //
-            // This crashed whenever the user clicked "+ Add Copies of
-            // Selected" while a grid cell (e.g. a Quantity or Product Name
-            // cell) was still actively being edited — the cursor left in a
-            // TextBox that was never committed by tabbing/clicking away
-            // first. ProductGrid.Items.Refresh() at the bottom of this
-            // method then threw immediately, because WPF's CollectionView
-            // refuses to Refresh() while an edit transaction is open,
-            // taking the whole app down with an unhandled exception instead
-            // of just... adding the copies. Committing any pending edit
-            // here, before touching Rows/adding anything, guarantees the
-            // grid is never mid-transaction by the time Refresh() runs.
+            // Fixes: System.InvalidOperationException: 'Refresh' is not
+            // allowed during an AddNew or EditItem transaction — same
+            // guard as before, this handler ends by calling
+            // ProductGrid.Items.Refresh().
             // ══════════════════════════════════════════════════════════════
             CommitPendingGridEdit();
 
             var selectedRows = Rows.Where(r => r.IsSelected).ToList();
             if (!selectedRows.Any())
             {
-                MessageBox.Show("Check the row(s) you want to create copies of first (✓ column).",
+                MessageBox.Show("Check the row(s) you want to create a variance of first (✓ column).",
                     "No Rows Selected", MessageBoxButton.OK, MessageBoxImage.Information);
                 return;
             }
 
-            if (!int.TryParse(TxtCopyCount.Text, out int count) || count < 1)
+            if (!int.TryParse(TxtVarianceCount.Text, out int totalCount) || totalCount < 1)
             {
-                MessageBox.Show("Enter a valid number of copies (1 or more).",
+                MessageBox.Show("Enter a valid total count (1 or more), including the product itself.",
                     "Invalid Count", MessageBoxButton.OK, MessageBoxImage.Warning);
                 return;
             }
 
-            int totalAdded = 0;
+            var varianceFields = GetVarianceEligibleFields();
+            if (!varianceFields.Any())
+            {
+                MessageBox.Show("No eligible fields found to vary by.", "Nothing To Vary",
+                    MessageBoxButton.OK, MessageBoxImage.Information);
+                return;
+            }
 
-            // selectedRows is already in on-screen (top-to-bottom) order.
-            // Each iteration re-reads the row's live position via
-            // Rows.IndexOf, so earlier insertions in this same click are
-            // automatically accounted for when placing the NEXT base row's
-            // copies directly beneath it.
+            int totalRowsAdded = 0;
+
             foreach (var baseRow in selectedRows)
             {
+                var dlg = new ProductVarianceWindow(
+                    productLabel: $"{baseRow.Product.ProductName} ({baseRow.Product.Barcode})",
+                    totalCount: totalCount,
+                    baseQuantity: baseRow.Quantity,
+                    fields: varianceFields,
+                    getCurrentValue: fieldName => GetStringPropertyValue(baseRow.Product, fieldName))
+                {
+                    Owner = this
+                };
+
+                if (dlg.ShowDialog() != true) continue; // user cancelled this row's variance
+
+                string chosenField = dlg.SelectedField;
+                string[] values = dlg.Values;          // length == totalCount
+                double[] quantities = dlg.Quantities;   // length == totalCount
+
+                // Slot 0 applies back onto the row the user selected.
+                SetStringPropertyValue(baseRow.Product, chosenField, values[0]);
+                baseRow.Quantity = quantities[0];
+
                 int baseIndex = Rows.IndexOf(baseRow);
                 var (prefix, _) = ParseBarcode(baseRow.Product.Barcode);
 
-                for (int i = 0; i < count; i++)
+                for (int i = 1; i < totalCount; i++)
                 {
                     string newBarcode = GetNextBarcodeForPrefix(prefix);
+                    var clone = CloneForVariance(baseRow.Product, newBarcode);
+                    SetStringPropertyValue(clone, chosenField, values[i]);
 
-                    var clone = new MProducts
-                    {
-                        ProductName = baseRow.Product.ProductName,
-                        ProductCode = baseRow.Product.ProductCode,
-                        Barcode = newBarcode,
-                        // Guard against cloning a 0/invalid lookup id (e.g. a base
-                        // row whose Product came from a code path that didn't
-                        // populate these) — falling back to the first available
-                        // lookup avoids an FK-constraint failure on Save.
-                        CategoryId = baseRow.Product.CategoryId > 0
-                            ? baseRow.Product.CategoryId
-                            : (Categories.Any() ? Categories.First().Id : 1),
-                        SubCategoryId = baseRow.Product.SubCategoryId > 0
-                            ? baseRow.Product.SubCategoryId
-                            : (SubCategories.Any() ? SubCategories.First().Id : 1),
-                        UnitId = baseRow.Product.UnitId > 0
-                            ? baseRow.Product.UnitId
-                            : (Units.Any() ? Units.First().Id : 1),
-                        HSNCode = baseRow.Product.HSNCode,
-                        PartGroup = baseRow.Product.PartGroup,
-                        Description = baseRow.Product.Description,
-                        PurchasePrice = baseRow.Product.PurchasePrice,
-                        RetailSalePrice = baseRow.Product.RetailSalePrice,
-                        WholesalePrice = baseRow.Product.WholesalePrice,
-                        DiscountPercentage = baseRow.Product.DiscountPercentage,
-                        CGST = baseRow.Product.CGST,
-                        SGST = baseRow.Product.SGST,
-                        IGST = baseRow.Product.IGST,
-                        CESS = baseRow.Product.CESS,
-                        MRP = baseRow.Product.MRP,
-                        Godown = baseRow.Product.Godown,
-                        Rack = baseRow.Product.Rack,
-                        Batch = baseRow.Product.Batch,
-                        MfgDate = baseRow.Product.MfgDate,
-                        ExpDate = baseRow.Product.ExpDate,
-                        // Blank — filled in later, per "fixed count" variety mode
-                        Size = null,
-                        Colour = null,
-                        IMEI1 = null,
-                        IMEI2 = null
-                    };
+                    var newRow = AddRow(clone, isNew: true, insertIndex: baseIndex + i);
+                    newRow.Quantity = quantities[i];
 
-                    AddRow(clone, isNew: true, insertIndex: baseIndex + 1 + i);
-                    totalAdded++;
+                    totalRowsAdded++;
                 }
             }
 
             ProductGrid.Items.Refresh();
-            MessageBox.Show(
-                $"✔ Added {totalAdded} new copy/copies directly below the row(s) you copied, " +
-                "using the next available barcode(s) after your last product. " +
-                "No existing item's barcode was changed.\nFill in Size/Colour directly in the grid if needed.",
-                "Copies Added", MessageBoxButton.OK, MessageBoxImage.Information);
+
+            if (totalRowsAdded > 0)
+            {
+                MessageBox.Show(
+                    $"✔ Added {totalRowsAdded} new variant row(s), using the next available " +
+                    "barcode(s) after your last product. No existing item's barcode was changed.",
+                    "Variance Added", MessageBoxButton.OK, MessageBoxImage.Information);
+            }
         }
+
+        // Fields eligible to vary by — every writable string property on
+        // MProducts except Barcode (auto-generated per row) and ProductName
+        // (stays the same across variants of the same product).
+        private static readonly string[] ExcludedFromVariance = { "Barcode", "ProductName" };
+
+        private List<string> GetVarianceEligibleFields()
+        {
+            return typeof(MProducts).GetProperties(BindingFlags.Public | BindingFlags.Instance)
+                .Where(p => p.CanWrite && p.PropertyType == typeof(string)
+                            && !ExcludedFromVariance.Contains(p.Name))
+                .Select(p => p.Name)
+                .OrderBy(n => n)
+                .ToList();
+        }
+
+        private static string GetStringPropertyValue(MProducts product, string fieldName)
+        {
+            var prop = typeof(MProducts).GetProperty(fieldName);
+            return (prop?.GetValue(product) as string) ?? "";
+        }
+
+        private static void SetStringPropertyValue(MProducts product, string fieldName, string value)
+        {
+            var prop = typeof(MProducts).GetProperty(fieldName);
+            if (prop != null && prop.CanWrite) prop.SetValue(product, value);
+        }
+
+        // Same field set as the old Add Copies clone, minus the field being
+        // varied (that's set by the caller right after this returns) and
+        // minus IMEI1/IMEI2, which are never cloned — they identify a single
+        // physical device, so duplicating them across variants would create
+        // duplicate IMEIs in the product master.
+        private MProducts CloneForVariance(MProducts baseProduct, string newBarcode) => new MProducts
+        {
+            ProductName = baseProduct.ProductName,
+            ProductCode = baseProduct.ProductCode,
+            Barcode = newBarcode,
+            CategoryId = baseProduct.CategoryId > 0
+                ? baseProduct.CategoryId
+                : (Categories.Any() ? Categories.First().Id : 1),
+            SubCategoryId = baseProduct.SubCategoryId > 0
+                ? baseProduct.SubCategoryId
+                : (SubCategories.Any() ? SubCategories.First().Id : 1),
+            UnitId = baseProduct.UnitId > 0
+                ? baseProduct.UnitId
+                : (Units.Any() ? Units.First().Id : 1),
+            HSNCode = baseProduct.HSNCode,
+            PartGroup = baseProduct.PartGroup,
+            Description = baseProduct.Description,
+            PurchasePrice = baseProduct.PurchasePrice,
+            RetailSalePrice = baseProduct.RetailSalePrice,
+            WholesalePrice = baseProduct.WholesalePrice,
+            DiscountPercentage = baseProduct.DiscountPercentage,
+            CGST = baseProduct.CGST,
+            SGST = baseProduct.SGST,
+            IGST = baseProduct.IGST,
+            CESS = baseProduct.CESS,
+            MRP = baseProduct.MRP,
+            Godown = baseProduct.Godown,
+            Rack = baseProduct.Rack,
+            Batch = baseProduct.Batch,
+            MfgDate = baseProduct.MfgDate,
+            ExpDate = baseProduct.ExpDate,
+            Size = baseProduct.Size,
+            Colour = baseProduct.Colour,
+            IMEI1 = null,
+            IMEI2 = null
+        };
 
         // ── Delete Selected — removes rows from the grid immediately;
         //    for pre-existing products, the actual DB delete happens at
         //    Save (see Save_Click), so Cancel undoes this cleanly. ──
         private void DeleteSelected_Click(object sender, RoutedEventArgs e)
         {
-            // NEW — same edit-transaction guard as AddCopies_Click/
+            // NEW — same edit-transaction guard as AddVariance_Click/
             // ApplyBulk_Click. Removing rows via Rows.Remove() while a cell
             // is mid-edit can leave the grid's CollectionView in a bad
             // state too (even though this handler doesn't call Refresh()
@@ -1009,13 +1060,13 @@ namespace MyWPFCRUDApp.Views
 
         // ── Save ─────────────────────────────────────────────────────────────
         // Bulk Edit's sole purpose is shaping the in-memory rows for this
-        // invoice session — bulk field edits, Add Copies (variance), and
-        // deletions. It NEVER writes to the database itself. This method just
-        // packages the final grid state for the caller; the actual
-        // Insert/Update/Delete calls happen later, in PurchaseViewModel's
-        // SavePurchase(), when the user clicks SAVE INVOICE on the Purchase
-        // screen — so Cancel here, or cancelling the whole invoice afterwards,
-        // always leaves the database untouched.
+        // invoice session — bulk field edits, Add Variance, and deletions. It
+        // NEVER writes to the database itself. This method just packages the
+        // final grid state for the caller; the actual Insert/Update/Delete
+        // calls happen later, in PurchaseViewModel's SavePurchase(), when the
+        // user clicks SAVE INVOICE on the Purchase screen — so Cancel here,
+        // or cancelling the whole invoice afterwards, always leaves the
+        // database untouched.
         private void Save_Click(object sender, RoutedEventArgs e)
         {
             // NEW — commit any in-progress cell edit before reading Rows, so
@@ -1058,14 +1109,15 @@ namespace MyWPFCRUDApp.Views
 
             // FIX: ordered snapshot of the grid, one entry per row, in the exact
             // order shown on screen. Rows (deleted rows are already gone from
-            // Rows by this point) is already in the correct order — Add Copies
-            // inserts each new row directly under the row it was copied from —
-            // but NewProducts/UpdatedInvoiceLines above are flat lists that lose
-            // that ordering. The caller uses ResultLines to rebuild PurchaseItems
-            // in this same order instead of updating existing lines in place and
-            // appending new ones at the end, which is why variance copies used
-            // to always land at the bottom of the invoice regardless of where
-            // they were created in this grid.
+            // Rows by this point) is already in the correct order — Add
+            // Variance inserts each new row directly under the row it was
+            // created from — but NewProducts/UpdatedInvoiceLines above are
+            // flat lists that lose that ordering. The caller uses
+            // ResultLines to rebuild PurchaseItems in this same order
+            // instead of updating existing lines in place and appending new
+            // ones at the end, which is why variance rows used to always
+            // land at the bottom of the invoice regardless of where they
+            // were created in this grid.
             ResultLines = Rows.Select(r => new BulkEditResultLine
             {
                 Product = r.Product,
