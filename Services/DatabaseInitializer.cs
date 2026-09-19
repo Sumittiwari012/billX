@@ -592,7 +592,8 @@ namespace MyWPFCRUDApp.Services
     "MODIFY COLUMN CGST DECIMAL(5,2) NOT NULL DEFAULT 0.00, " +
     "MODIFY COLUMN SGST DECIMAL(5,2) NOT NULL DEFAULT 0.00, " +
     "MODIFY COLUMN IGST DECIMAL(5,2) NOT NULL DEFAULT 0.00;"
-}
+},
+                { "add_json_string_to_productquantity","ALTER TABLE ProductQuantity ADD COLUMN PurchaseQuantity LONGTEXT NULL;" }
 
 
         // Future changes go here:

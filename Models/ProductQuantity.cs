@@ -11,6 +11,8 @@ namespace MyWPFCRUDApp.Models
 
         public long Quantity { get; set; } = 0;
 
+        public string? PurchaseQuantity { get; set; }
+
         
 
 
