@@ -438,11 +438,12 @@ namespace MyWPFCRUDApp.Services
                 foreach (var (masterId, master) in masterIds)
                 {
                     var detailSql = @"SELECT d.ProductId, d.Quantity, d.PurchasePrice,
-                                     d.WholesalePrice, d.MRP, d.RetailPrice, d.AfterTaxation,
-                                     p.ProductName, p.Barcode
-                              FROM MPurchaseDetail d
-                              LEFT JOIN MProducts p ON p.Id = d.ProductId
-                              WHERE d.PurchaseMasterId = @MasterId";
+                         d.WholesalePrice, d.MRP, d.RetailPrice, d.AfterTaxation,
+                         p.ProductName, p.Barcode,
+                         p.HSNCode, p.Size, p.Colour, p.CGST, p.SGST, p.IGST
+                  FROM MPurchaseDetail d
+                  LEFT JOIN MProducts p ON p.Id = d.ProductId
+                  WHERE d.PurchaseMasterId = @MasterId";
 
                     using var cmdDetail = new MySqlCommand(detailSql, conn);
                     cmdDetail.Parameters.AddWithValue("@MasterId", masterId);
@@ -461,6 +462,12 @@ namespace MyWPFCRUDApp.Services
                             MRP = dr.GetDecimal("MRP"),
                             Retail = dr["RetailPrice"] == DBNull.Value ? 0m : dr.GetDecimal("RetailPrice"),
                             AfterTaxation = dr.GetDecimal("AfterTaxation"),
+                            HSNCode = dr["HSNCode"] == DBNull.Value ? null : dr.GetString("HSNCode"),
+                            Size = dr["Size"] == DBNull.Value ? null : dr.GetString("Size"),
+                            Colour = dr["Colour"] == DBNull.Value ? null : dr.GetString("Colour"),
+                            CGST = dr["CGST"] == DBNull.Value ? 0m : Convert.ToDecimal(dr["CGST"]),
+                            SGST = dr["SGST"] == DBNull.Value ? 0m : Convert.ToDecimal(dr["SGST"]),
+                            IGST = dr["IGST"] == DBNull.Value ? 0m : Convert.ToDecimal(dr["IGST"]),
                         });
                     }
                 }
@@ -593,20 +600,38 @@ namespace MyWPFCRUDApp.Services
                     // Update product prices/details to the latest values — this
                     // is the "replace everything except quantity" part.
                     var updateProductSql = @"UPDATE MProducts SET
-                PurchasePrice   = @Price,
-                WholesalePrice  = @Wholesale,
-                MRP             = @MRP,
-                RetailSalePrice = @Retail,
-                ModifiedBy      = 'WPFUser',
-                ModifiedDate    = @Now
-                WHERE Id = @ProductId";
+    ProductName     = IF(@ProductName IS NULL OR @ProductName = '', ProductName, @ProductName),
+    PurchasePrice   = @Price,
+    WholesalePrice  = @Wholesale,
+    MRP             = @MRP,
+    RetailSalePrice = @Retail,
+    HSNCode         = COALESCE(@HSNCode, HSNCode),
+    Size            = COALESCE(@Size, Size),
+    Colour          = COALESCE(@Colour, Colour),
+    CGST            = @CGST,
+    SGST            = @SGST,
+    IGST            = @IGST,
+    ModifiedBy      = 'WPFUser',
+    ModifiedDate    = @Now
+    WHERE Id = @ProductId";
 
                     using (var cmd = new MySqlCommand(updateProductSql, conn, trans))
                     {
+                        cmd.Parameters.AddWithValue("@ProductName",
+                            string.IsNullOrWhiteSpace(detail.ProductName) ? (object)DBNull.Value : detail.ProductName.Trim());
                         cmd.Parameters.AddWithValue("@Price", detail.PurchasePrice);
                         cmd.Parameters.AddWithValue("@Wholesale", detail.WholesalePrice);
                         cmd.Parameters.AddWithValue("@MRP", detail.MRP);
                         cmd.Parameters.AddWithValue("@Retail", detail.Retail);
+                        cmd.Parameters.AddWithValue("@HSNCode",
+                            string.IsNullOrWhiteSpace(detail.HSNCode) ? (object)DBNull.Value : detail.HSNCode);
+                        cmd.Parameters.AddWithValue("@Size",
+                            string.IsNullOrWhiteSpace(detail.Size) ? (object)DBNull.Value : detail.Size);
+                        cmd.Parameters.AddWithValue("@Colour",
+                            string.IsNullOrWhiteSpace(detail.Colour) ? (object)DBNull.Value : detail.Colour);
+                        cmd.Parameters.AddWithValue("@CGST", (double)detail.CGST);
+                        cmd.Parameters.AddWithValue("@SGST", (double)detail.SGST);
+                        cmd.Parameters.AddWithValue("@IGST", (double)detail.IGST);
                         cmd.Parameters.AddWithValue("@Now", DateTime.Now);
                         cmd.Parameters.AddWithValue("@ProductId", detail.ProductId);
                         cmd.ExecuteNonQuery();
