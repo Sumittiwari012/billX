@@ -358,77 +358,60 @@ namespace MyWPFCRUDApp.Views
 
             foreach (var item in invoiceItems)
             {
-                if (item.ProductId > 0)
+                MProducts product;
+                bool isNew;
+
+                if (item.Product != null)
                 {
-                    var master = allProducts.FirstOrDefault(p => p.Id == item.ProductId)
-                                 ?? _productService.GetByBarcode(item.Barcode);
+                    // Carries everything from an earlier Bulk Edit session
+                    // (category, subcategory, unit, rack, etc.), even if not yet saved to the DB.
+                    product = CloneProduct(item.Product);
+                    isNew = item.ProductId <= 0;
+                    if (!isNew) product.Id = item.ProductId;
+                }
+                else
+                {
+                    MProducts? master = item.ProductId > 0
+                        ? (allProducts.FirstOrDefault(p => p.Id == item.ProductId)
+                           ?? _productService.GetByBarcode(item.Barcode))
+                        : null;
+
                     if (master != null)
                     {
-                        // FIX: previously this row was built straight from
-                        // `master` — whatever is currently saved in the
-                        // database — completely ignoring any edits the user
-                        // just made directly in the Purchase invoice grid
-                        // (Product Name / Wholesale / MRP / Retail / Price).
-                        // That meant opening Bulk Edit right after editing a
-                        // value in the invoice always showed the OLD,
-                        // pre-edit value, and the user had to SAVE INVOICE
-                        // first just to see their own edit reflected here.
-                        //
-                        // Clone the master (never mutate the shared instance
-                        // other parts of the app — dropdowns, Products list —
-                        // may still be holding), then overlay the invoice
-                        // line's live, currently-edited values on top. The
-                        // row shown in Bulk Edit now matches exactly what's
-                        // sitting in the Purchase Views grid at the moment
-                        // the user clicked ✏ Edit — nothing needs to be saved
-                        // first for it to show up here.
-                        var existing = CloneProduct(master);
-
-                        existing.ProductName = string.IsNullOrWhiteSpace(item.ProductName)
-                            ? existing.ProductName : item.ProductName;
-                        existing.PurchasePrice = item.PurchasePrice;
-                        existing.WholesalePrice = item.WholesalePrice;
-                        existing.MRP = item.MRP;
-                        existing.RetailSalePrice = item.Retail;
-
-                        // HSNCode/Size/Colour aren't populated on
-                        // MPurchaseDetail for a plain barcode-scanned/cart-
-                        // added item (only Excel Import fills them), so only
-                        // overlay these when the invoice line actually
-                        // carries a value — otherwise we'd blank out real
-                        // master data with empty defaults for the common
-                        // "just scanned it" case.
-                        if (!string.IsNullOrWhiteSpace(item.HSNCode)) existing.HSNCode = item.HSNCode;
-                        if (!string.IsNullOrWhiteSpace(item.Size)) existing.Size = item.Size;
-                        if (!string.IsNullOrWhiteSpace(item.Colour)) existing.Colour = item.Colour;
-
-                        AddRow(existing, isNew: false, sourceInvoiceItem: item);
-                        continue;
+                        product = CloneProduct(master);
+                        isNew = false;
+                    }
+                    else
+                    {
+                        long catId = Categories.FirstOrDefault()?.Id ?? 1;
+                        product = new MProducts
+                        {
+                            ProductName = item.ProductName,
+                            Barcode = item.Barcode,
+                            CategoryId = catId,
+                            SubCategoryId = SubCategories.FirstOrDefault(s => s.CategoryId == catId)?.Id
+                                            ?? SubCategories.FirstOrDefault()?.Id ?? 1,
+                            UnitId = Units.FirstOrDefault()?.Id ?? 1,
+                            CGST = (double)item.CGST,
+                            SGST = (double)item.SGST,
+                            IGST = (double)item.IGST,
+                            CESS = 0
+                        };
+                        isNew = true;
                     }
                 }
 
-                // Not saved yet (e.g. from Excel import / scanned bill) —
-                // build a skeleton MProducts from what the invoice line has.
-                var skeleton = new MProducts
-                {
-                    ProductName = item.ProductName,
-                    Barcode = item.Barcode,
-                    CategoryId = Categories.Any() ? Categories.First().Id : 1,
-                    SubCategoryId = SubCategories.Any() ? SubCategories.First().Id : 1,
-                    UnitId = Units.Any() ? Units.First().Id : 1,
-                    PurchasePrice = item.PurchasePrice,
-                    WholesalePrice = item.WholesalePrice,
-                    RetailSalePrice = item.Retail,
-                    MRP = item.MRP,
-                    HSNCode = item.HSNCode,
-                    Size = item.Size,
-                    Colour = item.Colour,
-                    CGST = (double)item.CGST,
-                    SGST = (double)item.SGST,
-                    IGST = (double)item.IGST,
-                    CESS = 0
-                };
-                AddRow(skeleton, isNew: true, sourceInvoiceItem: item);
+                // Overlay the invoice line's live values
+                if (!string.IsNullOrWhiteSpace(item.ProductName)) product.ProductName = item.ProductName;
+                product.PurchasePrice = item.PurchasePrice;
+                product.WholesalePrice = item.WholesalePrice;
+                product.MRP = item.MRP;
+                product.RetailSalePrice = item.Retail;
+                if (!string.IsNullOrWhiteSpace(item.HSNCode)) product.HSNCode = item.HSNCode;
+                if (!string.IsNullOrWhiteSpace(item.Size)) product.Size = item.Size;
+                if (!string.IsNullOrWhiteSpace(item.Colour)) product.Colour = item.Colour;
+
+                AddRow(product, isNew, sourceInvoiceItem: item);
             }
         }
 
@@ -1141,6 +1124,19 @@ namespace MyWPFCRUDApp.Views
         {
             DialogResult = false;
             Close();
+        }
+        // Category / SubCategory / Unit cells show row.CategoryName etc., which are
+        // display-only copies. Picking from the dropdown updates Product.CategoryId,
+        // but nothing refreshed those names, so the cell kept showing the old text.
+        private void ProductGrid_CellEditEnding(object sender, DataGridCellEditEndingEventArgs e)
+        {
+            if (e.EditAction != DataGridEditAction.Commit || e.Row.Item is not ProductEditRow row)
+                return;
+
+            // The binding pushes the new value into Product after this event fires,
+            // so refresh the display names afterwards, not immediately.
+            Dispatcher.BeginInvoke(new Action(() => RefreshLookupDisplay(row)),
+                System.Windows.Threading.DispatcherPriority.Background);
         }
     }
 }

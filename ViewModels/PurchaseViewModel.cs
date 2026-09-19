@@ -1460,20 +1460,35 @@ namespace MyWPFCRUDApp.ViewModels
         //     deleted product can't be purchased.
         // ════════════════════════════════════════════════════════════════════════
         public void RefreshAfterProductEdit(
-            List<MProducts> savedProducts,
-            List<(MProducts Product, double Quantity)> newProducts,
-            List<string> deletedBarcodes,
-            List<(MPurchaseDetail Source, MProducts Product)> updatedInvoiceLines,
-            List<MProducts> productsToInsert, List<MProducts> productsToUpdate, List<MProducts> productsToDelete,
-            List<ProductBulkEditWindow.BulkEditResultLine> resultLines)
+    List<MProducts> savedProducts,
+    List<(MProducts Product, double Quantity)> newProducts,
+    List<string> deletedBarcodes,
+    List<(MPurchaseDetail Source, MProducts Product)> updatedInvoiceLines,
+    List<MProducts> productsToInsert, List<MProducts> productsToUpdate, List<MProducts> productsToDelete,
+    List<ProductBulkEditWindow.BulkEditResultLine> resultLines)
         {
-            // Stage the product-master changes Bulk Edit produced — actually
-            // applied to the database inside SavePurchase(), not here. This
-            // keeps closing Bulk Edit a purely in-memory step for the invoice
-            // you're building; nothing commits until SAVE INVOICE.
+            // Stage the product-master changes Bulk Edit produced. They are applied
+            // to the database inside SavePurchase(), not here, so closing Bulk Edit
+            // stays a purely in-memory step until SAVE INVOICE.
+            //
+            // Every IsNew row in the grid is re-reported each session, so the staged
+            // inserts are replaced wholesale. This also drops new rows that were
+            // deleted in a later session, so they aren't inserted at SAVE.
+            _pendingProductInserts.Clear();
             _pendingProductInserts.AddRange(productsToInsert);
-            _pendingProductUpdates.AddRange(productsToUpdate);
-            _pendingProductDeletes.AddRange(productsToDelete);
+
+            // Updates and deletes accumulate across sessions, but replace by Id so
+            // a second session never leaves an older copy of the same product staged.
+            foreach (var p in productsToUpdate)
+            {
+                _pendingProductUpdates.RemoveAll(x => x.Id == p.Id);
+                _pendingProductUpdates.Add(p);
+            }
+            foreach (var p in productsToDelete)
+            {
+                if (!_pendingProductDeletes.Any(x => x.Id == p.Id))
+                    _pendingProductDeletes.Add(p);
+            }
 
             // Reflect the staged changes in the local Products list (used by
             // dropdowns / barcode search) without touching the database.
@@ -1490,33 +1505,27 @@ namespace MyWPFCRUDApp.ViewModels
             }
             OnPropertyChanged(nameof(Products));
 
-            // FIX: rebuild PurchaseItems from resultLines — an ordered snapshot
-            // of the Bulk Edit grid taken at Save time — instead of updating
-            // existing lines in place (keeping their old position) and appending
-            // every new line at the end. Add Copies already inserts each variance
-            // copy directly under the row it was copied from inside the Bulk Edit
-            // grid, but that ordering was being discarded here, so copies always
-            // landed at the bottom of the invoice no matter where they were
-            // created. Rebuilding from resultLines in order fixes that.
-            //
-            // Deleted rows are already absent from resultLines (Bulk Edit removes
-            // them from its Rows collection immediately on Delete Selected), so
-            // no separate pass over deletedBarcodes is needed here.
+            // Rebuild PurchaseItems from resultLines, an ordered snapshot of the Bulk
+            // Edit grid taken at Save time, so variance rows land directly under the
+            // row they were created from instead of at the bottom of the invoice.
+            // Deleted rows are already absent from resultLines.
             PurchaseItems.Clear();
 
             foreach (var line in resultLines)
             {
                 if (line.SourceInvoiceItem != null)
                 {
-                    // Existing invoice line — update via the direct row reference
-                    // the edit window handed back, NOT by matching Barcode.
-                    // "Add Copies" can renumber a row's barcode to make room for
-                    // new copies even when that row itself wasn't touched, so
-                    // barcode-matching used to silently miss those lines.
+                    // Existing invoice line: update via the direct row reference the
+                    // edit window handed back, not by matching Barcode.
                     var source = line.SourceInvoiceItem;
                     var product = line.Product;
 
-                    source.ProductId = product.Id;   // still 0 here for a not-yet-inserted product
+                    // NEW: carry the full edited product (category, subcategory,
+                    // unit, rack, etc.) on the invoice line, so reopening Bulk Edit
+                    // rebuilds from it instead of resetting to database/default values.
+                    source.Product = product;
+
+                    source.ProductId = product.Id;      // still 0 for a not-yet-inserted product
                     source.ProductName = product.ProductName;
                     source.Barcode = product.Barcode;   // keep in sync if it was renumbered
                     source.PurchasePrice = product.PurchasePrice;
@@ -1524,13 +1533,6 @@ namespace MyWPFCRUDApp.ViewModels
                     source.MRP = product.MRP;
                     source.Retail = product.RetailSalePrice;
 
-                    // FIX: HSNCode/Size/Colour/CGST/SGST/IGST were never
-                    // copied here, so any edit made to these fields directly
-                    // in the Bulk Edit grid for an EXISTING row was silently
-                    // discarded the moment you clicked Save All Changes —
-                    // PurchaseItems kept whatever value it had before Bulk
-                    // Edit even opened. Now the invoice line actually
-                    // reflects what's shown in the grid.
                     source.HSNCode = product.HSNCode;
                     source.Size = product.Size;
                     source.Colour = product.Colour;
@@ -1542,34 +1544,22 @@ namespace MyWPFCRUDApp.ViewModels
                 }
                 else
                 {
-                    // Brand-new line (created via Add Copies). Use the quantity
-                    // typed into the Bulk Edit grid for this row instead of
-                    // hardcoding 1, and calculate AfterTaxation from that real
-                    // quantity (qty * price) instead of just PurchasePrice.
+                    // Brand-new line (created via Add Variance). Uses the quantity
+                    // typed into the Bulk Edit grid, and AfterTaxation = qty * price.
                     double qty = line.Quantity > 0 ? line.Quantity : 1;
                     var newProd = line.Product;
 
                     PurchaseItems.Add(new MPurchaseDetail
                     {
-                        ProductId = newProd.Id, // 0 — created for real in SavePurchase()
+                        ProductId = newProd.Id,   // 0, created for real in SavePurchase()
                         ProductName = newProd.ProductName,
                         Barcode = newProd.Barcode,
-                        Product = newProd,
+                        Product = newProd,        // already carried on new lines
                         Quantity = qty,
                         PurchasePrice = newProd.PurchasePrice,
                         WholesalePrice = newProd.WholesalePrice,
                         MRP = newProd.MRP,
                         Retail = newProd.RetailSalePrice,
-                        // FIX: this is the actual bug behind "colour isn't
-                        // copied to Add Copies rows, and sizes I typed
-                        // disappear after reopening Bulk Edit". This new
-                        // MPurchaseDetail never read HSNCode/Size/Colour/
-                        // CGST/SGST/IGST off newProd, so whatever you typed
-                        // into those cells for a new copy was thrown away
-                        // the instant you clicked Save All Changes — it
-                        // never reached PurchaseItems in the first place,
-                        // which is why BuildRows() finds nothing there the
-                        // next time Bulk Edit opens.
                         HSNCode = newProd.HSNCode,
                         Size = newProd.Size,
                         Colour = newProd.Colour,

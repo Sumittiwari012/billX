@@ -132,6 +132,7 @@ namespace MyWPFCRUDApp.Services
                             cmdQty.Parameters.AddWithValue("@Barcode", detail.Barcode);
                             cmdQty.ExecuteNonQuery();
                         }
+                        RecordPurchaseQuantity(detail.Barcode, detail.PurchasePrice, detail.Quantity, conn, trans);
                     }
 
 
@@ -222,6 +223,30 @@ namespace MyWPFCRUDApp.Services
             using var cmd = new MySqlCommand(sql, conn, trans);
             var result = cmd.ExecuteScalar();
             return result != null && result != DBNull.Value ? Convert.ToInt64(result) : 1;
+        }
+        private static void RecordPurchaseQuantity(
+    string barcode, decimal price, double quantity,
+    MySqlConnection conn, MySqlTransaction trans)
+        {
+            string? current;
+            using (var sel = new MySqlCommand(
+                "SELECT PurchaseQuantity FROM ProductQuantity WHERE Barcode = @Barcode FOR UPDATE",
+                conn, trans))
+            {
+                sel.Parameters.AddWithValue("@Barcode", barcode);
+                var result = sel.ExecuteScalar();
+                if (result == null) return;   // no ProductQuantity row for this barcode
+                current = result == DBNull.Value ? null : result.ToString();
+            }
+
+            string updated = PurchaseBatchHelper.AddPurchase(current, price, quantity);
+
+            using var upd = new MySqlCommand(
+                "UPDATE ProductQuantity SET PurchaseQuantity = @Json WHERE Barcode = @Barcode",
+                conn, trans);
+            upd.Parameters.AddWithValue("@Json", updated);
+            upd.Parameters.AddWithValue("@Barcode", barcode);
+            upd.ExecuteNonQuery();
         }
 
         /// <summary>

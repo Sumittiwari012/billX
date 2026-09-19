@@ -175,15 +175,16 @@
         <Border Grid.Row="2" Background="White" CornerRadius="8"
                 BorderBrush="#DEE2E6" BorderThickness="1">
             <DataGrid x:Name="ProductGrid"
-                      AutoGenerateColumns="False"
-                      CanUserAddRows="False"
-                      IsReadOnly="False"
-                      AlternatingRowBackground="#F8F9FA"
-                      GridLinesVisibility="Horizontal"
-                      HorizontalGridLinesBrush="#E9ECEF"
-                      RowHeaderWidth="0"
-                      PreviewMouseMove="ProductGrid_PreviewMouseMove"
-                      PreviewMouseLeftButtonUp="ProductGrid_PreviewMouseLeftButtonUp">
+          AutoGenerateColumns="False"
+          CanUserAddRows="False"
+          IsReadOnly="False"
+          AlternatingRowBackground="#F8F9FA"
+          GridLinesVisibility="Horizontal"
+          HorizontalGridLinesBrush="#E9ECEF"
+          RowHeaderWidth="0"
+          CellEditEnding="ProductGrid_CellEditEnding"
+          PreviewMouseMove="ProductGrid_PreviewMouseMove"
+          PreviewMouseLeftButtonUp="ProductGrid_PreviewMouseLeftButtonUp">
                 <DataGrid.Columns>
 
                     <!-- Select (always visible) — header checkbox does
