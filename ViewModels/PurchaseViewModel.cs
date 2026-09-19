@@ -1519,6 +1519,7 @@ namespace MyWPFCRUDApp.ViewModels
                     source.ProductId = product.Id;   // still 0 here for a not-yet-inserted product
                     source.ProductName = product.ProductName;
                     source.Barcode = product.Barcode;   // keep in sync if it was renumbered
+                    source.PurchasePrice = product.PurchasePrice;
                     source.WholesalePrice = product.WholesalePrice;
                     source.MRP = product.MRP;
                     source.Retail = product.RetailSalePrice;
