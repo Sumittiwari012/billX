@@ -374,9 +374,12 @@ namespace MyWPFCRUDApp.Services
                 var productCode = row.Table.Columns.Contains("ProductCode") && row["ProductCode"] != DBNull.Value
                     ? row["ProductCode"].ToString()
                     : null;
+                var purchaseQuantity = row.Table.Columns.Contains("PurchaseQuantity") && row["PurchaseQuantity"] != DBNull.Value
+                    ? row["PurchaseQuantity"].ToString()
+                    : null;
 
                 await InsertProductQuantityAsync(
-                    localConn, localTx, barcode, productCode, minSelling, quantity, cancellationToken);
+                    localConn, localTx, barcode, productCode, minSelling, quantity, purchaseQuantity, cancellationToken);
                 inserted++;
             }
 
@@ -396,13 +399,18 @@ namespace MyWPFCRUDApp.Services
             return barcodes;
         }
 
+        /// <summary>
+        /// Inserts a single new ProductQuantity row, including PurchaseQuantity
+        /// (the JSON-string column of {"PurchasePrice":..,"Quantity":..} entries)
+        /// carried over as-is from the cloud row, if present.
+        /// </summary>
         private static async Task InsertProductQuantityAsync(
-    MySqlConnection conn, MySqlTransaction tx, string barcode, string? productCode,
-    long minSelling, long quantity, string? purchaseQuantity, CancellationToken cancellationToken)
+            MySqlConnection conn, MySqlTransaction tx, string barcode, string? productCode,
+            long minSelling, long quantity, string? purchaseQuantity, CancellationToken cancellationToken)
         {
             const string sql = @"
-        INSERT INTO ProductQuantity (ProductCode, Barcode, MinimumSellingQuantity, Quantity, PurchaseQuantity)
-        VALUES (@productCode, @barcode, @minSelling, @quantity, @purchaseQuantity);";
+                INSERT INTO ProductQuantity (ProductCode, Barcode, MinimumSellingQuantity, Quantity, PurchaseQuantity)
+                VALUES (@productCode, @barcode, @minSelling, @quantity, @purchaseQuantity);";
 
             using var cmd = new MySqlCommand(sql, conn, tx);
             cmd.Parameters.AddWithValue("@productCode", (object?)productCode ?? DBNull.Value);
