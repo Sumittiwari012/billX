@@ -397,18 +397,19 @@ namespace MyWPFCRUDApp.Services
         }
 
         private static async Task InsertProductQuantityAsync(
-            MySqlConnection conn, MySqlTransaction tx, string barcode, string? productCode,
-            long minSelling, long quantity, CancellationToken cancellationToken)
+    MySqlConnection conn, MySqlTransaction tx, string barcode, string? productCode,
+    long minSelling, long quantity, string? purchaseQuantity, CancellationToken cancellationToken)
         {
             const string sql = @"
-                INSERT INTO ProductQuantity (ProductCode, Barcode, MinimumSellingQuantity, Quantity)
-                VALUES (@productCode, @barcode, @minSelling, @quantity);";
+        INSERT INTO ProductQuantity (ProductCode, Barcode, MinimumSellingQuantity, Quantity, PurchaseQuantity)
+        VALUES (@productCode, @barcode, @minSelling, @quantity, @purchaseQuantity);";
 
             using var cmd = new MySqlCommand(sql, conn, tx);
             cmd.Parameters.AddWithValue("@productCode", (object?)productCode ?? DBNull.Value);
             cmd.Parameters.AddWithValue("@barcode", barcode);
             cmd.Parameters.AddWithValue("@minSelling", minSelling);
             cmd.Parameters.AddWithValue("@quantity", quantity);
+            cmd.Parameters.AddWithValue("@purchaseQuantity", (object?)purchaseQuantity ?? DBNull.Value);
             await cmd.ExecuteNonQueryAsync(cancellationToken);
         }
 
