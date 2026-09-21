@@ -2,12 +2,13 @@
 using MyWPFCRUDApp.Models;
 using System;
 using System.Collections.Generic;
+using System.Collections.ObjectModel;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 using System.ComponentModel;
 using System.Runtime.CompilerServices;
-
+using System.Text.Json;
 namespace MyWPFCRUDApp.Services
 {
     public class ProductService
@@ -40,6 +41,53 @@ namespace MyWPFCRUDApp.Services
 
             // Stock
             public long Quantity { get; set; }
+
+            // ObservableCollection so the Purchase History overlay updates live
+            // when the batches are re-sorted.
+            public ObservableCollection<PurchaseBatchDisplay> PurchaseBatches { get; set; } = new();
+
+            // Moves items in place so the UI updates without rebinding.
+            public void ApplyBatchOrder(IList<PurchaseBatchDisplay> order)
+            {
+                for (int i = 0; i < order.Count; i++)
+                {
+                    int cur = PurchaseBatches.IndexOf(order[i]);
+                    if (cur >= 0 && cur != i) PurchaseBatches.Move(cur, i);
+                }
+            }
+
+            // Sorts PurchaseBatches by one field. Rows with no value for the
+            // chosen field always sink to the bottom, ascending or descending.
+            public void SortPurchaseBatches(string key, bool descending)
+            {
+                var items = PurchaseBatches.ToList();
+
+                List<PurchaseBatchDisplay> Sort<TKey>(
+                    Func<PurchaseBatchDisplay, bool> hasValue,
+                    Func<PurchaseBatchDisplay, TKey> selector,
+                    IComparer<TKey>? comparer = null)
+                {
+                    var present = items.Where(hasValue);
+                    var ordered = descending
+                        ? present.OrderByDescending(selector, comparer)
+                        : present.OrderBy(selector, comparer);
+                    return ordered.Concat(items.Where(b => !hasValue(b))).ToList();
+                }
+
+                List<PurchaseBatchDisplay>? sorted = key switch
+                {
+                    "InvoiceNumber" => Sort<string>(b => !string.IsNullOrWhiteSpace(b.InvoiceNumber), b => b.InvoiceNumber!, StringComparer.OrdinalIgnoreCase),
+                    "SupplierName" => Sort<string>(b => !string.IsNullOrWhiteSpace(b.SupplierName), b => b.SupplierName!, StringComparer.OrdinalIgnoreCase),
+                    "Batch" => Sort<string>(b => !string.IsNullOrWhiteSpace(b.Batch), b => b.Batch!, StringComparer.OrdinalIgnoreCase),
+                    "Quantity" => Sort<double>(_ => true, b => b.Quantity),
+                    "PurchasePrice" => Sort<decimal>(_ => true, b => b.PurchasePrice),   // ← NEW
+                    "MfgDate" => Sort<DateTime>(b => b.MfgDate.HasValue, b => b.MfgDate!.Value),
+                    "ExpDate" => Sort<DateTime>(b => b.ExpDate.HasValue, b => b.ExpDate!.Value),
+                    _ => null
+                };
+
+                if (sorted != null) ApplyBatchOrder(sorted);
+            }
 
             // Pricing
             public decimal PurchasePrice { get; set; }
@@ -105,6 +153,65 @@ namespace MyWPFCRUDApp.Services
 
         // ─── INSERT ────────────────────────────────────────────────────────────
 
+        // Wraps a PurchaseBatch entry for display in the UI. Kept separate from
+        // PurchaseBatch itself so display-only properties never get re-serialized
+        // back into the ProductQuantity.PurchaseQuantity JSON.
+        public class PurchaseBatchDisplay
+        {
+            // The original entry — this is what gets serialized back on Save Order,
+            // so no JSON fields are lost in the round trip.
+            public PurchaseBatch Source { get; set; } = null!;
+
+            public string? InvoiceNumber { get; set; }
+            public string? SupplierName { get; set; }
+            public decimal PurchasePrice { get; set; }
+            public double Quantity { get; set; }
+            public string? Batch { get; set; }
+            public DateTime? MfgDate { get; set; }
+            public DateTime? ExpDate { get; set; }
+
+            public string Display
+            {
+                get
+                {
+                    var invPart = string.IsNullOrWhiteSpace(InvoiceNumber) ? "Opening stock" : $"Inv {InvoiceNumber}";
+                    var supplierPart = string.IsNullOrWhiteSpace(SupplierName) ? "" : $" · {SupplierName}";
+                    return $"{invPart} · {Quantity:0.##} @ ₹{PurchasePrice:0.00}{supplierPart}";
+                }
+            }
+        }
+
+        // Parses ProductQuantity.PurchaseQuantity — a JSON array serialized by
+        // PurchaseBatchHelper.AddPurchase — into display-ready rows. Tolerant of
+        // null/empty/malformed JSON so a bad or legacy row never breaks the grid.
+        private static List<PurchaseBatchDisplay> ParsePurchaseBatches(string? json)
+        {
+            if (string.IsNullOrWhiteSpace(json)) return new List<PurchaseBatchDisplay>();
+
+            try
+            {
+                var batches = JsonSerializer.Deserialize<List<PurchaseBatch>>(json);
+                if (batches == null) return new List<PurchaseBatchDisplay>();
+
+                return batches.Select(b => new PurchaseBatchDisplay
+                {
+                    Source = b,
+                    InvoiceNumber = b.InvoiceNumber,
+                    SupplierName = b.SupplierName,
+                    PurchasePrice = b.PurchasePrice,
+                    Quantity = b.Quantity,
+                    Batch = b.Batch,
+                    MfgDate = b.MfgDate,
+                    ExpDate = b.ExpDate
+                }).ToList();
+            }
+            catch
+            {
+                // Malformed JSON — treat as "no history" rather than crashing the grid.
+                return new List<PurchaseBatchDisplay>();
+            }
+        }
+
         // Returns display list with joined CategoryName, SubCategoryName, UnitName
         public List<ProductDisplayModel> GetProductDisplay()
         {
@@ -112,16 +219,17 @@ namespace MyWPFCRUDApp.Services
             using var conn = new MySqlConnection(Con);
             conn.Open();
             var sql = @"SELECT p.*, 
-            c.CategoryName, 
-            sc.SubCategoryName, 
-            u.UnitName,
-            pq.Quantity
-        FROM MProducts p
-        LEFT JOIN MCategory c        ON p.CategoryId    = c.Id
-        LEFT JOIN MSubCategory sc    ON p.SubCategoryId = sc.Id
-        LEFT JOIN MUnit u            ON p.UnitId        = u.Id
-        LEFT JOIN ProductQuantity pq ON p.Barcode        = pq.Barcode
-        ORDER BY p.createdDate";
+    c.CategoryName, 
+    sc.SubCategoryName, 
+    u.UnitName,
+    pq.Quantity,
+    pq.PurchaseQuantity
+FROM MProducts p
+LEFT JOIN MCategory c        ON p.CategoryId    = c.Id
+LEFT JOIN MSubCategory sc    ON p.SubCategoryId = sc.Id
+LEFT JOIN MUnit u            ON p.UnitId        = u.Id
+LEFT JOIN ProductQuantity pq ON p.Barcode        = pq.Barcode
+ORDER BY p.createdDate";
             var cmd = new MySqlCommand(sql, conn);
             using var reader = cmd.ExecuteReader();
             while (reader.Read())
@@ -138,7 +246,10 @@ namespace MyWPFCRUDApp.Services
                     SubCategoryName = reader["SubCategoryName"] == DBNull.Value ? "N/A" : reader.GetString("SubCategoryName"),
                     UnitId = reader.GetInt64("UnitId"),
                     UnitName = reader["UnitName"] == DBNull.Value ? "N/A" : reader.GetString("UnitName"),
+
                     Quantity = reader["Quantity"] == DBNull.Value ? 0 : Convert.ToInt64(reader["Quantity"]),
+                    PurchaseBatches = new ObservableCollection<PurchaseBatchDisplay>(ParsePurchaseBatches(
+                        reader["PurchaseQuantity"] == DBNull.Value ? null : reader["PurchaseQuantity"].ToString())),
                     PurchasePrice = reader.GetDecimal("PurchasePrice"),
                     RetailSalePrice = reader.GetDecimal("RetailSalePrice"),
                     WholesalePrice = reader.GetDecimal("WholesalePrice"),
@@ -164,6 +275,40 @@ namespace MyWPFCRUDApp.Services
             }
             return list;
         }
+
+        // ─── SAVE PURCHASE BATCH ORDER ─────────────────────────────────────────
+        // Re-serializes the batches in their new order into
+        // ProductQuantity.PurchaseQuantity.
+        public bool SavePurchaseBatchOrder(string barcode, IEnumerable<PurchaseBatch> orderedBatches)
+        {
+            LastError = null;
+            try
+            {
+                var json = JsonSerializer.Serialize(orderedBatches.ToList());
+
+                using var conn = new MySqlConnection(Con);
+                conn.Open();
+                using var cmd = new MySqlCommand(@"
+                    UPDATE ProductQuantity
+                    SET    PurchaseQuantity = @Json,
+                           ModifiedDate     = @Now,
+                           ModifiedBy       = @User
+                    WHERE  Barcode = @Barcode", conn);
+
+                cmd.Parameters.AddWithValue("@Json", json);
+                cmd.Parameters.AddWithValue("@Now", DateTime.Now);
+                cmd.Parameters.AddWithValue("@User", "ADMIN");
+                cmd.Parameters.AddWithValue("@Barcode", barcode);
+
+                return cmd.ExecuteNonQuery() > 0;
+            }
+            catch (Exception ex)
+            {
+                LastError = ex.Message;
+                return false;
+            }
+        }
+
         public bool InsertProduct(MProducts p)
         {
             LastError = null;
@@ -255,6 +400,9 @@ namespace MyWPFCRUDApp.Services
             using var trans = conn.BeginTransaction();
             try
             {
+                // FIX: MfgDate was missing from this UPDATE (Batch and ExpDate
+                // were there), so an edited manufacturing date was never
+                // written to the product master.
                 var sql = @"UPDATE MProducts SET
                     ProductName        = @ProductName,
                     ProductCode        = @ProductCode,
@@ -272,6 +420,7 @@ namespace MyWPFCRUDApp.Services
                     IGST               = @IGST,
                     CESS               = @CESS,
                     Batch              = @Batch,
+                    MfgDate            = @MfgDate,
                     ExpDate            = @ExpDate,
                     Size               = @Size,
                     Colour             = @Colour,
@@ -296,6 +445,7 @@ namespace MyWPFCRUDApp.Services
                 cmd.Parameters.AddWithValue("@SGST", p.SGST);
                 cmd.Parameters.AddWithValue("@CESS", p.CESS);
                 cmd.Parameters.AddWithValue("@Batch", p.Batch ?? (object)DBNull.Value);
+                cmd.Parameters.AddWithValue("@MfgDate", p.MfgDate ?? (object)DBNull.Value);
                 cmd.Parameters.AddWithValue("@ExpDate", p.ExpDate ?? (object)DBNull.Value);
                 cmd.Parameters.AddWithValue("@Size", p.Size ?? (object)DBNull.Value);
                 cmd.Parameters.AddWithValue("@Colour", p.Colour ?? (object)DBNull.Value);
@@ -572,6 +722,7 @@ namespace MyWPFCRUDApp.Services
                 return (false, 0, ex.Message);
             }
         }
+
         // ─── SET QUANTITY (absolute set, used by the edit form) ───────────────────
         public bool SetProductQuantity(string barcode, long quantity)
         {
@@ -597,6 +748,7 @@ namespace MyWPFCRUDApp.Services
 
             return cmd.ExecuteNonQuery() > 0;
         }
+
         public string? GetLastBarcode()
         {
             using var conn = new MySqlConnection(Con);
@@ -608,6 +760,7 @@ namespace MyWPFCRUDApp.Services
             var result = cmd.ExecuteScalar();
             return (result == null || result == DBNull.Value) ? null : result.ToString();
         }
+
         // ─── BULK DISCOUNT: update only DiscountPercentage + RetailSalePrice ──────
         public bool UpdateDiscountAndSalePrice(long id, double discountPercentage, decimal retailSalePrice)
         {
@@ -630,6 +783,7 @@ namespace MyWPFCRUDApp.Services
 
             return cmd.ExecuteNonQuery() > 0;
         }
+
         // ─── GET LAST AUTO-GENERATED BARCODE ──────────────────────────────────
         // Used to generate the next sequential barcode (e.g. "GR7809" -> "GR7810").
         // Only barcodes matching "letters followed by digits" count as part of

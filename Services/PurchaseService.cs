@@ -10,6 +10,38 @@ namespace MyWPFCRUDApp.Services
     {
         private string Con => DatabaseHelper.ConnectionString;
 
+        // ── Small helpers for the nullable Batch / MfgDate / ExpDate columns ──
+        private static object ToDbString(string? s) =>
+            string.IsNullOrWhiteSpace(s) ? DBNull.Value : s.Trim();
+
+        private static object ToDbDate(DateTime? d) =>
+            d.HasValue ? (object)d.Value : DBNull.Value;
+
+        // If the purchase line didn't specify a batch / mfg date / exp date, fall
+        // back to whatever the product row itself holds, so the values still get
+        // saved on MPurchaseDetail and land in the PurchaseQuantity JSON entry.
+        // Anything the line DOES specify is left alone.
+        private static void FillBatchDefaultsFromProduct(
+            MPurchaseDetail detail, MySqlConnection conn, MySqlTransaction trans)
+        {
+            if (detail.ProductId <= 0) return;
+            if (!string.IsNullOrWhiteSpace(detail.Batch) && detail.MfgDate.HasValue && detail.ExpDate.HasValue)
+                return;   // line already has everything
+
+            using var cmd = new MySqlCommand(
+                "SELECT Batch, MfgDate, ExpDate FROM MProducts WHERE Id = @Id", conn, trans);
+            cmd.Parameters.AddWithValue("@Id", detail.ProductId);
+            using var rdr = cmd.ExecuteReader();
+            if (!rdr.Read()) return;
+
+            if (string.IsNullOrWhiteSpace(detail.Batch) && rdr["Batch"] != DBNull.Value)
+                detail.Batch = rdr["Batch"].ToString();
+            if (!detail.MfgDate.HasValue && rdr["MfgDate"] != DBNull.Value)
+                detail.MfgDate = Convert.ToDateTime(rdr["MfgDate"]);
+            if (!detail.ExpDate.HasValue && rdr["ExpDate"] != DBNull.Value)
+                detail.ExpDate = Convert.ToDateTime(rdr["ExpDate"]);
+        }
+
         /// <summary>
         /// Records a new purchase. For any line where ProductId == 0 (typed name from scan),
         /// the product is first auto-inserted into MProducts + ProductQuantity using the
@@ -54,6 +86,12 @@ namespace MyWPFCRUDApp.Services
                     masterId = Convert.ToInt64(cmdMaster.ExecuteScalar());
                 }
 
+                // Looked up once per invoice and threaded through to every
+                // line's PurchaseQuantity JSON entry below, so each entry is
+                // self-describing (which invoice, which supplier) without a
+                // join back to MPurchaseMaster/MSupplier later.
+                string? supplierName = GetSupplierName(purchase.SupplierId, conn, trans);
+
                 // 2. Process each detail line
                 foreach (var detail in purchase.MPurchaseDetail)
                 {
@@ -63,13 +101,18 @@ namespace MyWPFCRUDApp.Services
                         detail.ProductId = InsertNewProduct(detail, conn, trans);
                     }
 
+                    // Fill any blank batch / mfg / exp from the product's own row
+                    FillBatchDefaultsFromProduct(detail, conn, trans);
+
                     // ── B. Insert Purchase Detail ────────────────────────────────────
                     var detailSql = @"INSERT INTO MPurchaseDetail (
     PurchaseMasterId, ProductId, Quantity,
-    PurchasePrice, WholesalePrice, MRP, RetailPrice, AfterTaxation
+    PurchasePrice, WholesalePrice, MRP, RetailPrice, AfterTaxation,
+    Batch, MfgDate, ExpDate
 ) VALUES (
     @MasterId, @ProductId, @Qty,
-    @Price, @Wholesale, @MRP, @Retail, @AfterTax
+    @Price, @Wholesale, @MRP, @Retail, @AfterTax,
+    @Batch, @MfgDate, @ExpDate
 )";
 
                     using (var cmdDetail = new MySqlCommand(detailSql, conn, trans))
@@ -82,6 +125,9 @@ namespace MyWPFCRUDApp.Services
                         cmdDetail.Parameters.AddWithValue("@MRP", detail.MRP);
                         cmdDetail.Parameters.AddWithValue("@Retail", detail.Retail);   // ← add
                         cmdDetail.Parameters.AddWithValue("@AfterTax", detail.AfterTaxation);
+                        cmdDetail.Parameters.AddWithValue("@Batch", ToDbString(detail.Batch));
+                        cmdDetail.Parameters.AddWithValue("@MfgDate", ToDbDate(detail.MfgDate));
+                        cmdDetail.Parameters.AddWithValue("@ExpDate", ToDbDate(detail.ExpDate));
                         cmdDetail.ExecuteNonQuery();
                     }
 
@@ -117,25 +163,21 @@ namespace MyWPFCRUDApp.Services
                         cmdProd.Parameters.AddWithValue("@ProductId", detail.ProductId);
                         cmdProd.ExecuteNonQuery();
                     }
+
+                    // ── D. Stock quantity + purchase-batch JSON, in one upsert ───────
+                    // Handles both an existing ProductQuantity row (the normal
+                    // case) AND an existing product that, for whatever reason,
+                    // has no ProductQuantity row at all yet - previously that
+                    // second case silently updated 0 rows and the JSON was
+                    // never created.
                     if (!string.IsNullOrWhiteSpace(detail.Barcode))
                     {
-                        var increaseStockSql = @"UPDATE ProductQuantity SET
-        Quantity     = Quantity + @Qty,
-        ModifiedBy   = 'WPFUser',
-        ModifiedDate = @Now
-        WHERE Barcode = @Barcode";
-
-                        using (var cmdQty = new MySqlCommand(increaseStockSql, conn, trans))
-                        {
-                            cmdQty.Parameters.AddWithValue("@Qty", detail.Quantity);
-                            cmdQty.Parameters.AddWithValue("@Now", DateTime.Now);
-                            cmdQty.Parameters.AddWithValue("@Barcode", detail.Barcode);
-                            cmdQty.ExecuteNonQuery();
-                        }
-                        RecordPurchaseQuantity(detail.Barcode, detail.PurchasePrice, detail.Quantity, conn, trans);
+                        UpsertPurchaseStock(
+                            detail.Barcode, detail.Quantity, detail.PurchasePrice,
+                            purchase.InvoiceNumber, supplierName,
+                            detail.Batch, detail.MfgDate, detail.ExpDate,
+                            conn, trans);
                     }
-
-
                 }
 
                 trans.Commit();
@@ -224,29 +266,95 @@ namespace MyWPFCRUDApp.Services
             var result = cmd.ExecuteScalar();
             return result != null && result != DBNull.Value ? Convert.ToInt64(result) : 1;
         }
-        private static void RecordPurchaseQuantity(
-    string barcode, decimal price, double quantity,
-    MySqlConnection conn, MySqlTransaction trans)
+
+        // ── Helper: supplier's display name, for embedding in the JSON ──────
+        private static string? GetSupplierName(long supplierId, MySqlConnection conn, MySqlTransaction trans)
         {
-            string? current;
+            using var cmd = new MySqlCommand(
+                "SELECT SupplierName FROM MSupplier WHERE Id = @Id", conn, trans);
+            cmd.Parameters.AddWithValue("@Id", supplierId);
+            var result = cmd.ExecuteScalar();
+            return result == null || result == DBNull.Value ? null : result.ToString();
+        }
+
+        /// <summary>
+        /// Adds this invoice's purchase quantity to ProductQuantity.Quantity and
+        /// records/updates the matching entry (by InvoiceNumber) in
+        /// ProductQuantity.PurchaseQuantity's JSON, for the given barcode.
+        ///
+        /// FIX: the previous version (RecordPurchaseQuantity) only ever ran an
+        /// UPDATE, and silently did nothing at all - no stock change, no JSON -
+        /// when no ProductQuantity row existed yet for the barcode (e.g. an
+        /// older/existing product that predates a ProductQuantity row ever
+        /// being created for it). That case is now detected and a new
+        /// ProductQuantity row is INSERTed instead, so both stock and the
+        /// purchase-batch JSON always get recorded.
+        ///
+        /// batch / mfgDate / expDate come from this purchase line and are
+        /// stored on the invoice's JSON entry.
+        /// </summary>
+        private static void UpsertPurchaseStock(
+            string barcode, double quantity, decimal price,
+            string? invoiceNumber, string? supplierName,
+            string? batch, DateTime? mfgDate, DateTime? expDate,
+            MySqlConnection conn, MySqlTransaction trans)
+        {
+            string? currentJson = null;
+            double existingQuantity = 0;
+            bool rowExists;
+
             using (var sel = new MySqlCommand(
-                "SELECT PurchaseQuantity FROM ProductQuantity WHERE Barcode = @Barcode FOR UPDATE",
+                "SELECT PurchaseQuantity, Quantity FROM ProductQuantity WHERE Barcode = @Barcode FOR UPDATE",
                 conn, trans))
             {
                 sel.Parameters.AddWithValue("@Barcode", barcode);
-                var result = sel.ExecuteScalar();
-                if (result == null) return;   // no ProductQuantity row for this barcode
-                current = result == DBNull.Value ? null : result.ToString();
+                using var rdr = sel.ExecuteReader();
+                rowExists = rdr.Read();                      // false = no matching row at all
+                if (rowExists)
+                {
+                    currentJson = rdr["PurchaseQuantity"] == DBNull.Value ? null : rdr["PurchaseQuantity"].ToString();
+                    existingQuantity = rdr["Quantity"] == DBNull.Value ? 0 : Convert.ToDouble(rdr["Quantity"]);
+                }
             }
 
-            string updated = PurchaseBatchHelper.AddPurchase(current, price, quantity);
+            // existingQuantity is the stock level BEFORE this purchase is
+            // applied - if batches haven't been recorded for this barcode
+            // yet, AddPurchase seeds a baseline entry for it.
+            string updatedJson = PurchaseBatchHelper.AddPurchase(
+                currentJson, price, quantity, invoiceNumber, supplierName,
+                existingQuantity,
+                batch: batch, mfgDate: mfgDate, expDate: expDate);
 
-            using var upd = new MySqlCommand(
-                "UPDATE ProductQuantity SET PurchaseQuantity = @Json WHERE Barcode = @Barcode",
-                conn, trans);
-            upd.Parameters.AddWithValue("@Json", updated);
-            upd.Parameters.AddWithValue("@Barcode", barcode);
-            upd.ExecuteNonQuery();
+            if (rowExists)
+            {
+                using var upd = new MySqlCommand(@"
+                    UPDATE ProductQuantity SET
+                        Quantity         = Quantity + @Qty,
+                        PurchaseQuantity = @Json,
+                        ModifiedBy       = 'WPFUser',
+                        ModifiedDate     = @Now
+                    WHERE Barcode = @Barcode", conn, trans);
+                upd.Parameters.AddWithValue("@Qty", quantity);
+                upd.Parameters.AddWithValue("@Json", updatedJson);
+                upd.Parameters.AddWithValue("@Now", DateTime.Now);
+                upd.Parameters.AddWithValue("@Barcode", barcode);
+                upd.ExecuteNonQuery();
+            }
+            else
+            {
+                // No ProductQuantity row exists yet for this barcode at all -
+                // create it now instead of silently dropping the stock/JSON update.
+                using var ins = new MySqlCommand(@"
+                    INSERT INTO ProductQuantity
+                        (Barcode, Quantity, MinimumSellingQuantity, PurchaseQuantity, CreatedBy, CreatedDate)
+                    VALUES
+                        (@Barcode, @Qty, 1, @Json, 'WPFUser', @Now)", conn, trans);
+                ins.Parameters.AddWithValue("@Barcode", barcode);
+                ins.Parameters.AddWithValue("@Qty", quantity);
+                ins.Parameters.AddWithValue("@Json", updatedJson);
+                ins.Parameters.AddWithValue("@Now", DateTime.Now);
+                ins.ExecuteNonQuery();
+            }
         }
 
         /// <summary>
@@ -321,6 +429,7 @@ namespace MyWPFCRUDApp.Services
                 {
                     var detailSql = @"SELECT d.ProductId, d.Quantity, d.PurchasePrice,
                                      d.WholesalePrice, d.MRP, d.RetailPrice, d.AfterTaxation,
+                                     d.Batch, d.MfgDate, d.ExpDate,
                                      p.ProductName, p.Barcode
                               FROM MPurchaseDetail d
                               LEFT JOIN MProducts p ON p.Id = d.ProductId
@@ -343,6 +452,9 @@ namespace MyWPFCRUDApp.Services
                             MRP = dr.GetDecimal("MRP"),
                             Retail = dr["RetailPrice"] == DBNull.Value ? 0m : dr.GetDecimal("RetailPrice"),
                             AfterTaxation = dr.GetDecimal("AfterTaxation"),
+                            Batch = dr["Batch"] == DBNull.Value ? null : dr.GetString("Batch"),
+                            MfgDate = dr["MfgDate"] == DBNull.Value ? null : dr.GetDateTime("MfgDate"),
+                            ExpDate = dr["ExpDate"] == DBNull.Value ? null : dr.GetDateTime("ExpDate"),
                         });
                     }
                 }
@@ -439,6 +551,7 @@ namespace MyWPFCRUDApp.Services
                 {
                     var detailSql = @"SELECT d.ProductId, d.Quantity, d.PurchasePrice,
                          d.WholesalePrice, d.MRP, d.RetailPrice, d.AfterTaxation,
+                         d.Batch, d.MfgDate, d.ExpDate,
                          p.ProductName, p.Barcode,
                          p.HSNCode, p.Size, p.Colour, p.CGST, p.SGST, p.IGST
                   FROM MPurchaseDetail d
@@ -462,6 +575,9 @@ namespace MyWPFCRUDApp.Services
                             MRP = dr.GetDecimal("MRP"),
                             Retail = dr["RetailPrice"] == DBNull.Value ? 0m : dr.GetDecimal("RetailPrice"),
                             AfterTaxation = dr.GetDecimal("AfterTaxation"),
+                            Batch = dr["Batch"] == DBNull.Value ? null : dr.GetString("Batch"),
+                            MfgDate = dr["MfgDate"] == DBNull.Value ? null : dr.GetDateTime("MfgDate"),
+                            ExpDate = dr["ExpDate"] == DBNull.Value ? null : dr.GetDateTime("ExpDate"),
                             HSNCode = dr["HSNCode"] == DBNull.Value ? null : dr.GetString("HSNCode"),
                             Size = dr["Size"] == DBNull.Value ? null : dr.GetString("Size"),
                             Colour = dr["Colour"] == DBNull.Value ? null : dr.GetString("Colour"),
@@ -531,22 +647,27 @@ namespace MyWPFCRUDApp.Services
                 }
 
                 // 1. Update master row
+                // FIX: VendorInvoiceNumber was missing from this UPDATE, so an
+                // edit to the vendor invoice number on a reopened invoice was
+                // never written to the database.
                 var masterSql = @"UPDATE MPurchaseMaster SET
-            InvoiceNumber = @InvoiceNumber,
-            SupplierId    = @SupplierId,
-            PurchaseDate  = @PurchaseDate,
-            TotalAmount   = @TotalAmount,
-            Discount      = @Discount,
-            PaymentMode   = @PaymentMode,
-            AmountPaid    = @AmountPaid,
-            Remarks       = @Remarks,
-            ModifiedBy    = 'WPFUser',
-            ModifiedDate  = @Now
+            InvoiceNumber       = @InvoiceNumber,
+            VendorInvoiceNumber = @VendorInvoiceNumber,
+            SupplierId          = @SupplierId,
+            PurchaseDate        = @PurchaseDate,
+            TotalAmount         = @TotalAmount,
+            Discount            = @Discount,
+            PaymentMode         = @PaymentMode,
+            AmountPaid          = @AmountPaid,
+            Remarks             = @Remarks,
+            ModifiedBy          = 'WPFUser',
+            ModifiedDate        = @Now
             WHERE Id = @MasterId";
 
                 using (var cmd = new MySqlCommand(masterSql, conn, trans))
                 {
                     cmd.Parameters.AddWithValue("@InvoiceNumber", purchase.InvoiceNumber);
+                    cmd.Parameters.AddWithValue("@VendorInvoiceNumber", purchase.VendorInvoiceNumber ?? (object)DBNull.Value);
                     cmd.Parameters.AddWithValue("@SupplierId", purchase.SupplierId);
                     cmd.Parameters.AddWithValue("@PurchaseDate", purchase.PurchaseDate);
                     cmd.Parameters.AddWithValue("@TotalAmount", purchase.TotalAmount);
@@ -576,12 +697,17 @@ namespace MyWPFCRUDApp.Services
                     if (detail.ProductId == 0)
                         detail.ProductId = InsertNewProduct(detail, conn, trans);
 
+                    // Fill any blank batch / mfg / exp from the product's own row
+                    FillBatchDefaultsFromProduct(detail, conn, trans);
+
                     var detailSql = @"INSERT INTO MPurchaseDetail (
                 PurchaseMasterId, ProductId, Quantity,
-                PurchasePrice, WholesalePrice, MRP, RetailPrice, AfterTaxation
+                PurchasePrice, WholesalePrice, MRP, RetailPrice, AfterTaxation,
+                Batch, MfgDate, ExpDate
             ) VALUES (
                 @MasterId, @ProductId, @Qty,
-                @Price, @Wholesale, @MRP, @Retail, @AfterTax
+                @Price, @Wholesale, @MRP, @Retail, @AfterTax,
+                @Batch, @MfgDate, @ExpDate
             )";
 
                     using (var cmd = new MySqlCommand(detailSql, conn, trans))
@@ -594,6 +720,9 @@ namespace MyWPFCRUDApp.Services
                         cmd.Parameters.AddWithValue("@MRP", detail.MRP);
                         cmd.Parameters.AddWithValue("@Retail", detail.Retail);
                         cmd.Parameters.AddWithValue("@AfterTax", detail.AfterTaxation);
+                        cmd.Parameters.AddWithValue("@Batch", ToDbString(detail.Batch));
+                        cmd.Parameters.AddWithValue("@MfgDate", ToDbDate(detail.MfgDate));
+                        cmd.Parameters.AddWithValue("@ExpDate", ToDbDate(detail.ExpDate));
                         cmd.ExecuteNonQuery();
                     }
 
@@ -644,6 +773,22 @@ namespace MyWPFCRUDApp.Services
                     }
                 }
 
+                // 3b. Keep each barcode's PurchaseQuantity JSON entry for THIS
+                //     invoice in sync with the edited price/quantity, the same
+                //     way a fresh purchase records it — matched by invoice
+                //     number, so this replaces the invoice's own entry rather
+                //     than adding a duplicate.
+                string? supplierName = GetSupplierName(purchase.SupplierId, conn, trans);
+                foreach (var detail in purchase.MPurchaseDetail)
+                {
+                    if (string.IsNullOrWhiteSpace(detail.Barcode)) continue;
+                    UpdatePurchaseQuantityJson(
+                        detail.Barcode, detail.PurchasePrice, detail.Quantity,
+                        purchase.InvoiceNumber, supplierName,
+                        detail.Batch, detail.MfgDate, detail.ExpDate,
+                        conn, trans);
+                }
+
                 // 4. Apply the quantity DELTA per barcode — the actual fix.
                 //    Union of every barcode that appeared before and/or after
                 //    the edit, so removed lines back their quantity out and
@@ -686,6 +831,64 @@ namespace MyWPFCRUDApp.Services
             }
         }
 
+        /// <summary>
+        /// Updates (or creates) this invoice's entry in a barcode's
+        /// PurchaseQuantity JSON on edit — same no-row-yet fallback as
+        /// UpsertPurchaseStock, but without touching the Quantity stock
+        /// column (that's handled separately, by delta, in UpdatePurchase).
+        /// </summary>
+        private static void UpdatePurchaseQuantityJson(
+            string barcode, decimal price, double quantity,
+            string? invoiceNumber, string? supplierName,
+            string? batch, DateTime? mfgDate, DateTime? expDate,
+            MySqlConnection conn, MySqlTransaction trans)
+        {
+            string? currentJson = null;
+            double existingQuantity = 0;
+            bool rowExists;
+
+            using (var sel = new MySqlCommand(
+                "SELECT PurchaseQuantity, Quantity FROM ProductQuantity WHERE Barcode = @Barcode FOR UPDATE",
+                conn, trans))
+            {
+                sel.Parameters.AddWithValue("@Barcode", barcode);
+                using var rdr = sel.ExecuteReader();
+                rowExists = rdr.Read();
+                if (rowExists)
+                {
+                    currentJson = rdr["PurchaseQuantity"] == DBNull.Value ? null : rdr["PurchaseQuantity"].ToString();
+                    existingQuantity = rdr["Quantity"] == DBNull.Value ? 0 : Convert.ToDouble(rdr["Quantity"]);
+                }
+            }
+
+            string updatedJson = PurchaseBatchHelper.AddPurchase(
+                currentJson, price, quantity, invoiceNumber, supplierName,
+                existingQuantity,
+                batch: batch, mfgDate: mfgDate, expDate: expDate);
+
+            if (rowExists)
+            {
+                using var upd = new MySqlCommand(
+                    "UPDATE ProductQuantity SET PurchaseQuantity = @Json WHERE Barcode = @Barcode",
+                    conn, trans);
+                upd.Parameters.AddWithValue("@Json", updatedJson);
+                upd.Parameters.AddWithValue("@Barcode", barcode);
+                upd.ExecuteNonQuery();
+            }
+            else
+            {
+                using var ins = new MySqlCommand(@"
+                    INSERT INTO ProductQuantity
+                        (Barcode, Quantity, MinimumSellingQuantity, PurchaseQuantity, CreatedBy, CreatedDate)
+                    VALUES
+                        (@Barcode, 0, 1, @Json, 'WPFUser', @Now)", conn, trans);
+                ins.Parameters.AddWithValue("@Barcode", barcode);
+                ins.Parameters.AddWithValue("@Json", updatedJson);
+                ins.Parameters.AddWithValue("@Now", DateTime.Now);
+                ins.ExecuteNonQuery();
+            }
+        }
+
         // ─── DELETE PURCHASE ───────────────────────────────────────────────────
         /// <summary>
         /// Deletes a purchase invoice and its detail lines.
@@ -697,6 +900,10 @@ namespace MyWPFCRUDApp.Services
         /// (summed per barcode, in case a barcode appears on more than one
         /// line) from whatever stock currently holds, clamped at 0 so it never
         /// goes negative.
+        ///
+        /// Also removes this invoice's own entry from each affected barcode's
+        /// PurchaseQuantity JSON, so a deleted invoice doesn't leave a stale
+        /// batch entry behind.
         /// </summary>
         public (bool Success, long SupplierId) DeletePurchase(long masterId)
         {
@@ -775,18 +982,46 @@ namespace MyWPFCRUDApp.Services
                 // 4. Subtract this invoice's quantity from current stock, per
                 //    barcode — never zero the whole row, since the same product
                 //    may have stock from other purchases too. Clamped at 0.
+                //    Also strip this invoice's own entry out of the barcode's
+                //    PurchaseQuantity JSON.
                 foreach (var (barcode, qty) in qtyByBarcode)
                 {
-                    using var cmd = new MySqlCommand(@"
+                    using (var cmd = new MySqlCommand(@"
                 UPDATE ProductQuantity SET
                     Quantity     = GREATEST(0, Quantity - @Qty),
                     ModifiedBy   = 'WPFUser',
                     ModifiedDate = @Now
-                WHERE Barcode = @Barcode", conn, trans);
-                    cmd.Parameters.AddWithValue("@Qty", qty);
-                    cmd.Parameters.AddWithValue("@Now", DateTime.Now);
-                    cmd.Parameters.AddWithValue("@Barcode", barcode);
-                    cmd.ExecuteNonQuery();
+                WHERE Barcode = @Barcode", conn, trans))
+                    {
+                        cmd.Parameters.AddWithValue("@Qty", qty);
+                        cmd.Parameters.AddWithValue("@Now", DateTime.Now);
+                        cmd.Parameters.AddWithValue("@Barcode", barcode);
+                        cmd.ExecuteNonQuery();
+                    }
+
+                    if (!string.IsNullOrWhiteSpace(invoiceNumber))
+                    {
+                        string? currentJson;
+                        using (var sel = new MySqlCommand(
+                            "SELECT PurchaseQuantity FROM ProductQuantity WHERE Barcode = @Barcode FOR UPDATE",
+                            conn, trans))
+                        {
+                            sel.Parameters.AddWithValue("@Barcode", barcode);
+                            var result = sel.ExecuteScalar();
+                            currentJson = (result == null || result == DBNull.Value) ? null : result.ToString();
+                        }
+
+                        if (!string.IsNullOrWhiteSpace(currentJson))
+                        {
+                            string? trimmedJson = PurchaseBatchHelper.RemoveByInvoice(currentJson, invoiceNumber);
+                            using var upd = new MySqlCommand(
+                                "UPDATE ProductQuantity SET PurchaseQuantity = @Json WHERE Barcode = @Barcode",
+                                conn, trans);
+                            upd.Parameters.AddWithValue("@Json", (object?)trimmedJson ?? DBNull.Value);
+                            upd.Parameters.AddWithValue("@Barcode", barcode);
+                            upd.ExecuteNonQuery();
+                        }
+                    }
                 }
 
                 trans.Commit();

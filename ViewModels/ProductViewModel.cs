@@ -254,7 +254,8 @@ namespace MyWPFCRUDApp.ViewModels
         ("ProductName",     "Product Name"),
         ("CategoryName",    "Category"),
         ("SubCategoryName", "SubCategory"),
-        ("Quantity",        "Quantity"),     // ← NEW
+        ("Quantity",        "Quantity"),
+
         ("PurchasePrice",   "Purchase"),
         ("RetailSalePrice", "Sale"),
         ("MRP",             "MRP"),
@@ -619,6 +620,23 @@ namespace MyWPFCRUDApp.ViewModels
                 MessageBox.Show($"Failed to update quantity for '{row.ProductName}'.",
                     "Error", MessageBoxButton.OK, MessageBoxImage.Error);
         }
+
+        // ─── Save Purchase Batch Order ─────────────────────────────────────────
+        // Persists the current order of a product's PurchaseBatches (as arranged
+        // in the Purchase History overlay) back to ProductQuantity.PurchaseQuantity.
+        public bool SavePurchaseBatchOrder(ProductDisplayModel product)
+        {
+            if (product == null || string.IsNullOrWhiteSpace(product.Barcode)) return false;
+
+            bool ok = _productService.SavePurchaseBatchOrder(
+                product.Barcode, product.PurchaseBatches.Select(b => b.Source));
+
+            if (!ok)
+                MessageBox.Show("Failed to save order: " + (_productService.LastError ?? "unknown error"),
+                    "Error", MessageBoxButton.OK, MessageBoxImage.Error);
+            return ok;
+        }
+
         // ─── Delete single ─────────────────────────────────────────────────────
         // ─── Delete (single OR multiple, depending on checkbox state) ──────────
         private void Delete()

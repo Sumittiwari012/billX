@@ -57,7 +57,6 @@
             <ScrollViewer HorizontalScrollBarVisibility="Auto">
                 <StackPanel>
                     <!-- Header Row -->
-                    <!-- Header Row -->
                     <StackPanel Orientation="Horizontal">
                         <TextBlock Text="Barcode"      Width="120" Margin="5" FontWeight="Bold"/>
                         <TextBlock Text="Product Code" Width="120" Margin="5" FontWeight="Bold"/>
@@ -130,11 +129,6 @@
                            FontWeight="SemiBold"
                            VerticalAlignment="Center"
                            Margin="0,0,12,0"/>
-                <!-- Opens BulkEditColumnsWindow: pick any number of columns
-                     to update (Category/SubCategory/Unit as dropdowns from
-                     the existing lists, everything else as a typed value)
-                     and apply them to every checked row at once. Replaces
-                     the old single-purpose Discount % controls. -->
                 <Button Content="⚙ Update Columns"
                         Click="UpdateColumnsButton_Click"
                         Background="#FF1F3A5F"
@@ -211,17 +205,38 @@
                 <DataGridTextColumn x:Name="ColName"        Header="Product Name" Binding="{Binding ProductName}"      Width="200"/>
                 <DataGridTextColumn x:Name="ColCategory"    Header="Category"     Binding="{Binding CategoryName}"     Width="150"/>
                 <DataGridTextColumn x:Name="ColSubCategory" Header="SubCategory"  Binding="{Binding SubCategoryName}"  Width="150"/>
-                <DataGridTemplateColumn x:Name="ColQuantity" Header="Quantity" Width="140">
+
+                <!-- ══════════════════════════════════════════════════════════
+                     Quantity — small ▾ button beside the qty textbox opens a
+                     centered modal overlay (HistoryOverlay, defined at the
+                     end of this Grid) showing every purchase batch behind
+                     this product's stock, laid out with real column headers.
+                     ══════════════════════════════════════════════════════════ -->
+                <DataGridTemplateColumn x:Name="ColQuantity" Header="Quantity" Width="150">
                     <DataGridTemplateColumn.CellTemplate>
                         <DataTemplate>
-                            <StackPanel Orientation="Horizontal">
-                                <TextBox Width="60" Margin="0,0,4,0"
-                         Text="{Binding Quantity, UpdateSourceTrigger=PropertyChanged}"/>
-
+                            <StackPanel Orientation="Horizontal" VerticalAlignment="Center">
+                                <TextBox Width="55" Margin="0,0,4,0"
+                                         VerticalContentAlignment="Center"
+                                         Text="{Binding Quantity, UpdateSourceTrigger=PropertyChanged}"/>
+                                <Button Width="22" Height="22"
+                                        Padding="0"
+                                        Tag="{Binding}"
+                                        Click="PurchaseHistoryButton_Click"
+                                        ToolTip="View purchase history"
+                                        Background="#F1F3F5"
+                                        BorderBrush="#CED4DA"
+                                        BorderThickness="1"
+                                        Cursor="Hand">
+                                    <Path Data="M0,0 L4,4 L8,0 Z" Fill="#495057"
+                                          Width="8" Height="4"
+                                          HorizontalAlignment="Center" VerticalAlignment="Center"/>
+                                </Button>
                             </StackPanel>
                         </DataTemplate>
                     </DataGridTemplateColumn.CellTemplate>
                 </DataGridTemplateColumn>
+
                 <DataGridTextColumn x:Name="ColPurchase"    Header="Purchase"     Binding="{Binding PurchasePrice}"    Width="100"/>
                 <DataGridTextColumn x:Name="ColSale"        Header="Sale"         Binding="{Binding RetailSalePrice}"  Width="100"/>
                 <DataGridTextColumn x:Name="ColMRP"         Header="MRP"          Binding="{Binding MRP}"              Width="100"/>
@@ -293,5 +308,190 @@
                     Width="140" Height="35" Margin="5"
                     FontWeight="Bold"/>
         </StackPanel>
+
+        <!-- ═══════════════════════════════════════════════
+             CENTERED MODAL OVERLAY · Purchase History
+             Spans every row so it sits on top of the whole page and
+             centers regardless of scroll position in the grid below.
+             DataContext is set to the clicked row's ProductDisplayModel
+             from code-behind (PurchaseHistoryButton_Click).
+             Includes a sort bar (field + direction) and a Save Order
+             button that persists the new order to the database.
+        ═══════════════════════════════════════════════ -->
+        <Grid x:Name="HistoryOverlay"
+              Grid.Row="0" Grid.RowSpan="5"
+              Background="#88000000"
+              Visibility="Collapsed"
+              MouseDown="HistoryOverlay_MouseDown">
+            <Border Background="White"
+                    CornerRadius="10"
+                    Padding="22"
+                    Width="880"
+                    MaxHeight="640"
+                    HorizontalAlignment="Center"
+                    VerticalAlignment="Center"
+                    MouseDown="HistoryCard_MouseDown">
+                <Border.Effect>
+                    <DropShadowEffect BlurRadius="22" ShadowDepth="5" Opacity="0.35" Color="Black"/>
+                </Border.Effect>
+                <StackPanel>
+                    <Grid Margin="0,0,0,4">
+                        <TextBlock Text="Purchase History" FontSize="20" FontWeight="Bold" Foreground="#212529"/>
+                        <Button Content="✖"
+                                Click="CloseHistoryOverlay_Click"
+                                HorizontalAlignment="Right"
+                                Background="Transparent"
+                                BorderThickness="0"
+                                FontSize="16"
+                                FontWeight="Bold"
+                                Foreground="#495057"
+                                Cursor="Hand"
+                                Padding="6,0"/>
+                    </Grid>
+                    <TextBlock Text="{Binding ProductName}" FontSize="14" Foreground="#868E96" Margin="0,0,0,14"/>
+
+                    <TextBlock Text="No purchase history recorded yet."
+                               FontSize="15" FontStyle="Italic" Foreground="#868E96" Margin="0,10,0,10">
+                        <TextBlock.Style>
+                            <Style TargetType="TextBlock">
+                                <Setter Property="Visibility" Value="Collapsed"/>
+                                <Style.Triggers>
+                                    <DataTrigger Binding="{Binding PurchaseBatches.Count}" Value="0">
+                                        <Setter Property="Visibility" Value="Visible"/>
+                                    </DataTrigger>
+                                </Style.Triggers>
+                            </Style>
+                        </TextBlock.Style>
+                    </TextBlock>
+
+                    <StackPanel>
+                        <StackPanel.Style>
+                            <Style TargetType="StackPanel">
+                                <Style.Triggers>
+                                    <DataTrigger Binding="{Binding PurchaseBatches.Count}" Value="0">
+                                        <Setter Property="Visibility" Value="Collapsed"/>
+                                    </DataTrigger>
+                                </Style.Triggers>
+                            </Style>
+                        </StackPanel.Style>
+
+                        <!-- Sort bar -->
+                        <Border Background="#F1F3F5" CornerRadius="6" Padding="10,8" Margin="0,0,0,10">
+                            <StackPanel Orientation="Horizontal" VerticalAlignment="Center">
+                                <TextBlock Text="Sort by" FontWeight="SemiBold" VerticalAlignment="Center" Margin="0,0,8,0"/>
+                                <ComboBox x:Name="SortFieldCombo" Width="150" SelectedIndex="0">
+                                    <ComboBoxItem Content="Invoice Number"  Tag="InvoiceNumber"/>
+                                    <ComboBoxItem Content="Supplier"        Tag="SupplierName"/>
+                                    <ComboBoxItem Content="Quantity"        Tag="Quantity"/>
+                                    <ComboBoxItem Content="Batch"           Tag="Batch"/>
+                                    <ComboBoxItem Content="Purchase Price"  Tag="PurchasePrice"/>
+                                    <ComboBoxItem Content="Mfg Date"        Tag="MfgDate"/>
+                                    <ComboBoxItem Content="Exp Date"        Tag="ExpDate"/>
+                                </ComboBox>
+                                <ComboBox x:Name="SortDirectionCombo" Width="120" Margin="8,0,0,0" SelectedIndex="0">
+                                    <ComboBoxItem Content="Ascending"  Tag="asc"/>
+                                    <ComboBoxItem Content="Descending" Tag="desc"/>
+                                </ComboBox>
+                                <Button Content="Apply Sort" Click="ApplySortButton_Click"
+                                        Margin="10,0,0,0" Padding="12,3"
+                                        Background="#FFE8F4FD" Foreground="#FF1565C0" FontWeight="SemiBold"/>
+                                <Button x:Name="SaveOrderButton" Content="💾 Save Order"
+                                        Click="SaveOrderButton_Click" IsEnabled="False"
+                                        Margin="8,0,0,0" Padding="12,3"
+                                        Background="#FF1F3A5F" Foreground="White" FontWeight="Bold"/>
+                                <Button x:Name="ResetOrderButton" Content="↺ Reset Order"
+                                        Click="ResetOrderButton_Click" IsEnabled="False"
+                                        Margin="8,0,0,0" Padding="12,3"
+                                        Background="#FFFFE5E5" Foreground="DarkRed" FontWeight="SemiBold"
+                                        ToolTip="Undo all reordering and go back to the last saved order"/>
+                            </StackPanel>
+                        </Border>
+
+                        <!-- Column header row -->
+                        <Border Background="#1F3A5F" CornerRadius="6,6,0,0" Padding="12,10">
+                            <Grid>
+                                <Grid.ColumnDefinitions>
+                                    <ColumnDefinition Width="64"/>
+                                    <ColumnDefinition Width="1.6*"/>
+                                    <ColumnDefinition Width="1.2*"/>
+                                    <ColumnDefinition Width="1.1*"/>
+                                    <ColumnDefinition Width="1.1*"/>
+                                    <ColumnDefinition Width="0.9*"/>
+                                    <ColumnDefinition Width="1.1*"/>
+                                    <ColumnDefinition Width="1.6*"/>
+                                </Grid.ColumnDefinitions>
+                                <TextBlock Grid.Column="0" Text="Move"     FontWeight="Bold" FontSize="14" Foreground="White"/>
+                                <TextBlock Grid.Column="1" Text="Invoice"  FontWeight="Bold" FontSize="14" Foreground="White"/>
+                                <TextBlock Grid.Column="2" Text="Batch"    FontWeight="Bold" FontSize="14" Foreground="White"/>
+                                <TextBlock Grid.Column="3" Text="Mfg Date" FontWeight="Bold" FontSize="14" Foreground="White"/>
+                                <TextBlock Grid.Column="4" Text="Exp Date" FontWeight="Bold" FontSize="14" Foreground="White"/>
+                                <TextBlock Grid.Column="5" Text="Qty"      FontWeight="Bold" FontSize="14" Foreground="White" HorizontalAlignment="Right"/>
+                                <TextBlock Grid.Column="6" Text="Price"    FontWeight="Bold" FontSize="14" Foreground="White" HorizontalAlignment="Right"/>
+                                <TextBlock Grid.Column="7" Text="Supplier" FontWeight="Bold" FontSize="14" Foreground="White" Margin="14,0,0,0"/>
+                            </Grid>
+                        </Border>
+
+                        <ScrollViewer MaxHeight="340" VerticalScrollBarVisibility="Auto">
+                            <ItemsControl ItemsSource="{Binding PurchaseBatches}">
+                                <ItemsControl.ItemTemplate>
+                                    <DataTemplate>
+                                        <Border BorderBrush="#E9ECEF" BorderThickness="0,0,0,1" Padding="12,12">
+                                            <Grid>
+                                                <Grid.ColumnDefinitions>
+                                                    <ColumnDefinition Width="64"/>
+                                                    <ColumnDefinition Width="1.6*"/>
+                                                    <ColumnDefinition Width="1.2*"/>
+                                                    <ColumnDefinition Width="1.1*"/>
+                                                    <ColumnDefinition Width="1.1*"/>
+                                                    <ColumnDefinition Width="0.9*"/>
+                                                    <ColumnDefinition Width="1.1*"/>
+                                                    <ColumnDefinition Width="1.6*"/>
+                                                </Grid.ColumnDefinitions>
+
+                                                <!-- Move up / down -->
+                                                <StackPanel Grid.Column="0" Orientation="Horizontal" VerticalAlignment="Center">
+                                                    <Button Content="▲" Tag="{Binding}" Click="MoveBatchUp_Click"
+                                                            Width="24" Height="24" Padding="0" Margin="0,0,4,0"
+                                                            FontSize="11" Background="#F1F3F5"
+                                                            BorderBrush="#CED4DA" BorderThickness="1"
+                                                            Cursor="Hand" ToolTip="Move up"/>
+                                                    <Button Content="▼" Tag="{Binding}" Click="MoveBatchDown_Click"
+                                                            Width="24" Height="24" Padding="0"
+                                                            FontSize="11" Background="#F1F3F5"
+                                                            BorderBrush="#CED4DA" BorderThickness="1"
+                                                            Cursor="Hand" ToolTip="Move down"/>
+                                                </StackPanel>
+
+                                                <TextBlock Grid.Column="1" FontSize="15" FontWeight="SemiBold" Foreground="#1971C2"
+                                                           Text="{Binding InvoiceNumber, TargetNullValue=Opening Stock}"
+                                                           VerticalAlignment="Center"/>
+                                                <TextBlock Grid.Column="2" FontSize="14" Foreground="#495057"
+                                                           Text="{Binding Batch, TargetNullValue=—}"
+                                                           VerticalAlignment="Center"/>
+                                                <TextBlock Grid.Column="3" FontSize="14" Foreground="#495057"
+                                                           Text="{Binding MfgDate, StringFormat=dd-MMM-yyyy, TargetNullValue=—}"
+                                                           VerticalAlignment="Center"/>
+                                                <TextBlock Grid.Column="4" FontSize="14" Foreground="#495057"
+                                                           Text="{Binding ExpDate, StringFormat=dd-MMM-yyyy, TargetNullValue=—}"
+                                                           VerticalAlignment="Center"/>
+                                                <TextBlock Grid.Column="5" FontSize="15" FontWeight="Bold" Foreground="#212529"
+                                                           HorizontalAlignment="Right" VerticalAlignment="Center"
+                                                           Text="{Binding Quantity, StringFormat=N2}"/>
+                                                <TextBlock Grid.Column="6" FontSize="15" FontWeight="Bold" Foreground="#2B8A3E"
+                                                           HorizontalAlignment="Right" VerticalAlignment="Center"
+                                                           Text="{Binding PurchasePrice, StringFormat=₹{0:N2}}"/>
+                                                <TextBlock Grid.Column="7" FontSize="14" Foreground="#495057"
+                                                           Margin="14,0,0,0" VerticalAlignment="Center"
+                                                           Text="{Binding SupplierName, TargetNullValue=—}"/>
+                                            </Grid>
+                                        </Border>
+                                    </DataTemplate>
+                                </ItemsControl.ItemTemplate>
+                            </ItemsControl>
+                        </ScrollViewer>
+                    </StackPanel>
+                </StackPanel>
+            </Border>
+        </Grid>
     </Grid>
 </UserControl>

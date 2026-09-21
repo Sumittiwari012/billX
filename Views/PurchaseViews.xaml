@@ -378,9 +378,12 @@
                                             Width="120"
                                             ElementStyle="{StaticResource BarcodeCellText}"/>
 
+                        <!-- MinWidth added so the three new Batch / Mfg Date /
+                             Exp Date columns below can never squeeze the
+                             product name down to nothing on a narrow window. -->
                         <DataGridTextColumn Header="Product Name"
                                             Binding="{Binding ProductName, UpdateSourceTrigger=PropertyChanged}"
-                                            Width="*">
+                                            Width="*" MinWidth="150">
                             <DataGridTextColumn.ElementStyle>
                                 <Style TargetType="TextBlock">
                                     <Setter Property="FontWeight" Value="SemiBold"/>
@@ -422,6 +425,46 @@
                                 </Style>
                             </DataGridTextColumn.ElementStyle>
                         </DataGridTextColumn>
+
+                        <!-- ══════════════════════════════════════════════════
+                             NEW: per-invoice Batch / Mfg Date / Exp Date.
+                             These are the values PurchaseService writes to
+                             MPurchaseDetail and into the ProductQuantity
+                             PurchaseQuantity JSON for THIS invoice, so each
+                             purchase keeps its own batch info instead of
+                             borrowing the product master's.
+                             ══════════════════════════════════════════════════ -->
+                        <DataGridTextColumn Header="Batch"
+                                            Binding="{Binding Batch, UpdateSourceTrigger=PropertyChanged}"
+                                            Width="90"/>
+
+                        <DataGridTemplateColumn Header="Mfg Date" Width="105">
+                            <DataGridTemplateColumn.CellTemplate>
+                                <DataTemplate>
+                                    <TextBlock Text="{Binding MfgDate, StringFormat={}{0:dd-MM-yyyy}}"
+                                               Padding="4,2" VerticalAlignment="Center"/>
+                                </DataTemplate>
+                            </DataGridTemplateColumn.CellTemplate>
+                            <DataGridTemplateColumn.CellEditingTemplate>
+                                <DataTemplate>
+                                    <DatePicker SelectedDate="{Binding MfgDate, UpdateSourceTrigger=PropertyChanged}"/>
+                                </DataTemplate>
+                            </DataGridTemplateColumn.CellEditingTemplate>
+                        </DataGridTemplateColumn>
+
+                        <DataGridTemplateColumn Header="Exp Date" Width="105">
+                            <DataGridTemplateColumn.CellTemplate>
+                                <DataTemplate>
+                                    <TextBlock Text="{Binding ExpDate, StringFormat={}{0:dd-MM-yyyy}}"
+                                               Padding="4,2" VerticalAlignment="Center"/>
+                                </DataTemplate>
+                            </DataGridTemplateColumn.CellTemplate>
+                            <DataGridTemplateColumn.CellEditingTemplate>
+                                <DataTemplate>
+                                    <DatePicker SelectedDate="{Binding ExpDate, UpdateSourceTrigger=PropertyChanged}"/>
+                                </DataTemplate>
+                            </DataGridTemplateColumn.CellEditingTemplate>
+                        </DataGridTemplateColumn>
 
                         <DataGridTextColumn Header="Net Amount (₹)"
                                             Binding="{Binding AfterTaxation, UpdateSourceTrigger=PropertyChanged, StringFormat={}{0:N2}}"

@@ -769,6 +769,16 @@ namespace MyWPFCRUDApp.ViewModels
                     SGST = d.SGST,
                     IGST = d.IGST,
                     AfterTaxation = d.AfterTaxation,
+
+                    // FIX: Batch / MfgDate / ExpDate were saved on the
+                    // MPurchaseDetail row (GetFilteredPurchases reads them) but
+                    // never copied onto the in-memory grid line here, so a
+                    // reopened invoice always started with blanks — and those
+                    // blanks are what UpdatePurchase then wrote back into the
+                    // ProductQuantity.PurchaseQuantity JSON.
+                    Batch = d.Batch,
+                    MfgDate = d.MfgDate,
+                    ExpDate = d.ExpDate,
                 });
             }
 
@@ -990,24 +1000,44 @@ namespace MyWPFCRUDApp.ViewModels
             if (product != null)
             {
                 AddToCart(product);
+                return;
             }
-            else
-            {
-                var result = MessageBox.Show(
-                    $"Barcode '{barcode}' not found in your product list.\n\nCreate a new product?",
-                    "Product Not Found", MessageBoxButton.YesNo);
 
-                if (result == MessageBoxResult.Yes)
-                {
-                    var addWin = new AddProductWindow(barcode) { Owner = Application.Current.MainWindow };
-                    if (addWin.ShowDialog() == true)
-                    {
-                        Products = new ObservableCollection<MProducts>(_productService.GetProducts());
-                        var newProd = Products.FirstOrDefault(p => p.Barcode == barcode);
-                        if (newProd != null) AddToCart(newProd);
-                    }
-                }
+            // Unknown barcode: add it straight to the invoice as a new line with
+            // ProductId == 0 — same pattern already used by Scan Bill, Excel
+            // Import and Quick Add. Nothing is written to MProducts here;
+            // SavePurchase() auto-creates the product master row for any
+            // ProductId == 0 line, but only when SAVE INVOICE is actually clicked.
+            var existingLine = PurchaseItems.FirstOrDefault(i =>
+                i.ProductId == 0 &&
+                string.Equals(i.Barcode, barcode, StringComparison.OrdinalIgnoreCase));
+
+            if (existingLine != null)
+            {
+                // Same unknown barcode scanned again this session — just bump qty.
+                int index = PurchaseItems.IndexOf(existingLine);
+                existingLine.Quantity++;
+                existingLine.AfterTaxation = (decimal)existingLine.Quantity * existingLine.PurchasePrice;
+                PurchaseItems.RemoveAt(index);
+                PurchaseItems.Insert(index, existingLine);
+                RecalculateTotal();
+                return;
             }
+
+            PurchaseItems.Add(new MPurchaseDetail
+            {
+                ProductId = 0,
+                ProductName = barcode,   // placeholder — edit directly in the grid
+                Barcode = barcode,
+                Quantity = 1,
+                PurchasePrice = 0,
+                WholesalePrice = 0,
+                MRP = 0,
+                Retail = 0,
+                AfterTaxation = 0
+            });
+
+            RecalculateTotal();
         }
 
         private void AddToCart(MProducts product)
@@ -1540,6 +1570,14 @@ namespace MyWPFCRUDApp.ViewModels
                     source.SGST = (decimal)product.SGST;
                     source.IGST = (decimal)product.IGST;
 
+                    // FIX: batch + dates edited in Bulk Edit were never copied
+                    // back onto the invoice line, so the line kept its old
+                    // (or blank) values and those are what PurchaseService
+                    // wrote into the PurchaseQuantity JSON.
+                    source.Batch = product.Batch;
+                    source.MfgDate = product.MfgDate;
+                    source.ExpDate = product.ExpDate;
+
                     PurchaseItems.Add(source);
                 }
                 else
@@ -1566,6 +1604,9 @@ namespace MyWPFCRUDApp.ViewModels
                         CGST = (decimal)newProd.CGST,
                         SGST = (decimal)newProd.SGST,
                         IGST = (decimal)newProd.IGST,
+                        Batch = newProd.Batch,
+                        MfgDate = newProd.MfgDate,
+                        ExpDate = newProd.ExpDate,
                         AfterTaxation = (decimal)qty * newProd.PurchasePrice
                     });
                 }

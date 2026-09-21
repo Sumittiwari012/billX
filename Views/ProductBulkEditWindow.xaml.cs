@@ -411,6 +411,23 @@ namespace MyWPFCRUDApp.Views
                 if (!string.IsNullOrWhiteSpace(item.Size)) product.Size = item.Size;
                 if (!string.IsNullOrWhiteSpace(item.Colour)) product.Colour = item.Colour;
 
+                // FIX: also overlay this invoice line's batch / mfg date / exp
+                // date. Without this, Bulk Edit showed the product master's
+                // (or a previous session's) values instead of what's on THIS
+                // invoice line, and saving Bulk Edit then pushed those stale
+                // values back onto the line — silently undoing anything typed
+                // into the purchase grid's Batch / Mfg Date / Exp Date columns.
+                //
+                // Like HSNCode/Size/Colour above, this only overlays a value
+                // when the line actually HAS one. A blank line leaves the
+                // product's own value alone, so opening + saving Bulk Edit on
+                // a line with no batch info can never wipe the product
+                // master's batch/dates (UpdateProduct writes these three
+                // columns back to MProducts when the invoice is saved).
+                if (!string.IsNullOrWhiteSpace(item.Batch)) product.Batch = item.Batch;
+                if (item.MfgDate.HasValue) product.MfgDate = item.MfgDate;
+                if (item.ExpDate.HasValue) product.ExpDate = item.ExpDate;
+
                 AddRow(product, isNew, sourceInvoiceItem: item);
             }
         }

@@ -63,6 +63,30 @@ namespace MyWPFCRUDApp.Models
             set { if (_afterTaxation != value) { _afterTaxation = value; OnPropertyChanged(); } }
         }
 
+        // ── Per-purchase batch details (stored on MPurchaseDetail itself) ───────
+        // These describe THIS purchase line, so they're saved with the line and
+        // copied into the barcode's PurchaseQuantity JSON entry for this invoice.
+        private string? _batch;
+        public string? Batch
+        {
+            get => _batch;
+            set { if (_batch != value) { _batch = value; OnPropertyChanged(); } }
+        }
+
+        private DateTime? _mfgDate;
+        public DateTime? MfgDate
+        {
+            get => _mfgDate;
+            set { if (_mfgDate != value) { _mfgDate = value; OnPropertyChanged(); } }
+        }
+
+        private DateTime? _expDate;
+        public DateTime? ExpDate
+        {
+            get => _expDate;
+            set { if (_expDate != value) { _expDate = value; OnPropertyChanged(); } }
+        }
+
         private void RecalcAmount()
         {
             if (_quantity > 0 && _purchasePrice > 0)
