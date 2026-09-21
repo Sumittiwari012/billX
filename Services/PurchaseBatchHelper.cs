@@ -130,5 +130,54 @@ namespace MyWPFCRUDApp.Services
 
             return batches.Count == 0 ? null : JsonSerializer.Serialize(batches);
         }
+        /// <summary>
+        /// Reduces the recorded quantity of a batch entry to reflect a return —
+        /// finds the entry matching invoiceNumber (or, when invoiceNumber is null/
+        /// blank, the single no-invoice "opening stock" baseline entry if one
+        /// exists) and subtracts qtyToReturn from it, clamped at 0. An entry that
+        /// hits 0 is left in place rather than removed, so the return itself still
+        /// has a batch-level record to point to.
+        ///
+        /// Returns the updated JSON unchanged if no matching entry is found (the
+        /// return still succeeds — it just couldn't tie back to a specific batch).
+        /// </summary>
+        public static string? ReduceQuantity(
+            string? json, string? invoiceNumber, double qtyToReturn)
+        {
+            if (string.IsNullOrWhiteSpace(json)) return json;
+
+            var batches = JsonSerializer.Deserialize<List<PurchaseBatch>>(json) ?? new List<PurchaseBatch>();
+
+            PurchaseBatch? match = string.IsNullOrWhiteSpace(invoiceNumber)
+                ? batches.FirstOrDefault(b => string.IsNullOrWhiteSpace(b.InvoiceNumber))
+                : batches.FirstOrDefault(b => string.Equals(b.InvoiceNumber, invoiceNumber, StringComparison.OrdinalIgnoreCase));
+
+            if (match != null)
+                match.Quantity = Math.Max(0, match.Quantity - qtyToReturn);
+
+            return JsonSerializer.Serialize(batches);
+        }
+
+        /// <summary>
+        /// Reverses ReduceQuantity — adds qtyToRestore back onto the matching batch
+        /// entry. Used when a return is edited (quantity reduced) or deleted, so the
+        /// batch history goes back to reflecting what's actually on hand.
+        /// </summary>
+        public static string? RestoreQuantity(
+            string? json, string? invoiceNumber, double qtyToRestore)
+        {
+            if (string.IsNullOrWhiteSpace(json)) return json;
+
+            var batches = JsonSerializer.Deserialize<List<PurchaseBatch>>(json) ?? new List<PurchaseBatch>();
+
+            PurchaseBatch? match = string.IsNullOrWhiteSpace(invoiceNumber)
+                ? batches.FirstOrDefault(b => string.IsNullOrWhiteSpace(b.InvoiceNumber))
+                : batches.FirstOrDefault(b => string.Equals(b.InvoiceNumber, invoiceNumber, StringComparison.OrdinalIgnoreCase));
+
+            if (match != null)
+                match.Quantity += qtyToRestore;
+
+            return JsonSerializer.Serialize(batches);
+        }
     }
 }

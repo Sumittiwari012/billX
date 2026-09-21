@@ -1,5 +1,11 @@
-﻿using MySql.Data.MySqlClient;
+﻿using DocumentFormat.OpenXml.Office2010.Excel;
+using DocumentFormat.OpenXml.Presentation;
+using Google.Protobuf.Collections;
+using MySql.Data.MySqlClient;
+using Mysqlx.Crud;
 using System.Diagnostics;
+using System.Runtime.InteropServices;
+using static System.Runtime.InteropServices.JavaScript.JSType;
 
 namespace MyWPFCRUDApp.Services
 {
@@ -537,13 +543,54 @@ namespace MyWPFCRUDApp.Services
     Accepted TINYINT(1) NOT NULL DEFAULT 0,
     CONSTRAINT FK_settlement_counter FOREIGN KEY (CounterId) REFERENCES MCounterNew(Id)
     
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;",
+@"CREATE TABLE IF NOT EXISTS MPurchaseReturnMaster (
+    Id                   BIGINT AUTO_INCREMENT PRIMARY KEY,
+    ReturnInvoiceNumber  VARCHAR(100) NOT NULL UNIQUE,
+    InvoiceNumber        VARCHAR(100) NULL,   -- original purchase invoice, if known
+    SupplierId           BIGINT NOT NULL,
+    ReturnDate           DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+
+    TotalAmount          DECIMAL(18,2) DEFAULT 0.00,
+    Remarks              TEXT,
+
+    CreatedBy            VARCHAR(100) DEFAULT 'System',
+    CreatedDate          DATETIME DEFAULT CURRENT_TIMESTAMP,
+    ModifiedBy           VARCHAR(100) DEFAULT 'System',
+    ModifiedDate         DATETIME DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+
+    CONSTRAINT FK_PurchaseReturnMaster_Supplier FOREIGN KEY (SupplierId)
+        REFERENCES MSupplier(Id)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;",
+
+@"CREATE TABLE IF NOT EXISTS MPurchaseReturnDetail (
+    Id                   BIGINT AUTO_INCREMENT PRIMARY KEY,
+    ReturnInvoiceNumber  VARCHAR(100) NOT NULL,
+    ProductId            BIGINT NOT NULL,
+
+    Quantity             DOUBLE NOT NULL DEFAULT 0,
+    PurchasePrice        DECIMAL(18,2) NOT NULL DEFAULT 0.00,
+    Batch                VARCHAR(50) NULL,
+    MfgDate              DATETIME NULL,
+    ExpDate              DATETIME NULL,
+    Reason               VARCHAR(200) NULL,   -- damaged, expired, wrong item, etc.
+
+    CreatedBy            VARCHAR(100) DEFAULT 'System',
+    CreatedDate          DATETIME DEFAULT CURRENT_TIMESTAMP,
+    ModifiedBy           VARCHAR(100) DEFAULT 'System',
+    ModifiedDate         DATETIME DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+
+    CONSTRAINT FK_PurchaseReturnDetail_Master FOREIGN KEY (ReturnInvoiceNumber)
+        REFERENCES MPurchaseReturnMaster(ReturnInvoiceNumber) ON DELETE CASCADE,
+    CONSTRAINT FK_PurchaseReturnDetail_Product FOREIGN KEY (ProductId)
+        REFERENCES MProducts(Id)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;"
 
 
-                
 
-                // Add all your other tables here...
-            };
+
+            // Add all your other tables here...
+        };
 
             foreach (var sql in tables)
                 new MySqlCommand(sql, conn).ExecuteNonQuery();
