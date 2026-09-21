@@ -1,5 +1,4 @@
-﻿
-using MyWPFCRUDApp.Helpers;
+﻿using MyWPFCRUDApp.Helpers;
 using MyWPFCRUDApp.Models;
 using MyWPFCRUDApp.Services;
 using System;
@@ -7,6 +6,7 @@ using System.Collections.Generic;
 using System.Collections.ObjectModel;
 using System.Linq;
 using System.Windows;
+using System.Windows.Documents;
 using System.Windows.Input;
 using WPFCRUDApp.Models;
 
@@ -27,6 +27,7 @@ namespace MyWPFCRUDApp.ViewModels
         public long ProductId { get; set; }
         public string? ProductName { get; set; }
         public string? Barcode { get; set; }
+        
 
         /// <summary>
         /// Quantity originally purchased on the linked purchase invoice.
@@ -155,7 +156,8 @@ namespace MyWPFCRUDApp.ViewModels
         private decimal _originalReturnTotal = 0m;
 
         private string _linkedInvoiceNumber = string.Empty;
-
+        // ── Scan & bill matching ─────────────────────────────────────
+        public ReturnScanViewModel Scan { get; }
 
         // ── Commands ────────────────────────────────────────────────────────
         public ICommand RemoveItemCommand { get; }
@@ -436,7 +438,11 @@ namespace MyWPFCRUDApp.ViewModels
 
             _purchaseService = new PurchaseService();
 
-
+            Scan = new ReturnScanViewModel(
+    _purchaseService,
+    _returnService,
+    () => Suppliers.ToDictionary(s => (long)s.Id, s => s.SupplierName ?? ""),
+    ApplyBillCandidate);
             RemoveItemCommand =
                 new RelayCommand(
                     p => RemoveItem(p as ReturnLineItem));
@@ -668,6 +674,51 @@ namespace MyWPFCRUDApp.ViewModels
         // ════════════════════════════════════════════════════════════════════════
         // Load items from original purchase invoice
         // ════════════════════════════════════════════════════════════════════════
+        private void ApplyBillCandidate(BillCandidate c)
+        {
+            if (IsEditMode)
+            {
+                MessageBox.Show(
+                    "You are editing a saved return. Click Reset first, then pick a bill.",
+                    "Editing a return", MessageBoxButton.OK, MessageBoxImage.Information);
+                return;
+            }
+
+            // A just-saved return blocks further saving until reset.
+            if (_returnSaved) ResetForm();
+
+            var supplier = Suppliers.FirstOrDefault(s => s.Id == c.SupplierId);
+            if (supplier == null)
+            {
+                MessageBox.Show("This bill's supplier could not be found.", "Supplier Missing",
+                    MessageBoxButton.OK, MessageBoxImage.Warning);
+                return;
+            }
+
+            if (!ReferenceEquals(SelectedSupplier, supplier))
+                SelectedSupplier = supplier;   // also loads that supplier's invoices
+
+            SelectedSupplierInvoice =
+                SupplierInvoices.FirstOrDefault(i =>
+                    string.Equals(i.InvoiceNumber, c.InvoiceNumber, StringComparison.OrdinalIgnoreCase))
+                ?? c.Invoice;
+
+            ReturnItems = new ObservableCollection<ReturnLineItem>(
+                c.Lines.Select(l => new ReturnLineItem(RecalculateTotal)
+                {
+                    ProductId = l.ProductId,
+                    ProductName = l.ProductName,
+                    Barcode = l.Barcode,
+                    PurchasedQuantity = l.MaxQuantity,   // cap = still returnable
+                    PurchasePrice = l.PurchasePrice,
+                    Batch = l.Batch,
+                    MfgDate = l.MfgDate,
+                    ExpDate = l.ExpDate,
+                    Quantity = l.Quantity
+                }));
+
+            RecalculateTotal();
+        }
         private void LoadItemsFromInvoice()
         {
             if (SelectedSupplier == null)
@@ -695,6 +746,27 @@ namespace MyWPFCRUDApp.ViewModels
 
                 return;
             }
+            List<ReturnableLine> lines;
+            try
+            {
+                var returned = _returnService.GetReturnedQuantities(
+                    IsEditMode ? _editingMasterId : (long?)null);
+                lines = ReturnBillMatcher.GetReturnableLines(invoice, returned);
+            }
+            catch (Exception ex)
+            {
+                MessageBox.Show($"Could not check earlier returns:\n\n{ex.Message}",
+                    "Load Error", MessageBoxButton.OK, MessageBoxImage.Error);
+                return;
+            }
+
+            if (lines.Count == 0)
+            {
+                MessageBox.Show(
+                    $"Everything on invoice {invoice.InvoiceNumber} has already been returned.",
+                    "Nothing To Return", MessageBoxButton.OK, MessageBoxImage.Information);
+                return;
+            }
 
 
             if (ReturnItems.Any())
@@ -716,32 +788,21 @@ namespace MyWPFCRUDApp.ViewModels
             ReturnItems.Clear();
 
 
-            foreach (
-                var d in
-                invoice.Details ??
-                Enumerable.Empty<MPurchaseDetail>())
+            foreach (var l in lines)
             {
-                ReturnItems.Add(
-                    new ReturnLineItem(RecalculateTotal)
-                    {
-                        ProductId = d.ProductId,
-
-                        ProductName = d.ProductName,
-
-                        Barcode = d.Barcode,
-
-                        PurchasedQuantity = d.Quantity,
-
-                        PurchasePrice = d.PurchasePrice,
-
-                        Batch = d.Batch,
-
-                        MfgDate = d.MfgDate,
-
-                        ExpDate = d.ExpDate,
-
-                        Quantity = d.Quantity
-                    });
+                var d = l.Line;
+                ReturnItems.Add(new ReturnLineItem(RecalculateTotal)
+                {
+                    ProductId = d.ProductId,
+                    ProductName = d.ProductName,
+                    Barcode = d.Barcode,
+                    PurchasedQuantity = l.Quantity,   // now "still returnable"
+                    PurchasePrice = d.PurchasePrice,
+                    Batch = d.Batch,
+                    MfgDate = d.MfgDate,
+                    ExpDate = d.ExpDate,
+                    Quantity = l.Quantity
+                });
             }
 
 
@@ -1002,10 +1063,8 @@ namespace MyWPFCRUDApp.ViewModels
             if (overReturn != null)
             {
                 MessageBox.Show(
-                    $"'{overReturn.ProductName}': you're returning " +
-                    $"{overReturn.Quantity}, but only " +
-                    $"{overReturn.PurchasedQuantity} were purchased " +
-                    $"on invoice {_linkedInvoiceNumber}.",
+                    $"'{overReturn.ProductName}': you're returning {overReturn.Quantity}, but only " +
+                    $"{overReturn.PurchasedQuantity} can still be returned on invoice {_linkedInvoiceNumber}.",
                     "Quantity Too High",
                     MessageBoxButton.OK,
                     MessageBoxImage.Warning);
@@ -1147,13 +1206,25 @@ namespace MyWPFCRUDApp.ViewModels
             }
 
 
+            int leftOver = 0;
+
+            if (_editingMasterId == 0 && Scan.HasPool)
+            {
+                Scan.Consume(ReturnItems.Select(i => (i.Barcode, i.Quantity)));
+                leftOver = Scan.Pool.Count;
+            }
+
             MessageBox.Show(
-                _editingMasterId > 0
+                (_editingMasterId > 0
                     ? "✔ Return updated successfully!"
-                    : "✔ Return recorded and stock updated!",
-                "Saved",
-                MessageBoxButton.OK,
-                MessageBoxImage.Information);
+                    : "✔ Return recorded and stock updated!") +
+                (leftOver > 0
+                    ? $"\n\n{leftOver} scanned item(s) still left. Pick the next bill from the list."
+                    : ""),
+                "Saved", MessageBoxButton.OK, MessageBoxImage.Information);
+
+            if (leftOver > 0)
+                ResetForm();   // ready for the next bill; the scan pool is kept
         }
 
 
@@ -1308,4 +1379,3 @@ namespace MyWPFCRUDApp.ViewModels
         }
     }
 }
-

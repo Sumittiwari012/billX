@@ -429,5 +429,46 @@ namespace MyWPFCRUDApp.Services
 
             return list;
         }
+        // Total already returned, per (supplier, purchase invoice, product).
+        // Pass the id of the return being edited so it doesn't count against itself.
+        public Dictionary<string, double> GetReturnedQuantities(long? excludeReturnId = null)
+        {
+            var map = new Dictionary<string, double>();
+            using var conn = new MySqlConnection(Con);
+            conn.Open();
+
+            var sql = @"SELECT m.SupplierId, m.InvoiceNumber, d.ProductId, SUM(d.Quantity) AS Qty
+                FROM MPurchaseReturnDetail d
+                INNER JOIN MPurchaseReturnMaster m ON m.ReturnInvoiceNumber = d.ReturnInvoiceNumber
+                WHERE m.InvoiceNumber IS NOT NULL AND m.InvoiceNumber <> ''"
+                      + (excludeReturnId.HasValue ? " AND m.Id <> @Exclude" : "")
+                      + " GROUP BY m.SupplierId, m.InvoiceNumber, d.ProductId";
+
+            using var cmd = new MySqlCommand(sql, conn);
+            if (excludeReturnId.HasValue) cmd.Parameters.AddWithValue("@Exclude", excludeReturnId.Value);
+
+            using var rdr = cmd.ExecuteReader();
+            while (rdr.Read())
+            {
+                var key = ReturnBillMatcher.ReturnedKey(
+                    rdr.GetInt64("SupplierId"),
+                    rdr["InvoiceNumber"] as string,
+                    rdr.GetInt64("ProductId"));
+                double q = Convert.ToDouble(rdr["Qty"]);
+                map[key] = (map.TryGetValue(key, out var e) ? e : 0) + q;
+            }
+            return map;
+        }
+
+        public string? GetProductNameByBarcode(string barcode)
+        {
+            using var conn = new MySqlConnection(Con);
+            conn.Open();
+            using var cmd = new MySqlCommand(
+                "SELECT ProductName FROM MProducts WHERE Barcode = @B LIMIT 1", conn);
+            cmd.Parameters.AddWithValue("@B", barcode);
+            var r = cmd.ExecuteScalar();
+            return r == null || r == DBNull.Value ? null : r.ToString();
+        }
     }
 }
