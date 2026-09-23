@@ -29,17 +29,16 @@ namespace MyWPFCRUDApp.Services
     /// small targeted "upsert just these columns" pass for that specific table -
     /// there's a clearly marked spot below for it.
     ///
-    /// PRODUCT QUANTITY IS NEVER OVERWRITTEN FROM THE CLOUD. Instead: whatever
-    /// rows were just newly inserted into MCustomerPurchaseDetail /
-    /// MCustomerReturnDetail (found via the additive-insert step above - no
-    /// separate snapshot/diff needed anymore, since "missing locally" already
-    /// *is* "new") are used to compute a per-barcode quantity delta:
+    /// PRODUCT QUANTITY: the Quantity column is NEVER set from the cloud's raw
+    /// Quantity value. It's only ever adjusted by the per-barcode sale/return
+    /// deltas computed below, or left alone entirely. PurchaseQuantity, however,
+    /// IS refreshed from the cloud on every pull - for barcodes that already
+    /// exist locally we overwrite just that one column (Quantity untouched); for
+    /// barcodes that don't exist locally yet we insert a brand new row carrying
+    /// both Quantity and PurchaseQuantity from the cloud, since there's no local
+    /// value to protect in that case.
     ///   - new MCustomerPurchaseDetail rows  -> Quantity -= sold qty
     ///   - new MCustomerReturnDetail rows    -> Quantity += returned qty
-    /// ProductQuantity itself is only ever touched to INSERT a row for a barcode
-    /// that doesn't exist locally at all yet (e.g. a brand new product created on
-    /// another terminal). Existing local ProductQuantity rows are never
-    /// overwritten by that step.
     ///
     /// NOT pulled here (sync direction wasn't established for these, so they're
     /// left untouched to avoid guessing wrong): MCounterNew, MCounterUser,
@@ -132,6 +131,10 @@ namespace MyWPFCRUDApp.Services
                 await ApplyQuantityAdjustmentsAsync(
                     localConn, transaction, newReturnRows, productBarcodeMap, sign: +1,
                     label: "return", progress, cancellationToken);
+
+                // ---- PurchaseQuantity refresh (Quantity column is NEVER touched here) ----
+                progress?.Report("Refreshing PurchaseQuantity for existing barcodes (Quantity left untouched)...");
+                await RefreshPurchaseQuantityForExistingBarcodesAsync(cloudConn, localConn, transaction, progress, cancellationToken);
 
                 progress?.Report("Pulling missing product quantity rows (new barcodes only)...");
                 await InsertMissingProductQuantitiesAsync(cloudConn, localConn, transaction, progress, cancellationToken);
@@ -328,8 +331,89 @@ namespace MyWPFCRUDApp.Services
         }
 
         /// <summary>
+        /// For every barcode that already has a ProductQuantity row locally,
+        /// overwrites ONLY the PurchaseQuantity column with the cloud's current
+        /// value for that barcode. The Quantity column is never referenced or
+        /// written by this method - it is left exactly as it was. Barcodes that
+        /// don't exist locally are skipped here and handled instead by
+        /// <see cref="InsertMissingProductQuantitiesAsync"/>, which inserts a
+        /// brand new row (Quantity + PurchaseQuantity together) since there's no
+        /// existing local value to protect in that case.
+        /// </summary>
+        private static async Task RefreshPurchaseQuantityForExistingBarcodesAsync(
+            MySqlConnection cloudConn,
+            MySqlConnection localConn,
+            MySqlTransaction localTx,
+            IProgress<string>? progress,
+            CancellationToken cancellationToken)
+        {
+            const string table = "ProductQuantity";
+
+            var cloudRows = new DataTable();
+            using (var adapter = new MySqlDataAdapter($"SELECT Barcode, PurchaseQuantity FROM `{table}`;", cloudConn))
+            {
+                adapter.Fill(cloudRows);
+            }
+
+            if (cloudRows.Rows.Count == 0)
+            {
+                progress?.Report($"{table}: nothing in the cloud to check for PurchaseQuantity.");
+                return;
+            }
+
+            var localBarcodes = await GetLocalBarcodesAsync(localConn, localTx, cancellationToken);
+
+            var updated = 0;
+            var skippedNotLocal = 0;
+
+            foreach (DataRow row in cloudRows.Rows)
+            {
+                cancellationToken.ThrowIfCancellationRequested();
+
+                if (row["Barcode"] == DBNull.Value)
+                    continue;
+
+                var barcode = row["Barcode"].ToString()!;
+
+                // Only touch barcodes that already exist locally - brand new
+                // barcodes are inserted (Quantity + PurchaseQuantity together)
+                // by InsertMissingProductQuantitiesAsync instead.
+                if (!localBarcodes.Contains(barcode))
+                {
+                    skippedNotLocal++;
+                    continue;
+                }
+
+                var purchaseQuantity = row["PurchaseQuantity"] == DBNull.Value
+                    ? null
+                    : row["PurchaseQuantity"].ToString();
+
+                using var cmd = new MySqlCommand(@"
+                    UPDATE ProductQuantity
+                    SET PurchaseQuantity = @purchaseQuantity,
+                        ModifiedBy = 'CloudSync',
+                        ModifiedDate = CURRENT_TIMESTAMP
+                    WHERE Barcode = @barcode;", localConn, localTx);
+                cmd.Parameters.AddWithValue("@purchaseQuantity", (object?)purchaseQuantity ?? DBNull.Value);
+                cmd.Parameters.AddWithValue("@barcode", barcode);
+
+                var affected = await cmd.ExecuteNonQueryAsync(cancellationToken);
+                if (affected > 0)
+                    updated++;
+            }
+
+            progress?.Report(
+                $"{table}: PurchaseQuantity refreshed for {updated} existing barcode(s)"
+                + (skippedNotLocal > 0 ? $", {skippedNotLocal} cloud barcode(s) not yet local (left for the insert step)" : "")
+                + ". Quantity column untouched.");
+        }
+
+        /// <summary>
         /// Inserts a ProductQuantity row for any cloud barcode that doesn't exist
-        /// locally yet. Existing local rows are left completely untouched.
+        /// locally yet. Existing local rows are left completely untouched (their
+        /// PurchaseQuantity is handled separately by
+        /// <see cref="RefreshPurchaseQuantityForExistingBarcodesAsync"/>, and their
+        /// Quantity is never touched by any pull step).
         /// </summary>
         private static async Task InsertMissingProductQuantitiesAsync(
             MySqlConnection cloudConn,

@@ -32,6 +32,15 @@ namespace MyWPFCRUDApp.Services
         ///
         /// IMPORTANT: trim this list down to only the tables that actually exist in your
         /// cloud database. Trying to sync a table that isn't there yet will throw.
+        ///
+        /// NOTE: MCustomer / MCustomerPurchaseMaster / MCustomerPurchaseDetail /
+        /// MCustomerPayment / MCustomerReturnMaster / MCustomerReturnDetail /
+        /// MPettyCash / MLoginLogout are intentionally left out of this push list -
+        /// those flow the other direction (cloud -> local) via CloudPullService's
+        /// additive pull, so pushing them here would wipe cloud history. Everything
+        /// else - including the supplier/purchase-side tables we just added models
+        /// for - is master/transaction data owned by this terminal, so it's pushed
+        /// (wiped + re-populated) in full below.
         /// </summary>
         private static readonly string[] TablesInDependencyOrder =
         {
@@ -42,9 +51,18 @@ namespace MyWPFCRUDApp.Services
             "MCounterNew",
             "MCounterUser",
             "MPettyCash",
-            "MSubCategory",  
-            "MProducts",     
+            "MSubCategory",
+            "MProducts",
             "ProductQuantity",
+
+            // Newly modeled tables - parent-before-child.
+            "MBankAccountMaster",
+            "MSupplier",
+            "MPurchaseMaster",
+            "MPurchaseDetail",
+            "MPurchaseReturnMaster",
+            "MPurchaseReturnDetail",
+            "MPayment",
         };
 
         /// <summary>
