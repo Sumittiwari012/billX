@@ -548,13 +548,14 @@ namespace MyWPFCRUDApp.ViewModels
                 {
                     MessageBox.Show(
                         "The Excel sheet must have a 'ProductName' column.\n\n" +
-                        "Optional columns: 'Quantity', 'PurchasePrice', 'RetailPrice', 'MRP', " +
+                        "Optional columns: 'Barcode', 'Quantity', 'PurchasePrice', 'RetailPrice', 'MRP', " +
                         "'Size', 'Color', 'HSNCode', 'CGST', 'SGST', 'IGST'.\n\n" +
-                        "Barcodes are assigned automatically — no Barcode column needed.",
+                        "If a row has a Barcode, it's used as-is; otherwise one is assigned automatically.",
                         "Invalid Sheet", MessageBoxButton.OK, MessageBoxImage.Warning);
                     return;
                 }
 
+                int? barcodeCol = colMap.TryGetValue("Barcode", out var bc) ? bc : (int?)null;
                 int? qtyCol = colMap.TryGetValue("Quantity", out var qc) ? qc : (int?)null;
                 int? priceCol = colMap.TryGetValue("PurchasePrice", out var pc) ? pc : (int?)null;
                 int? retailCol = colMap.TryGetValue("RetailPrice", out var rc) ? rc : (int?)null;
@@ -603,6 +604,28 @@ namespace MyWPFCRUDApp.ViewModels
                 }
 
                 int lastRow = ws.LastRowUsed()?.RowNumber() ?? headerRow.RowNumber();
+
+                // NEW — reserve every barcode already typed into the sheet before the
+                // main loop runs, so an auto-generated barcode for a row that doesn't
+                // have one can never collide with a barcode a later row explicitly
+                // provides. Uses the same stop-at-first-blank-ProductName rule as the
+                // main import loop below.
+                if (barcodeCol.HasValue)
+                {
+                    for (int r = headerRow.RowNumber() + 1; r <= lastRow; r++)
+                    {
+                        var scanRow = ws.Row(r);
+                        if (string.IsNullOrWhiteSpace(scanRow.Cell(nameCol).GetString()))
+                            break;
+
+                        var bcCell = scanRow.Cell(barcodeCol.Value);
+                        if (!bcCell.IsEmpty())
+                        {
+                            var bcValue = bcCell.GetString().Trim();
+                            if (!string.IsNullOrWhiteSpace(bcValue)) usedBarcodes.Add(bcValue);
+                        }
+                    }
+                }
 
                 for (int r = headerRow.RowNumber() + 1; r <= lastRow; r++)
                 {
@@ -654,20 +677,27 @@ namespace MyWPFCRUDApp.ViewModels
                     // product master OR against other rows already on this
                     // invoice (including earlier rows from this same Excel
                     // sheet). Every row in the sheet becomes its own separate
-                    // invoice line, taken exactly as the sheet has it, with a
-                    // freshly auto-generated barcode. Nothing hits the database
-                    // until SAVE INVOICE is clicked (SavePurchase() already
-                    // auto-creates a product for ProductId == 0 rows).
+                    // invoice line, taken exactly as the sheet has it. Nothing
+                    // else needs to change for this to work — SavePurchase()
+                    // already knows how to auto-create a product for ProductId==0
+                    // rows when you click SAVE INVOICE, and it also already looks
+                    // up an existing product by barcode first, so a row whose
+                    // sheet barcode matches an existing product will be linked to
+                    // it there, exactly like a scanned or typed barcode.
                     decimal price = priceOverride ?? 0;
                     decimal retail = retailOverride ?? 0;
                     decimal mrp = mrpOverride ?? 0;
-                    string generatedBarcode = GenerateBarcode();
+
+                    // NEW — use the sheet's own barcode when the row has one;
+                    // otherwise fall back to auto-generation exactly as before.
+                    string barcodeFromSheet = ReadString(barcodeCol);
+                    string rowBarcode = barcodeFromSheet ?? GenerateBarcode();
 
                     PurchaseItems.Add(new MPurchaseDetail
                     {
                         ProductId = 0,
                         ProductName = nameFromSheet,
-                        Barcode = generatedBarcode,
+                        Barcode = rowBarcode,
                         Quantity = qty,
                         PurchasePrice = price,
                         WholesalePrice = 0,
@@ -697,8 +727,9 @@ namespace MyWPFCRUDApp.ViewModels
 
             string summary = $"✔ Import complete.\n\n" +
                 $"{added} item(s) added, taken exactly as they appear in the sheet " +
-                "(no matching or merging by product name) — barcodes were auto-assigned " +
-                "and are only recorded in your product list once you click SAVE INVOICE.";
+                "(no matching or merging by product name) — rows with a Barcode use it as-is, " +
+                "rows without one get an auto-assigned barcode, and either way it's only " +
+                "recorded in your product list once you click SAVE INVOICE.";
 
             MessageBox.Show(summary, "Import Result", MessageBoxButton.OK, MessageBoxImage.Information);
         }
