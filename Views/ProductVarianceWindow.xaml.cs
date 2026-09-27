@@ -42,6 +42,15 @@ namespace MyWPFCRUDApp.Views
         private readonly Func<string, string> _getCurrentValue;
         private readonly List<string> _fields;
 
+        // NEW — the slots collection is now built ONCE and reused for the
+        // life of the dialog. Switching "Vary by" used to call BuildSlots()
+        // again, which created a brand-new ObservableCollection and threw
+        // away every value the user had already typed (M/L/XL/XXL etc.),
+        // silently resetting rows 1+ to blank. Now a field switch only
+        // refreshes row 0's value (which maps back onto the currently
+        // selected product) and leaves every other row's typed text alone.
+        private ObservableCollection<VarianceSlotVM>? _slots;
+
         // Results — only meaningful if ShowDialog() returned true.
         public string SelectedField { get; private set; } = "";
         public string[] Values { get; private set; } = Array.Empty<string>();
@@ -69,29 +78,42 @@ namespace MyWPFCRUDApp.Views
             BuildSlots();
         }
 
-        // Rebuilds the per-row inputs whenever the chosen field changes.
-        // Slot 0 pre-fills with the base row's CURRENT value for that field,
-        // since slot 0 always maps back onto the product the user selected
-        // in the grid. Every other slot starts blank. Quantity is pre-filled
-        // by splitting the base row's current Quantity evenly across all
-        // slots — remainder goes to the earliest slots (qty 6 / 4 rows ->
-        // 2,2,1,1) — and stays fully editable either way.
+        // First call (dialog just opened): creates the rows and pre-fills
+        // them — slot 0 from the base row's current value for whichever
+        // field is selected, slots 1..N-1 blank, quantities pre-split evenly
+        // from the base row's current Quantity (remainder to the earliest
+        // slots — e.g. qty 6 / 4 rows -> 2,2,1,1).
+        //
+        // Every SUBSEQUENT call (user switched "Vary by" after already
+        // typing values) no longer rebuilds anything: it only refreshes
+        // row 0's FieldValue to match the newly chosen field's current
+        // value. Rows 1..N-1 — and their typed quantities — are left
+        // exactly as the user left them, so switching fields can no longer
+        // silently discard what was already entered.
         private void BuildSlots()
         {
             string field = ComboField.SelectedItem as string ?? "";
-            double[] distributed = DistributeQuantity(_baseQuantity, _totalCount);
 
-            var slots = new ObservableCollection<VarianceSlotVM>();
-            for (int i = 0; i < _totalCount; i++)
+            if (_slots == null)
             {
-                slots.Add(new VarianceSlotVM
+                double[] distributed = DistributeQuantity(_baseQuantity, _totalCount);
+
+                _slots = new ObservableCollection<VarianceSlotVM>();
+                for (int i = 0; i < _totalCount; i++)
                 {
-                    Label = i == 0 ? "This item" : $"Variant {i + 1}",
-                    FieldValue = i == 0 ? (_getCurrentValue(field) ?? "") : "",
-                    QuantityText = distributed[i].ToString("0.##")
-                });
+                    _slots.Add(new VarianceSlotVM
+                    {
+                        Label = i == 0 ? "This item" : $"Variant {i + 1}",
+                        FieldValue = i == 0 ? (_getCurrentValue(field) ?? "") : "",
+                        QuantityText = distributed[i].ToString("0.##")
+                    });
+                }
+                SlotsItemsControl.ItemsSource = _slots;
             }
-            SlotsItemsControl.ItemsSource = slots;
+            else
+            {
+                _slots[0].FieldValue = _getCurrentValue(field) ?? "";
+            }
         }
 
         private static double[] DistributeQuantity(double totalQty, int count)
@@ -156,10 +178,12 @@ namespace MyWPFCRUDApp.Views
 
             var values = new string[_totalCount];
             var quantities = new double[_totalCount];
+            bool anyBlank = false;
 
             for (int i = 0; i < _totalCount; i++)
             {
                 values[i] = slots[i].FieldValue ?? "";
+                if (string.IsNullOrWhiteSpace(values[i])) anyBlank = true;
 
                 if (!double.TryParse(slots[i].QuantityText, out double qty) || qty <= 0)
                 {
@@ -168,6 +192,21 @@ namespace MyWPFCRUDApp.Views
                     return;
                 }
                 quantities[i] = qty;
+            }
+
+            // NEW — catches exactly the scenario that caused the bug report:
+            // switching "Vary by" right before saving, without noticing a
+            // row's value didn't carry over the way expected. This can't
+            // happen anymore for rows 1+ (see BuildSlots above), but row 0
+            // can still legitimately be blank if the product's current
+            // value for that field is empty — so this stays a warning you
+            // can override, not a hard block.
+            if (anyBlank)
+            {
+                var confirm = MessageBox.Show(
+                    $"One or more rows have no value for '{field}'. Continue anyway?",
+                    "Blank Value", MessageBoxButton.YesNo, MessageBoxImage.Warning);
+                if (confirm != MessageBoxResult.Yes) return;
             }
 
             SelectedField = field;
