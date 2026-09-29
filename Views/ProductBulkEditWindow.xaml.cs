@@ -144,46 +144,23 @@ namespace MyWPFCRUDApp.Views
         }
 
         // ══════════════════════════════════════════════════════════════════
-        // Next barcode for "Add Variance" — same rule as Quick Add on the
-        // Purchase screen (GetNextQuickAddBarcode): always APPEND after the
-        // true current maximum for this prefix, never touch/renumber any
-        // barcode that already exists. The maximum is taken from whichever
-        // is higher of:
-        //   • every row currently in THIS grid (covers an old invoice's
-        //     existing items plus any variants already added this session —
-        //     none of that is in the DB yet if it hasn't been saved), and
-        //   • the product master's own last-known barcode for this prefix
-        //     (covers every OTHER invoice/product saved since this bill was
-        //     first created — the actual reason old bills used to collide:
-        //     the old logic numbered relative to the base row's own barcode
-        //     instead of the real, current global max).
-        // A final collision-check loop is a safety net only; it should
-        // rarely need to advance past maxNumber + 1.
+        // FIX (Issue 1 — barcode placement): variant barcodes now continue
+        // from the SPECIFIC ROW being varied, not the global maximum for the
+        // prefix anywhere in the grid/DB. Previously GetNextBarcodeForPrefix
+        // (below) always jumped to one past the highest number used ANYWHERE
+        // for that prefix — so varying a row like "GR105" could produce
+        // "GR451" if some unrelated product elsewhere was "GR450", landing
+        // nowhere near the row it was created from.
+        //
+        // This new helper instead starts counting right after `afterNumber`
+        // (the base row's own number, or the previous variant's number when
+        // generating several in a row) and only steps forward far enough to
+        // skip a number that's already taken by something else — so variants
+        // land directly under the product they were varied from.
         // ══════════════════════════════════════════════════════════════════
-        private string GetNextBarcodeForPrefix(string prefix)
+        private string GetNextBarcodeAfterNumber(string prefix, long afterNumber)
         {
-            long maxNumber = 0;
-
-            foreach (var r in Rows)
-            {
-                var (p, n) = ParseBarcode(r.Product.Barcode);
-                if (p == prefix && n > maxNumber) maxNumber = n;
-            }
-
-            try
-            {
-                string? dbLast = _productService.GetLastBarcode();
-                var (dbPrefix, dbNum) = ParseBarcode(dbLast);
-                if (dbPrefix == prefix && dbNum > maxNumber) maxNumber = dbNum;
-            }
-            catch
-            {
-                // If the lookup fails, fall back to whatever's visible in
-                // this grid — still correct, just not aware of barcodes
-                // used by invoices that aren't loaded right now.
-            }
-
-            long candidate = maxNumber + 1;
+            long candidate = afterNumber + 1;
             string barcode = $"{prefix}{candidate}";
             while (BarcodeTakenElsewhere(barcode, null))
             {
@@ -834,6 +811,7 @@ namespace MyWPFCRUDApp.Views
                 "Bulk Update Applied", MessageBoxButton.OK, MessageBoxImage.Information);
         }
 
+        // ══════════════════════════════════════════════════════════════════
         // ── Add Variance ─────────────────────────────────────────────────────
         //   TxtVarianceCount is a TOTAL count INCLUDING the selected product
         //   itself (not "copies to add"). Before any row is touched,
@@ -849,12 +827,22 @@ namespace MyWPFCRUDApp.Views
         //        e.g. qty 6 / 4 rows -> 2,2,1,1), fully editable.
         //   On confirm: slot 0 is applied back onto the selected row itself,
         //   slots 1..N-1 become new rows inserted directly beneath it, each
-        //   with a fresh, non-colliding barcode (GetNextBarcodeForPrefix —
-        //   same rule as before: only ever appends, never renumbers an
-        //   existing barcode).
+        //   with a fresh, non-colliding barcode.
         //
-        //   Multiple rows selected -> the dialog runs once per selected row,
-        //   one after another; cancelling one doesn't affect the others.
+        //   FIX (Issue 2 — one-time action): previously the dialog was
+        //   opened INSIDE a `foreach (var baseRow in selectedRows)` loop, so
+        //   selecting several rows meant filling in the same field/values/
+        //   quantities once PER ROW. The dialog now opens exactly ONCE —
+        //   pre-filled from the first selected row — and whatever is entered
+        //   there (field, each slot's value, each slot's quantity) is then
+        //   applied identically to every selected row in the loop below.
+        //
+        //   FIX (Issue 1 — barcode placement): each new variant barcode now
+        //   continues from THAT row's own number (GetNextBarcodeAfterNumber),
+        //   not the global max for the prefix — so variants land directly
+        //   under the product they were varied from instead of jumping to
+        //   whatever the highest barcode anywhere happens to be.
+        // ══════════════════════════════════════════════════════════════════
         private void AddVariance_Click(object sender, RoutedEventArgs e)
         {
             // ══════════════════════════════════════════════════════════════
@@ -888,42 +876,61 @@ namespace MyWPFCRUDApp.Views
                 return;
             }
 
+            // ── Open the dialog ONCE, pre-filled from the first selected
+            //    row, regardless of how many rows are selected. ──
+            var referenceRow = selectedRows[0];
+            string label = selectedRows.Count == 1
+                ? $"{referenceRow.Product.ProductName} ({referenceRow.Product.Barcode})"
+                : $"{selectedRows.Count} selected products (e.g. {referenceRow.Product.ProductName})";
+
+            var dlg = new ProductVarianceWindow(
+                productLabel: label,
+                totalCount: totalCount,
+                baseQuantity: referenceRow.Quantity,
+                fields: varianceFields,
+                getCurrentValue: fieldName => GetStringPropertyValue(referenceRow.Product, fieldName))
+            {
+                Owner = this
+            };
+
+            if (dlg.ShowDialog() != true)
+            {
+                // Cancelled — nothing was touched on any row.
+                return;
+            }
+
+            string chosenField = dlg.SelectedField;
+            string[] values = dlg.Values;          // same set of values applied to every selected row
+            double[] quantities = dlg.Quantities;  // same quantity split applied to every selected row
+
             int totalRowsAdded = 0;
 
             foreach (var baseRow in selectedRows)
             {
-                var dlg = new ProductVarianceWindow(
-                    productLabel: $"{baseRow.Product.ProductName} ({baseRow.Product.Barcode})",
-                    totalCount: totalCount,
-                    baseQuantity: baseRow.Quantity,
-                    fields: varianceFields,
-                    getCurrentValue: fieldName => GetStringPropertyValue(baseRow.Product, fieldName))
-                {
-                    Owner = this
-                };
-
-                if (dlg.ShowDialog() != true) continue; // user cancelled this row's variance
-
-                string chosenField = dlg.SelectedField;
-                string[] values = dlg.Values;          // length == totalCount
-                double[] quantities = dlg.Quantities;   // length == totalCount
-
-                // Slot 0 applies back onto the row the user selected.
+                // Slot 0 applies back onto the row itself.
                 SetStringPropertyValue(baseRow.Product, chosenField, values[0]);
                 baseRow.Quantity = quantities[0];
 
                 int baseIndex = Rows.IndexOf(baseRow);
-                var (prefix, _) = ParseBarcode(baseRow.Product.Barcode);
+                var (prefix, baseNumber) = ParseBarcode(baseRow.Product.Barcode);
+
+                // FIX (Issue 1): start right after THIS row's own barcode
+                // number, then keep advancing from whatever number was just
+                // used, so consecutive variants for the same row stay
+                // consecutive (e.g. GR105 -> GR106 -> GR107 ...) instead of
+                // jumping to the prefix's global maximum.
+                long runningNumber = baseNumber;
 
                 for (int i = 1; i < totalCount; i++)
                 {
-                    string newBarcode = GetNextBarcodeForPrefix(prefix);
+                    string newBarcode = GetNextBarcodeAfterNumber(prefix, runningNumber);
                     var clone = CloneForVariance(baseRow.Product, newBarcode);
                     SetStringPropertyValue(clone, chosenField, values[i]);
 
                     var newRow = AddRow(clone, isNew: true, insertIndex: baseIndex + i);
                     newRow.Quantity = quantities[i];
 
+                    runningNumber = ParseBarcode(newBarcode).number;
                     totalRowsAdded++;
                 }
             }
@@ -933,8 +940,8 @@ namespace MyWPFCRUDApp.Views
             if (totalRowsAdded > 0)
             {
                 MessageBox.Show(
-                    $"✔ Added {totalRowsAdded} new variant row(s), using the next available " +
-                    "barcode(s) after your last product. No existing item's barcode was changed.",
+                    $"✔ Added {totalRowsAdded} new variant row(s) across {selectedRows.Count} product(s), " +
+                    "each starting right after its own barcode number. No existing item's barcode was changed.",
                     "Variance Added", MessageBoxButton.OK, MessageBoxImage.Information);
             }
         }
