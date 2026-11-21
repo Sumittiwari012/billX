@@ -6,6 +6,21 @@
         WindowStartupLocation="CenterScreen"
         Background="#F1F3F5">
 
+    <Window.Resources>
+        <!-- Group header shown above each category's subcategories in the
+             SubCategory dropdowns (e.g. "Mens" in bold, then its items). -->
+        <GroupStyle x:Key="CategoryGroupStyle">
+            <GroupStyle.HeaderTemplate>
+                <DataTemplate>
+                    <Border Background="#E9ECEF" Padding="6,3">
+                        <TextBlock Text="{Binding Name}" FontWeight="Bold"
+                                   FontSize="12" Foreground="#343A40"/>
+                    </Border>
+                </DataTemplate>
+            </GroupStyle.HeaderTemplate>
+        </GroupStyle>
+    </Window.Resources>
+
     <Grid Margin="16">
         <Grid.RowDefinitions>
             <RowDefinition Height="Auto"/>   <!-- Column picker -->
@@ -84,9 +99,15 @@
                              VerticalContentAlignment="Center" Padding="6,0"
                              Margin="0,0,8,0"/>
 
-                    <!-- Dropdown value (shown for Category/SubCategory/Unit) -->
+                    <!-- Dropdown value (shown for Category/SubCategory/Unit).
+                         SubCategory is grouped by Category, so the group
+                         style is attached here. -->
                     <ComboBox x:Name="ComboBulkValue" Width="150" Height="30"
-                              Visibility="Collapsed" Margin="0,0,8,0"/>
+                              Visibility="Collapsed" Margin="0,0,8,0">
+                        <ComboBox.GroupStyle>
+                            <StaticResource ResourceKey="CategoryGroupStyle"/>
+                        </ComboBox.GroupStyle>
+                    </ComboBox>
 
                     <!-- Per-tax value inputs (shown only for the clubbed
                          "Tax Rate (CGST + SGST + IGST)" option — one field
@@ -271,10 +292,16 @@
                         </DataGridTemplateColumn.CellTemplate>
                         <DataGridTemplateColumn.CellEditingTemplate>
                             <DataTemplate>
-                                <ComboBox ItemsSource="{Binding DataContext.SubCategories,
+                                <!-- Grouped by Category: category name as a bold
+                                     header, its subcategories listed beneath. -->
+                                <ComboBox ItemsSource="{Binding DataContext.SubCategoryOptions,
                                           RelativeSource={RelativeSource AncestorType=Window}}"
                                           DisplayMemberPath="SubCategoryName" SelectedValuePath="Id"
-                                          SelectedValue="{Binding Product.SubCategoryId, Mode=TwoWay}"/>
+                                          SelectedValue="{Binding Product.SubCategoryId, Mode=TwoWay}">
+                                    <ComboBox.GroupStyle>
+                                        <StaticResource ResourceKey="CategoryGroupStyle"/>
+                                    </ComboBox.GroupStyle>
+                                </ComboBox>
                             </DataTemplate>
                         </DataGridTemplateColumn.CellEditingTemplate>
                     </DataGridTemplateColumn>

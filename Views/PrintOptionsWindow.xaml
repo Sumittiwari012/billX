@@ -27,12 +27,6 @@
                     FontWeight="SemiBold" FontSize="13"
                     Cursor="Hand"/>
 
-            <Button Content="🧾 Purchase Bill"
-                    Click="PurchaseBillButton_Click"
-                    Height="42"
-                    Background="#2B8A3E" Foreground="White"
-                    FontWeight="SemiBold" FontSize="13"
-                    Cursor="Hand"/>
         </StackPanel>
 
         <Button Grid.Row="2"

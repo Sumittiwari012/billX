@@ -104,6 +104,28 @@
                         </StackPanel>
                     </Button>
 
+                    <!-- Warehouse -->
+                    <Button Style="{StaticResource SidebarBtnStyle}"
+                            Command="{Binding SelectSectionCommand}"
+                            CommandParameter="warehouse">
+                        <StackPanel Orientation="Horizontal">
+                            <TextBlock Text="🏭" FontSize="16" VerticalAlignment="Center"/>
+                            <TextBlock Text=" Warehouse" VerticalAlignment="Center"
+                                       Visibility="{Binding SidebarTextVisibility}"/>
+                        </StackPanel>
+                    </Button>
+
+                    <!-- Store -->
+                    <Button Style="{StaticResource SidebarBtnStyle}"
+                            Command="{Binding SelectSectionCommand}"
+                            CommandParameter="store">
+                        <StackPanel Orientation="Horizontal">
+                            <TextBlock Text="🏬" FontSize="16" VerticalAlignment="Center"/>
+                            <TextBlock Text=" Store" VerticalAlignment="Center"
+                                       Visibility="{Binding SidebarTextVisibility}"/>
+                        </StackPanel>
+                    </Button>
+
                     <Button Style="{StaticResource SidebarBtnStyle}"
                             Command="{Binding SelectSectionCommand}"
                             CommandParameter="banking">

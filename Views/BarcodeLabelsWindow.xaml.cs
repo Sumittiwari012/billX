@@ -21,6 +21,10 @@ namespace MyWPFCRUDApp.Views
         private readonly Dictionary<BarcodeColumnOption, DataGridColumn> _activeOptionalColumns = new();
         private ObservableCollection<BarcodeLabelRow> _rows = new();
 
+        // False while the window is still being built / saved values are being
+        // applied, so those programmatic changes don't write the file back.
+        private bool _settingsReady;
+
         public BarcodeLabelsWindow(IEnumerable<MPurchaseDetail> items, ProductService? productService = null)
         {
             InitializeComponent();
@@ -45,6 +49,9 @@ namespace MyWPFCRUDApp.Views
                     {
                         if (args.PropertyName == nameof(BarcodeLabelRow.IsSelected))
                             UpdateSelectedCountText();
+                        else if (args.PropertyName == nameof(BarcodeLabelRow.PrintQuantity) &&
+                                 ReferenceEquals(LabelsGrid.SelectedItem, row))
+                            UpdatePreviewVisibility();
                     };
                 }
             }
@@ -63,8 +70,81 @@ namespace MyWPFCRUDApp.Views
                 NoSelectionHint.Text = "No barcoded items on this invoice.";
 
             TemplateList.SelectedIndex = 0;
+            ApplySavedSettings();
             UpdatePreviewVisibility();
             UpdateSelectedCountText();
+        }
+
+        // ── Remembered print layout (labels across + gap + last template) ────
+        // Persisted by LabelPrintSettingsService in %APPDATA%, which survives
+        // clearing cache / temp files.
+        private void ApplySavedSettings()
+        {
+            var saved = LabelPrintSettingsService.Load();
+
+            LabelsAcrossBox.Text = Math.Clamp(saved.LabelsAcross, 1, MaxLabelsAcross).ToString();
+            GapMmBox.Text = saved.GapMm.ToString("0.##", System.Globalization.CultureInfo.InvariantCulture);
+
+            if (!string.IsNullOrEmpty(saved.SelectedTemplateKey))
+            {
+                var match = TemplateList.Items.OfType<ListBoxItem>()
+                    .FirstOrDefault(i => TemplateKey(i) == saved.SelectedTemplateKey);
+                if (match != null) TemplateList.SelectedItem = match;
+            }
+
+            _settingsReady = true;
+        }
+
+        private static string? TemplateKey(ListBoxItem? item) => item?.Tag switch
+        {
+            string builtIn => "builtin:" + builtIn,
+            LabelTemplate tpl => "custom:" + tpl.Name,
+            _ => null
+        };
+
+        // Upper limit for the typed "Labels across" value.
+        private const int MaxLabelsAcross = 20;
+
+        private int GetLabelsAcross() =>
+            int.TryParse((LabelsAcrossBox.Text ?? "").Trim(), out var n)
+                ? Math.Clamp(n, 1, MaxLabelsAcross)
+                : 1;
+
+        // Lets only digits be typed into the Labels across box.
+        private void DigitsOnly_PreviewTextInput(object sender, System.Windows.Input.TextCompositionEventArgs e)
+            => e.Handled = !e.Text.All(char.IsDigit);
+
+        private double GetGapMm()
+        {
+            var text = (GapMmBox.Text ?? "").Trim().Replace(',', '.');
+            return double.TryParse(text, System.Globalization.NumberStyles.Float,
+                       System.Globalization.CultureInfo.InvariantCulture, out var v)
+                ? Math.Clamp(v, 0, 50)
+                : 0;
+        }
+
+        private void SaveSettings()
+        {
+            if (!_settingsReady) return;
+
+            LabelPrintSettingsService.Save(new LabelPrintSettings
+            {
+                LabelsAcross = GetLabelsAcross(),
+                GapMm = GetGapMm(),
+                SelectedTemplateKey = TemplateKey(TemplateList.SelectedItem as ListBoxItem)
+            });
+        }
+
+        private void LabelsAcrossBox_TextChanged(object sender, TextChangedEventArgs e)
+        {
+            SaveSettings();
+            if (_settingsReady) UpdatePreviewVisibility();
+        }
+
+        private void GapMmBox_TextChanged(object sender, TextChangedEventArgs e)
+        {
+            SaveSettings();
+            if (_settingsReady) UpdatePreviewVisibility();
         }
 
         private BarcodeLabelRow BuildRow(MPurchaseDetail item)
@@ -93,7 +173,10 @@ namespace MyWPFCRUDApp.Views
                 MfgDate = product?.MfgDate,
                 ExpDate = product?.ExpDate,
                 Godown = product?.Godown,
-                Rack = product?.Rack,
+                // CHANGED: MProducts.Rack is now long?. BarcodeLabelRow.Rack is
+                // kept as a string (it's only displayed), so convert here.
+                // If you change BarcodeLabelRow.Rack to long?, use: Rack = product?.Rack,
+                Rack = product?.Rack?.ToString(),
                 PartGroup = product?.PartGroup,
                 Description = product?.Description,
                 DiscountPercentage = product?.DiscountPercentage ?? 0,
@@ -247,35 +330,65 @@ namespace MyWPFCRUDApp.Views
         }
 
         // ── Template + preview ───────────────────────────────────────────────
-        private void TemplateList_SelectionChanged(object sender, SelectionChangedEventArgs e) => UpdatePreviewVisibility();
+        private void TemplateList_SelectionChanged(object sender, SelectionChangedEventArgs e)
+        {
+            UpdatePreviewVisibility();
+            SaveSettings();
+        }
 
         private void LabelsGrid_SelectionChanged(object sender, SelectionChangedEventArgs e) => UpdatePreviewVisibility();
 
+        // Shows the selected row exactly as it will print: the chosen template,
+        // repeated "Labels across" times with the chosen gap, on one strip.
+        // Uses the same BuildStrip/BuildPrintVisual as PrintSelectedButton_Click.
         private void UpdatePreviewVisibility()
         {
-            if (NoSelectionHint == null || StandardPreview == null || CompactPreview == null ||
-                DetailedPreview == null || CustomTemplateViewbox == null)
+            if (NoSelectionHint == null || StripPreviewPanel == null || StripPreviewHost == null ||
+                StripInfoText == null || LabelsAcrossBox == null || GapMmBox == null)
                 return;
 
-            bool hasSelection = LabelsGrid.SelectedItem != null;
+            var row = LabelsGrid.SelectedItem as BarcodeLabelRow;
+            bool hasSelection = row != null;
             NoSelectionHint.Visibility = hasSelection ? Visibility.Collapsed : Visibility.Visible;
+            StripPreviewPanel.Visibility = hasSelection ? Visibility.Visible : Visibility.Collapsed;
+
+            if (row == null)
+            {
+                StripPreviewHost.Content = null;
+                return;
+            }
 
             var selectedItem = TemplateList.SelectedItem as ListBoxItem;
-            string? builtIn = selectedItem?.Tag as string;
+            string builtIn = selectedItem?.Tag as string ?? "Standard";
             var customTemplate = selectedItem?.Tag as LabelTemplate;
 
-            StandardPreview.Visibility = hasSelection && builtIn == "Standard" ? Visibility.Visible : Visibility.Collapsed;
-            CompactPreview.Visibility = hasSelection && builtIn == "Compact" ? Visibility.Visible : Visibility.Collapsed;
-            DetailedPreview.Visibility = hasSelection && builtIn == "Detailed" ? Visibility.Visible : Visibility.Collapsed;
+            int across = GetLabelsAcross();
+            double gapPx = GetGapMm() * TemplateRenderer.PxPerMm;
 
-            if (hasSelection && customTemplate != null)
+            var (_, labelW, labelH) = BuildPrintVisual(row, builtIn, customTemplate);
+            StripPreviewHost.Content = BuildStrip(row, builtIn, customTemplate, across, across, labelW, labelH, gapPx, preview: true);
+
+            double stripWmm = (across * labelW + (across - 1) * gapPx) / TemplateRenderer.PxPerMm;
+            double labelWmm = labelW / TemplateRenderer.PxPerMm;
+            double labelHmm = labelH / TemplateRenderer.PxPerMm;
+            var inv = System.Globalization.CultureInfo.InvariantCulture;
+            StripInfoText.Text =
+                $"{across} across · gap {GetGapMm().ToString("0.##", inv)} mm\n" +
+                $"label {labelWmm.ToString("0.#", inv)} × {labelHmm.ToString("0.#", inv)} mm · " +
+                $"strip {stripWmm.ToString("0.#", inv)} × {labelHmm.ToString("0.#", inv)} mm";
+
+            // How Print Qty will be split into strips, e.g. 37 labels at 2 across
+            // = 18 full strips + 1 strip with a single label.
+            int copies = (int)Math.Round(row.PrintQuantity, MidpointRounding.AwayFromZero);
+            if (copies > 0)
             {
-                CustomTemplatePreview.Content = TemplateRenderer.Render(customTemplate, LabelsGrid.SelectedItem);
-                CustomTemplateViewbox.Visibility = Visibility.Visible;
-            }
-            else
-            {
-                CustomTemplateViewbox.Visibility = Visibility.Collapsed;
+                int full = copies / across;
+                int rest = copies % across;
+                var parts = new List<string>();
+                if (full > 0) parts.Add($"{full} strip(s) of {across}");
+                if (rest > 0) parts.Add($"1 strip of {rest}");
+                StripInfoText.Text += $"\nPrint Qty {copies} → " + string.Join(" + ", parts) +
+                                      $" = {full + (rest > 0 ? 1 : 0)} strip(s)";
             }
         }
 
@@ -310,37 +423,56 @@ namespace MyWPFCRUDApp.Views
 
             var pd = new PrintDialog { PrintQueue = queue };
             int printed = 0;
+            int strips = 0;
+
+            int across = GetLabelsAcross();
+            double gapPx = GetGapMm() * TemplateRenderer.PxPerMm;
 
             foreach (var row in rows)
             {
-                // Print Qty drives how many copies go out — not the invoice
-                // Quantity — so a row checked "Print?" but set to 0 is
-                // deliberately skipped rather than defaulting back to "print
-                // everything that was purchased".
+                // Print Qty = total number of labels wanted for this row.
+                // With "labels across" > 1 they are laid out side by side on a
+                // strip, so 20 labels at 2-across is 10 strips.
                 int copies = (int)Math.Round(row.PrintQuantity, MidpointRounding.AwayFromZero);
                 if (copies <= 0) continue;
 
-                var (visual, widthPx, heightPx) = BuildPrintVisual(row, builtIn, customTemplate);
+                // Size of ONE label (custom templates: from mm; built-ins: content size).
+                var (_, labelW, labelH) = BuildPrintVisual(row, builtIn, customTemplate);
 
-                pd.PrintTicket.PageMediaSize = new PageMediaSize(widthPx, heightPx);
+                // Full strip width: every slot plus the gaps between them. Empty
+                // slots on a partial last strip are left blank but still take
+                // their space, so label positions always line up with the roll.
+                double stripW = across * labelW + (across - 1) * gapPx;
+                pd.PrintTicket.PageMediaSize = new PageMediaSize(stripW, labelH);
 
-                // Ask the driver what it will ACTUALLY give us at that page size.
-                // Many label/thermal printers have hardware margins (a printable
-                // area inset from the physical page edges). If we ignore that and
-                // just arrange our visual to fill (0,0)→(width,height), the driver
-                // either clips whatever falls outside its real printable rectangle
-                // or shifts our content into it — which is what was pushing
-                // prints to the left and clipping the left edge.
-                var pageVisual = WrapForImageableArea(visual, queue, pd.PrintTicket, widthPx, heightPx);
+                int fullStrips = copies / across;
+                int remainder = copies % across;
 
-                pageVisual.Measure(new Size(widthPx, heightPx));
-                pageVisual.Arrange(new Rect(0, 0, widthPx, heightPx));
-                pageVisual.UpdateLayout();
-
-                for (int i = 0; i < copies; i++)
+                foreach (var (slots, times) in new[] { (across, fullStrips), (remainder, 1) })
                 {
-                    pd.PrintVisual(pageVisual, $"Barcode Label – {row.ProductName} [{row.Barcode}]");
-                    printed++;
+                    if (slots <= 0 || times <= 0) continue;
+
+                    var strip = BuildStrip(row, builtIn, customTemplate, slots, across, labelW, labelH, gapPx);
+
+                    // Ask the driver what it will ACTUALLY give us at that page size.
+                    // Many label/thermal printers have hardware margins (a printable
+                    // area inset from the physical page edges). If we ignore that and
+                    // just arrange our visual to fill (0,0)→(width,height), the driver
+                    // either clips whatever falls outside its real printable rectangle
+                    // or shifts our content into it — which is what was pushing
+                    // prints to the left and clipping the left edge.
+                    var pageVisual = WrapForImageableArea(strip, queue, pd.PrintTicket, stripW, labelH);
+
+                    pageVisual.Measure(new Size(stripW, labelH));
+                    pageVisual.Arrange(new Rect(0, 0, stripW, labelH));
+                    pageVisual.UpdateLayout();
+
+                    for (int i = 0; i < times; i++)
+                    {
+                        pd.PrintVisual(pageVisual, $"Barcode Label – {row.ProductName} [{row.Barcode}]");
+                        printed += slots;
+                        strips++;
+                    }
                 }
             }
 
@@ -351,7 +483,7 @@ namespace MyWPFCRUDApp.Views
                 return;
             }
 
-            MessageBox.Show(this, $"{printed} label(s) sent to \"{queue.FullName}\".",
+            MessageBox.Show(this, $"{printed} label(s) sent to \"{queue.FullName}\" ({strips} strip(s), up to {across} across).",
                 "Print", MessageBoxButton.OK, MessageBoxImage.Information);
         }
 
@@ -385,6 +517,37 @@ namespace MyWPFCRUDApp.Views
             visual.Margin = new Thickness(imageable.OriginWidth, imageable.OriginHeight, 0, 0);
             container.Children.Add(visual);
             return container;
+        }
+
+        // One printed strip: `slots` identical labels side by side, each label
+        // in its own fixed-size cell, separated by gapPx. Every slot gets its
+        // own freshly built visual because a WPF element can only have one parent.
+        private static FrameworkElement BuildStrip(
+            BarcodeLabelRow row, string builtIn, LabelTemplate? customTemplate,
+            int slots, int across, double labelW, double labelH, double gapPx, bool preview = false)
+        {
+            var canvas = new Canvas
+            {
+                Width = across * labelW + (across - 1) * gapPx,
+                Height = labelH
+            };
+
+            // Preview only: grey strip behind white labels so the gaps are visible.
+            // Never set when printing, so printed output is unchanged.
+            if (preview) canvas.Background = new SolidColorBrush(Color.FromRgb(0xCE, 0xD4, 0xDA));
+
+            for (int i = 0; i < slots; i++)
+            {
+                var (visual, _, _) = BuildPrintVisual(row, builtIn, customTemplate);
+                var cell = new Grid { Width = labelW, Height = labelH };
+                if (preview) cell.Background = Brushes.White;
+                cell.Children.Add(visual);
+                Canvas.SetLeft(cell, i * (labelW + gapPx));
+                Canvas.SetTop(cell, 0);
+                canvas.Children.Add(cell);
+            }
+
+            return canvas;
         }
 
         private static (FrameworkElement Visual, double WidthPx, double HeightPx) BuildPrintVisual(

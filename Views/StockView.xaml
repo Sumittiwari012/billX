@@ -1,0 +1,104 @@
+<UserControl x:Class="MyWPFCRUDApp.Views.StockView"
+             xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml">
+    <UserControl.Resources>
+        <BooleanToVisibilityConverter x:Key="BoolToVis"/>
+    </UserControl.Resources>
+
+    <Grid Margin="12">
+        <Grid.RowDefinitions>
+            <RowDefinition Height="Auto"/>
+            <RowDefinition Height="*"/>
+        </Grid.RowDefinitions>
+
+        <!-- Location picker (shared by both tabs) -->
+        <StackPanel Orientation="Horizontal" Margin="0,0,0,10">
+            <TextBlock Text="Location type" VerticalAlignment="Center" Margin="0,0,6,0"/>
+            <ComboBox ItemsSource="{Binding LocationTypes}" SelectedItem="{Binding SelectedLocationType}" Width="110" Margin="0,0,16,0"/>
+            <TextBlock Text="Location" VerticalAlignment="Center" Margin="0,0,6,0"/>
+            <ComboBox ItemsSource="{Binding Locations}" DisplayMemberPath="Name" SelectedValuePath="Id"
+                      SelectedValue="{Binding SelectedLocationId}" Width="220"/>
+        </StackPanel>
+
+        <TabControl Grid.Row="1">
+            <!-- ===== Current stock ===== -->
+            <TabItem Header="Current stock">
+                <Grid Margin="8">
+                    <Grid.RowDefinitions>
+                        <RowDefinition Height="Auto"/>
+                        <RowDefinition Height="Auto"/>
+                        <RowDefinition Height="*"/>
+                    </Grid.RowDefinitions>
+
+                    <StackPanel Orientation="Horizontal" Margin="0,0,0,8">
+                        <TextBox Text="{Binding Search, UpdateSourceTrigger=PropertyChanged}" Width="260" Margin="0,0,8,0">
+                            <TextBox.InputBindings>
+                                <KeyBinding Key="Enter" Command="{Binding RefreshCommand}"/>
+                            </TextBox.InputBindings>
+                        </TextBox>
+                        <Button Content="Search / Refresh" Command="{Binding RefreshCommand}" Padding="10,2"/>
+                    </StackPanel>
+
+                    <!-- Manual posting: godown only. Quantity is never edited directly. -->
+                    <GroupBox Grid.Row="1" Header="Post stock into the selected godown" Margin="0,0,0,8"
+                              Visibility="{Binding CanPost, Converter={StaticResource BoolToVis}}">
+                        <StackPanel Orientation="Horizontal" Margin="6">
+                            <ComboBox ItemsSource="{Binding PostModes}" SelectedItem="{Binding PostMode}" Width="120" Margin="0,0,8,0"/>
+                            <TextBlock Text="Barcode" VerticalAlignment="Center" Margin="0,0,4,0"/>
+                            <TextBox Text="{Binding PostBarcode, UpdateSourceTrigger=PropertyChanged}" Width="160" Margin="0,0,8,0"/>
+                            <TextBlock Text="Qty (+/-)" VerticalAlignment="Center" Margin="0,0,4,0"/>
+                            <TextBox Text="{Binding PostQty, UpdateSourceTrigger=LostFocus}" Width="70" Margin="0,0,8,0"/>
+                            <TextBlock Text="Reason" VerticalAlignment="Center" Margin="0,0,4,0"/>
+                            <TextBox Text="{Binding PostReason, UpdateSourceTrigger=PropertyChanged}" Width="200" Margin="0,0,8,0"/>
+                            <Button Content="Post" Command="{Binding PostCommand}" Width="70"/>
+                        </StackPanel>
+                    </GroupBox>
+
+                    <DataGrid Grid.Row="2" ItemsSource="{Binding Stock}" AutoGenerateColumns="False" IsReadOnly="True"
+                              CanUserAddRows="False" HeadersVisibility="Column">
+                        <DataGrid.Columns>
+                            <DataGridTextColumn Header="Location" Binding="{Binding LocationName}" Width="*"/>
+                            <DataGridTextColumn Header="Barcode" Binding="{Binding Barcode}" Width="140"/>
+                            <DataGridTextColumn Header="Product" Binding="{Binding ProductName}" Width="2*"/>
+                            <DataGridTextColumn Header="Quantity" Binding="{Binding Quantity, StringFormat=N3}" Width="100"/>
+                            <DataGridTextColumn Header="Updated" Binding="{Binding ModifiedDate, StringFormat=g}" Width="140"/>
+                        </DataGrid.Columns>
+                    </DataGrid>
+                </Grid>
+            </TabItem>
+
+            <!-- ===== Ledger ===== -->
+            <TabItem Header="Ledger">
+                <Grid Margin="8">
+                    <Grid.RowDefinitions>
+                        <RowDefinition Height="Auto"/>
+                        <RowDefinition Height="*"/>
+                    </Grid.RowDefinitions>
+                    <StackPanel Orientation="Horizontal" Margin="0,0,0,8">
+                        <TextBlock Text="Barcode" VerticalAlignment="Center" Margin="0,0,6,0"/>
+                        <TextBox Text="{Binding LedgerBarcode, UpdateSourceTrigger=PropertyChanged}" Width="200" Margin="0,0,8,0">
+                            <TextBox.InputBindings>
+                                <KeyBinding Key="Enter" Command="{Binding LoadLedgerCommand}"/>
+                            </TextBox.InputBindings>
+                        </TextBox>
+                        <Button Content="Load ledger" Command="{Binding LoadLedgerCommand}" Padding="10,2"/>
+                    </StackPanel>
+                    <DataGrid Grid.Row="1" ItemsSource="{Binding Ledger}" AutoGenerateColumns="False" IsReadOnly="True"
+                              CanUserAddRows="False" HeadersVisibility="Column">
+                        <DataGrid.Columns>
+                            <DataGridTextColumn Header="When" Binding="{Binding CreatedDate, StringFormat=g}" Width="130"/>
+                            <DataGridTextColumn Header="Location" Binding="{Binding LocationName}" Width="*"/>
+                            <DataGridTextColumn Header="Barcode" Binding="{Binding Barcode}" Width="130"/>
+                            <DataGridTextColumn Header="Product" Binding="{Binding ProductName}" Width="*"/>
+                            <DataGridTextColumn Header="Change" Binding="{Binding QtyChange, StringFormat=+0.###;-0.###}" Width="80"/>
+                            <DataGridTextColumn Header="Balance" Binding="{Binding BalanceAfter, StringFormat=N3}" Width="90"/>
+                            <DataGridTextColumn Header="Type" Binding="{Binding MovementType}" Width="110"/>
+                            <DataGridTextColumn Header="Ref" Binding="{Binding Remarks}" Width="110"/>
+                            <DataGridTextColumn Header="By" Binding="{Binding CreatedBy}" Width="90"/>
+                        </DataGrid.Columns>
+                    </DataGrid>
+                </Grid>
+            </TabItem>
+        </TabControl>
+    </Grid>
+</UserControl>

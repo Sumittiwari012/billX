@@ -16,9 +16,7 @@
             <RowDefinition Height="Auto"/>
         </Grid.RowDefinitions>
 
-        <!-- ═══════════════════════════════════════════════
-             ROW 0 · Column Visibility Expander
-        ═══════════════════════════════════════════════ -->
+        <!-- ROW 0 · Column Visibility Expander -->
         <Expander Grid.Row="0"
                   Header="⚙ Choose Visible Columns"
                   Margin="0,0,0,6"
@@ -44,9 +42,7 @@
             </Border>
         </Expander>
 
-        <!-- ═══════════════════════════════════════════════
-             ROW 1 · Entry / Edit Row
-        ═══════════════════════════════════════════════ -->
+        <!-- ROW 1 · Entry / Edit Row -->
         <Border Grid.Row="1"
                 Background="#FFF8F1E7"
                 BorderBrush="#FFD6C4A7"
@@ -76,6 +72,7 @@
                         <TextBlock Text="Rack"         Width="100" Margin="5" FontWeight="Bold"/>
                         <TextBlock Text="HSN Code"     Width="100" Margin="5" FontWeight="Bold"/>
                         <TextBlock Text="DiscountPercentage" Width="100" Margin="5" FontWeight="Bold"/>
+                        <TextBlock Text="Opening Stock" Width="100" Margin="5" FontWeight="Bold"/>
                     </StackPanel>
                     <!-- Entry Controls Row -->
                     <StackPanel Orientation="Horizontal">
@@ -97,14 +94,13 @@
                         <TextBox Width="100" Margin="5" Text="{Binding MProduct.Rack}"/>
                         <TextBox Width="100" Margin="5" Text="{Binding MProduct.HSNCode}"/>
                         <TextBox Width="100" Margin="5" Text="{Binding MProduct.DiscountPercentage}"/>
+                        <TextBox Width="100" Margin="5" Text="{Binding MProduct.OpeningStock, TargetNullValue=''}"/>
                     </StackPanel>
                 </StackPanel>
             </ScrollViewer>
         </Border>
 
-        <!-- ═══════════════════════════════════════════════
-             ROW 1B · Price Auto-Calculation Section
-        ═══════════════════════════════════════════════ -->
+        <!-- ROW 1B · Price Auto-Calculation Section -->
         <Border Grid.Row="2"
                 Background="#FFF0E8DC"
                 BorderBrush="#FFDFCFB8"
@@ -113,9 +109,7 @@
                 Padding="12"
                 Margin="0,0,0,8"/>
 
-        <!-- ═══════════════════════════════════════════════
-             ROW 2 · Multi-select notice bar (bulk column update)
-        ═══════════════════════════════════════════════ -->
+        <!-- Multi-select notice bar (bulk column update) -->
         <Border Grid.Row="5"
                 Background="#FFFFEEBA"
                 BorderBrush="#FFC8A400"
@@ -143,9 +137,7 @@
             </StackPanel>
         </Border>
 
-        <!-- ═══════════════════════════════════════════════
-             ROW 3 · Products DataGrid
-        ═══════════════════════════════════════════════ -->
+        <!-- ROW 3 · Products DataGrid -->
         <DataGrid x:Name="ProductDataGrid"
           Grid.Row="3"
           ItemsSource="{Binding Products}"
@@ -181,7 +173,7 @@
                     </DataGridTemplateColumn.CellTemplate>
                 </DataGridTemplateColumn>
 
-                <!-- Print column (always visible, last) -->
+                <!-- Print column -->
                 <DataGridTemplateColumn Header="🖨 Print" Width="70" CanUserResize="False" CanUserSort="False">
                     <DataGridTemplateColumn.CellTemplate>
                         <DataTemplate>
@@ -206,12 +198,7 @@
                 <DataGridTextColumn x:Name="ColCategory"    Header="Category"     Binding="{Binding CategoryName}"     Width="150"/>
                 <DataGridTextColumn x:Name="ColSubCategory" Header="SubCategory"  Binding="{Binding SubCategoryName}"  Width="150"/>
 
-                <!-- ══════════════════════════════════════════════════════════
-                     Quantity — small ▾ button beside the qty textbox opens a
-                     centered modal overlay (HistoryOverlay, defined at the
-                     end of this Grid) showing every purchase batch behind
-                     this product's stock, laid out with real column headers.
-                     ══════════════════════════════════════════════════════════ -->
+                <!-- Quantity — ▾ button opens the Purchase History overlay -->
                 <DataGridTemplateColumn x:Name="ColQuantity" Header="Quantity" Width="150">
                     <DataGridTemplateColumn.CellTemplate>
                         <DataTemplate>
@@ -248,13 +235,12 @@
                 <DataGridTextColumn x:Name="ColColour"      Header="Colour"       Binding="{Binding Colour}"           Width="100"/>
                 <DataGridTextColumn x:Name="ColRack"        Header="Rack"         Binding="{Binding Rack}"             Width="100"/>
                 <DataGridTextColumn x:Name="ColHSN"         Header="HSN"          Binding="{Binding HSNCode}"          Width="100"/>
-                <DataGridTextColumn x:Name="Coldis"         Header="DiscountPercentage"          Binding="{Binding DiscountPercentage}" Width="100"/>
+                <DataGridTextColumn x:Name="Coldis"         Header="DiscountPercentage" Binding="{Binding DiscountPercentage}" Width="100"/>
+                <DataGridTextColumn x:Name="ColOpeningStock" Header="Opening Stock" Binding="{Binding OpeningStock}" Width="110"/>
             </DataGrid.Columns>
         </DataGrid>
 
-        <!-- ═══════════════════════════════════════════════
-             ROW 4 · Action Buttons
-        ═══════════════════════════════════════════════ -->
+        <!-- ROW 4 · Action Buttons -->
         <StackPanel Grid.Row="4"
                     Orientation="Horizontal"
                     HorizontalAlignment="Right"
@@ -309,15 +295,7 @@
                     FontWeight="Bold"/>
         </StackPanel>
 
-        <!-- ═══════════════════════════════════════════════
-             CENTERED MODAL OVERLAY · Purchase History
-             Spans every row so it sits on top of the whole page and
-             centers regardless of scroll position in the grid below.
-             DataContext is set to the clicked row's ProductDisplayModel
-             from code-behind (PurchaseHistoryButton_Click).
-             Includes a sort bar (field + direction) and a Save Order
-             button that persists the new order to the database.
-        ═══════════════════════════════════════════════ -->
+        <!-- CENTERED MODAL OVERLAY · Purchase History -->
         <Grid x:Name="HistoryOverlay"
               Grid.Row="0" Grid.RowSpan="5"
               Background="#88000000"
@@ -448,7 +426,6 @@
                                                     <ColumnDefinition Width="1.6*"/>
                                                 </Grid.ColumnDefinitions>
 
-                                                <!-- Move up / down -->
                                                 <StackPanel Grid.Column="0" Orientation="Horizontal" VerticalAlignment="Center">
                                                     <Button Content="▲" Tag="{Binding}" Click="MoveBatchUp_Click"
                                                             Width="24" Height="24" Padding="0" Margin="0,0,4,0"

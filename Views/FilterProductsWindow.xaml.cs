@@ -81,7 +81,7 @@ namespace MyWPFCRUDApp.Views
             "Colour" => p.Colour,
             "Size" => p.Size,
             "HSNCode" => p.HSNCode,
-            "Rack" => p.Rack,
+            "Rack" => p.Rack?.ToString(),     // CHANGED: Rack is now long?
             _ => null
         };
 

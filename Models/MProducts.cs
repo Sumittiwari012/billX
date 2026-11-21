@@ -53,9 +53,11 @@ namespace MyWPFCRUDApp.Models
         public decimal MRP { get; set; }
 
         // --- Inventory (Made Nullable) ---
+        // --- Inventory (Made Nullable) ---
         public string? Godown { get; set; }
-        public string? Rack { get; set; }
-        
+        public long? Rack { get; set; }
+        public double? OpeningStock { get; set; } = 0;   // NEW
+
         public string? Batch { get; set; }
         public DateTime? MfgDate { get; set; }
         public DateTime? ExpDate { get; set; }

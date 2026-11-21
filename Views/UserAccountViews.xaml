@@ -21,6 +21,7 @@
                 <DataGrid.Columns>
                     <DataGridTextColumn Header="ID" Binding="{Binding Id}" Width="40"/>
                     <DataGridTextColumn Header="User Name" Binding="{Binding UserName}" Width="*"/>
+                    <DataGridTextColumn Header="Store" Binding="{Binding StoreName}" Width="*"/>
                     <DataGridTextColumn Header="User Type" Binding="{Binding UserTypeName}" Width="*"/>
                     <DataGridTextColumn Header="Mobile Number" Binding="{Binding MobileNumber}" Width="*"/>
                 </DataGrid.Columns>
@@ -33,6 +34,12 @@
                         <StackPanel Margin="5">
                             <Label Content="User Name*"/>
                             <TextBox Text="{Binding CurrentUser.UserName, UpdateSourceTrigger=PropertyChanged}"/>
+                        </StackPanel>
+                        <StackPanel Margin="5">
+                            <Label Content="Store*"/>
+                            <ComboBox ItemsSource="{Binding Stores}"
+                                      SelectedItem="{Binding SelectedStore}"
+                                      DisplayMemberPath="StoreName"/>
                         </StackPanel>
                         <StackPanel Margin="5">
                             <Label Content="User Type*"/>

@@ -103,7 +103,7 @@ namespace MyWPFCRUDApp.ViewModels
             _checkedProducts = selected;
             OnPropertyChanged(nameof(SelectedCountText));
             OnPropertyChanged(nameof(MultiSelectBarVisibility));
-            CommandManager.InvalidateRequerySuggested();   // NEW — re-check ProductDeleteCommand.CanExecute
+            CommandManager.InvalidateRequerySuggested();
         }
 
         public string SelectedCountText =>
@@ -184,11 +184,7 @@ namespace MyWPFCRUDApp.ViewModels
 
             // Only treat the barcode box as an active search when it holds
             // something the user actually typed — NOT the auto-generated
-            // "next barcode" that GenerateNextBarcode() pre-fills for a
-            // brand-new product entry. That placeholder never matches any
-            // existing product, so treating it as a live search silently
-            // emptied the grid the instant a column filter was applied on
-            // top of it.
+            // "next barcode" placeholder.
             bool isUserBarcodeSearch =
                 !string.IsNullOrWhiteSpace(_barcodeInput) &&
                 !string.Equals(_barcodeInput, _lastGeneratedBarcode, StringComparison.OrdinalIgnoreCase);
@@ -199,10 +195,9 @@ namespace MyWPFCRUDApp.ViewModels
 
             var result = query.ToList();
 
-            // Same "found nothing → show everything so a new barcode can be
-            // typed" rule as before, but only when the barcode box is the
-            // active narrowing factor and no column filter is applied — a
-            // genuinely empty column-filter result should stay empty.
+            // "Found nothing → show everything so a new barcode can be typed",
+            // but only when the barcode box is the active narrowing factor and
+            // no column filter is applied.
             if (!result.Any() && isUserBarcodeSearch && !_activeColumnFilter.HasValue)
                 result = _allProducts;
 
@@ -222,7 +217,8 @@ namespace MyWPFCRUDApp.ViewModels
             "Colour" => p.Colour,
             "Size" => p.Size,
             "HSNCode" => p.HSNCode,
-            "Rack" => p.Rack,
+            "Rack" => p.Rack?.ToString(),
+            "OpeningStock" => p.OpeningStock?.ToString(),     // NEW
             _ => null
         };
 
@@ -266,6 +262,7 @@ namespace MyWPFCRUDApp.ViewModels
         ("Size",            "Size"),
         ("Colour",          "Colour"),
         ("Rack",            "Rack"),
+        ("OpeningStock",    "Opening Stock"),     // NEW
         ("HSNCode",         "HSN"),
         ("DiscountPercentage","DiscountPercentage")
     };
@@ -316,6 +313,7 @@ namespace MyWPFCRUDApp.ViewModels
                         Description = value.Description,
                         Godown = value.Godown,
                         Rack = value.Rack,
+                        OpeningStock = value.OpeningStock,     // NEW
                         Batch = value.Batch,
                         MfgDate = value.MfgDate,
                         ExpDate = value.ExpDate,
@@ -335,7 +333,7 @@ namespace MyWPFCRUDApp.ViewModels
                     SelectedSubCategory = FilteredSubCategories.FirstOrDefault(s => s.Id == value.SubCategoryId);
                     SelectedUnit = Units.FirstOrDefault(u => u.Id == value.UnitId);
 
-                    _quantityInput = value.Quantity;                 // NEW — avoid re-triggering setter logic
+                    _quantityInput = value.Quantity;
                     OnPropertyChanged(nameof(QuantityInput));
                 }
             }
@@ -434,10 +432,7 @@ namespace MyWPFCRUDApp.ViewModels
         // ─── SubCategory Dropdown ──────────────────────────────────────────────
         private List<MSubCategory> _allSubCategories = new();
 
-        // Full, unfiltered SubCategory list (every subcategory across every
-        // category) — used by the bulk-edit panel, which lets the user pick
-        // any subcategory directly rather than only ones under the current
-        // form's selected Category.
+        // Full, unfiltered SubCategory list — used by the bulk-edit panel.
         public IReadOnlyList<MSubCategory> AllSubCategories => _allSubCategories;
 
         private ObservableCollection<MSubCategory> _filteredSubCategories;
@@ -539,7 +534,7 @@ namespace MyWPFCRUDApp.ViewModels
             _checkedProducts = _allProducts.Where(p => p.IsSelected).ToList();
             OnPropertyChanged(nameof(SelectedCountText));
             OnPropertyChanged(nameof(MultiSelectBarVisibility));
-            CommandManager.InvalidateRequerySuggested();   // NEW
+            CommandManager.InvalidateRequerySuggested();
         }
 
 
@@ -548,7 +543,7 @@ namespace MyWPFCRUDApp.ViewModels
             try
             {
                 string lastBarcode = _productService.GetLastAutoBarcode();
-                string prefix = "GR"; // unchanged fallback for a brand-new sequence — change to "GR" if you want that as the default going forward
+                string prefix = "GR";
                 long nextNumber = 1;
 
                 if (!string.IsNullOrWhiteSpace(lastBarcode))
@@ -571,6 +566,14 @@ namespace MyWPFCRUDApp.ViewModels
         // ─── Save ──────────────────────────────────────────────────────────────
         private void Save()
         {
+            // A product must have a name — nothing is processed without one.
+            if (string.IsNullOrWhiteSpace(MProduct.ProductName))
+            {
+                MessageBox.Show("At least a product name is required to add a product.",
+                    "Name Required", MessageBoxButton.OK, MessageBoxImage.Warning);
+                return;
+            }
+
             if (string.IsNullOrWhiteSpace(MProduct.Barcode))
                 MProduct.Barcode = $"M{_productService.GetProductCount() + 1}";
 
@@ -591,6 +594,13 @@ namespace MyWPFCRUDApp.ViewModels
             if (MProduct.UnitId <= 0)
                 MProduct.UnitId = Units.FirstOrDefault()?.Id ?? 1;
 
+            // Opening stock already recorded for this product (0 for a new one).
+            // Only the CHANGE in opening stock is added to current stock, so
+            // re-saving an unchanged product never double-counts it.
+            double previousOpeningStock = MProduct.Id > 0
+                ? _productService.GetOpeningStockById(MProduct.Id)
+                : 0;
+
             bool success = MProduct.Id <= 0
                 ? _productService.InsertProduct(MProduct)
                 : _productService.UpdateProduct(MProduct);
@@ -600,6 +610,12 @@ namespace MyWPFCRUDApp.ViewModels
                 bool qtyOk = _productService.SetProductQuantity(MProduct.Barcode, QuantityInput);
                 if (!qtyOk)
                     MessageBox.Show("Product saved, but quantity update failed.", "Warning",
+                        MessageBoxButton.OK, MessageBoxImage.Warning);
+
+                // Add the opening-stock change to the current stock.
+                long openingDelta = (long)Math.Round((MProduct.OpeningStock ?? 0) - previousOpeningStock);
+                if (openingDelta != 0 && !_productService.AddToProductQuantity(MProduct.Barcode, openingDelta))
+                    MessageBox.Show("Product saved, but adding opening stock to current stock failed.", "Warning",
                         MessageBoxButton.OK, MessageBoxImage.Warning);
 
                 LoadData();
@@ -622,8 +638,6 @@ namespace MyWPFCRUDApp.ViewModels
         }
 
         // ─── Save Purchase Batch Order ─────────────────────────────────────────
-        // Persists the current order of a product's PurchaseBatches (as arranged
-        // in the Purchase History overlay) back to ProductQuantity.PurchaseQuantity.
         public bool SavePurchaseBatchOrder(ProductDisplayModel product)
         {
             if (product == null || string.IsNullOrWhiteSpace(product.Barcode)) return false;
@@ -637,7 +651,6 @@ namespace MyWPFCRUDApp.ViewModels
             return ok;
         }
 
-        // ─── Delete single ─────────────────────────────────────────────────────
         // ─── Delete (single OR multiple, depending on checkbox state) ──────────
         private void Delete()
         {
@@ -718,7 +731,7 @@ namespace MyWPFCRUDApp.ViewModels
             SelectedCategory = null;
             SelectedSubCategory = null;
             SelectedUnit = null;
-            QuantityInput = 0;                            // NEW
+            QuantityInput = 0;
             FilteredSubCategories = new ObservableCollection<MSubCategory>();
             GenerateNextBarcode();
         }
@@ -776,7 +789,7 @@ namespace MyWPFCRUDApp.ViewModels
                             "ProductName" => p.ProductName,
                             "CategoryName" => p.CategoryName,
                             "SubCategoryName" => p.SubCategoryName,
-                            "Quantity" => p.Quantity,          // ← NEW
+                            "Quantity" => p.Quantity,
                             "PurchasePrice" => p.PurchasePrice,
                             "RetailSalePrice" => p.RetailSalePrice,
                             "MRP" => p.MRP,
@@ -786,7 +799,8 @@ namespace MyWPFCRUDApp.ViewModels
                             "UnitName" => p.UnitName,
                             "Size" => p.Size,
                             "Colour" => p.Colour,
-                            "Rack" => p.Rack,
+                            "Rack" => p.Rack,                  // long? — null stays blank
+                            "OpeningStock" => p.OpeningStock,  // NEW — double? — null stays blank
                             "HSNCode" => p.HSNCode,
                             _ => null
                         };
@@ -813,11 +827,8 @@ namespace MyWPFCRUDApp.ViewModels
         }
 
         // ─── Bulk Column Update ─────────────────────────────────────────────────
-        // Replaces the old single-purpose "bulk discount" feature. Applies any
-        // number of (field, value) pairs — picked in BulkEditColumnsWindow — to
-        // every currently-checked product. Category/SubCategory/Unit come in
-        // as MCategory/MSubCategory/MUnit picked from a list; everything else
-        // comes in as a plain string parsed to the right numeric type here.
+        // Applies any number of (field, value) pairs — picked in
+        // BulkEditColumnsWindow — to every currently-checked product.
         public void ApplyBulkColumnUpdates(List<BulkFieldUpdate> updates)
         {
             if (updates == null || !updates.Any() || !_checkedProducts.Any()) return;
@@ -828,13 +839,12 @@ namespace MyWPFCRUDApp.ViewModels
             int updatedCount = 0;
             foreach (var p in _checkedProducts.ToList())
             {
-                // Load the FULL row (every MProducts column) rather than
-                // building one from ProductDisplayModel — ProductDisplayModel
-                // only carries a subset of fields, and calling UpdateProduct
-                // with a partially-populated object would blank out anything
-                // it's missing (e.g. Description, Batch, MfgDate).
+                // Load the FULL row (every MProducts column) so UpdateProduct
+                // never blanks out fields the display model doesn't carry.
                 var full = _productService.GetByBarcode(p.Barcode);
                 if (full == null) continue;
+
+                double previousOpeningStock = full.OpeningStock ?? 0;
 
                 foreach (var upd in productFieldUpdates)
                 {
@@ -877,7 +887,22 @@ namespace MyWPFCRUDApp.ViewModels
                             full.Colour = upd.Value?.ToString();
                             break;
                         case "Rack":
-                            full.Rack = upd.Value?.ToString();
+                            // Rack is long? — empty clears it, numbers are parsed,
+                            // anything non-numeric is ignored.
+                            var rackText = upd.Value?.ToString();
+                            if (string.IsNullOrWhiteSpace(rackText))
+                                full.Rack = null;
+                            else if (long.TryParse(rackText, out var rack))
+                                full.Rack = rack;
+                            break;
+                        case "OpeningStock":                                   // NEW
+                            // OpeningStock is double? — empty clears it, numbers are
+                            // parsed, anything non-numeric is ignored.
+                            var osText = upd.Value?.ToString();
+                            if (string.IsNullOrWhiteSpace(osText))
+                                full.OpeningStock = null;
+                            else if (double.TryParse(osText, out var os))
+                                full.OpeningStock = os;
                             break;
                         case "HSNCode":
                             full.HSNCode = upd.Value?.ToString();
@@ -889,10 +914,14 @@ namespace MyWPFCRUDApp.ViewModels
                 {
                     updatedCount++;
 
-                    // Quantity lives in ProductQuantity, not MProducts — same
-                    // separate persistence path Save() already uses.
+                    // Quantity lives in ProductQuantity, not MProducts.
                     if (quantityUpdate != null && long.TryParse(quantityUpdate.Value?.ToString(), out var qty))
                         _productService.SetProductQuantity(full.Barcode, qty);
+
+                    // Any change in opening stock is added to current stock.
+                    long openingDelta = (long)Math.Round((full.OpeningStock ?? 0) - previousOpeningStock);
+                    if (openingDelta != 0)
+                        _productService.AddToProductQuantity(full.Barcode, openingDelta);
                 }
             }
 
@@ -902,7 +931,7 @@ namespace MyWPFCRUDApp.ViewModels
             LoadData(); // refresh grid so updated values show immediately
         }
 
-        // ─── Import from Excel (unchanged logic) ───────────────────────────────
+        // ─── Import from Excel ─────────────────────────────────────────────────
         private void ExecuteImportWizard()
         {
             var openFileDialog = new OpenFileDialog { Filter = "Excel Files|*.xls;*.xlsx;*.xlsm" };
@@ -935,7 +964,9 @@ namespace MyWPFCRUDApp.ViewModels
                         prop.PropertyType == typeof(double) ||
                         prop.PropertyType == typeof(DateTime) ||
                         prop.PropertyType == typeof(DateTime?) ||
-                        prop.PropertyType == typeof(long))
+                        prop.PropertyType == typeof(long) ||
+                        prop.PropertyType == typeof(long?) ||
+                        prop.PropertyType == typeof(double?))      // NEW: OpeningStock is double?
                     {
                         if (prop.Name == "Id" || prop.Name.Contains("Date") || prop.Name.Contains("By")) continue;
 
@@ -964,6 +995,7 @@ namespace MyWPFCRUDApp.ViewModels
         private void ProcessExcelData(DataTable dt)
         {
             int successCount = 0;
+            int skippedNoName = 0;   // rows skipped because the name is missing
             var productType = typeof(MProducts);
 
             for (int i = 1; i < dt.Rows.Count; i++)
@@ -985,6 +1017,10 @@ namespace MyWPFCRUDApp.ViewModels
                     {
                         try
                         {
+                            // Nullable.GetUnderlyingType unwraps long? -> long and
+                            // double? -> double, so Rack / OpeningStock parse normally.
+                            // A non-numeric value throws and is skipped by the catch
+                            // below, leaving the property at its default.
                             var targetType = Nullable.GetUnderlyingType(prop.PropertyType) ?? prop.PropertyType;
                             object convertedVal =
                                 targetType == typeof(decimal) ? decimal.Parse(val) :
@@ -1003,21 +1039,37 @@ namespace MyWPFCRUDApp.ViewModels
                 if (p.SubCategoryId == 0) p.SubCategoryId = _allSubCategories.FirstOrDefault()?.Id ?? 0;
                 if (p.UnitId == 0) p.UnitId = Units.FirstOrDefault()?.Id ?? 0;
 
-                if (!string.IsNullOrEmpty(p.ProductName) && !string.IsNullOrEmpty(p.Barcode))
+                // No name, don't process this row.
+                if (string.IsNullOrWhiteSpace(p.ProductName))
+                {
+                    skippedNoName++;
+                    continue;
+                }
+
+                if (!string.IsNullOrEmpty(p.Barcode))
                 {
                     if (_productService.InsertProduct(p))
                     {
                         successCount++;
 
-                        // NEW — Quantity isn't persisted by InsertProduct itself,
+                        // Quantity isn't persisted by InsertProduct itself,
                         // so push it through the same path the manual Save() uses.
                         if (p.Quantity > 0)
                             _productService.SetProductQuantity(p.Barcode, (long)p.Quantity);
+
+                        // Opening stock from the sheet is added on top of current stock.
+                        long openingQty = (long)Math.Round(p.OpeningStock ?? 0);
+                        if (openingQty != 0)
+                            _productService.AddToProductQuantity(p.Barcode, openingQty);
                     }
                 }
             }
 
-            MessageBox.Show($"{successCount} products imported successfully.");
+            string msg = $"{successCount} products imported successfully.";
+            if (skippedNoName > 0)
+                msg += $"\n{skippedNoName} row(s) skipped: at least a product name is required to add a product.";
+
+            MessageBox.Show(msg);
             LoadData();
         }
     }

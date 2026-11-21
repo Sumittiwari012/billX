@@ -92,6 +92,14 @@ namespace MyWPFCRUDApp.ViewModels
             ["Stock Adjustment"] = "⚖️",
             ["Branch Stock Inward"] = "📤",
             ["Branch Stock Outward"] = "📦",
+            // Warehouse
+            ["Godown"] = "🏭",
+            ["Stock"] = "📚",
+            ["Stock Transfer"] = "🚛",
+            // Store
+            ["Store"] = "🏬",
+            ["Store Stock"] = "🏪",
+            ["Store Stock Transfer"] = "🔀",
             // Banking
             ["Bank Master"] = "🏦",
             ["Branch Master"] = "🏛️",
@@ -133,6 +141,8 @@ namespace MyWPFCRUDApp.ViewModels
             ["master"] = ("Master Entry", new[] { "Company Info", "Category", "Sub Category", "Unit Master", "Tax Category", "Products", "Customer", "Supplier", "Sales Person", "Account Head" }),
             ["transaction"] = ("Transactions", new[] { "Receipt Entry", "Payment", "Income Voucher", "Expense Voucher", "Contra Voucher", "General Voucher", "Quotation", "Transaction Status", "Purchase Entry", "Purchase Return" }),
             ["inventory"] = ("Inventory", new[] { "Stock Entry", "Stock Adjustment", "Branch Stock Inward", "Branch Stock Outward" }),
+            ["warehouse"] = ("Warehouse", new[] { "Godown", "Stock", "Stock Transfer" }),
+            ["store"] = ("Store", new[] { "Store", "Store Stock", "Store Stock Transfer" }),
             ["banking"] = ("Banking", new[] { "Bank Master", "Branch Master", "Bank Account Registration", "Fund Deposit", "Fund Transfer", "Payment Withdrawal", "Account Statement" }),
             ["reports"] = ("Reports", new[] { "Supplier Ledger", "Customer Ledger", "Cash Ledger", "Income Report", "Expense Report", "Sales Report", "Purchase Report", "Balance Sheet", "Profit & Loss", "Trial Balance", "Low Stock Item" }),
             ["settings"] = ("Settings", new[] { "Add Company", "Terminal Settings", "Sales Invoice Settings", "Auto Round Off", "WhatsApp", "Printer Setting", "Payment Setting", "Backup Settings", "Cloud Sync" }),
@@ -221,6 +231,33 @@ namespace MyWPFCRUDApp.ViewModels
                     case "Purchase Return":
                         viewType = typeof(ReturnViews);
                         break;
+
+                    // Warehouse
+                    case "Godown":
+                        viewType = typeof(GodownViews);
+                        break;
+
+                    case "Stock":
+                        viewType = typeof(StockView);
+                        break;
+
+                    case "Stock Transfer":
+                        viewType = typeof(StockTransferView);
+                        break;
+
+                    // Store
+                    case "Store":
+                        viewType = typeof(StoreViews);
+                        break;
+
+                    case "Store Stock":
+                        viewType = typeof(StoreStockViews);
+                        break;
+
+                    case "Store Stock Transfer":
+                        viewType = typeof(StoreStockTransferViews);
+                        break;
+
                     case "Bank Master":
                         viewType = typeof(BankAccountViews);
                         break;
@@ -251,7 +288,6 @@ namespace MyWPFCRUDApp.ViewModels
                     case "Login/Logout":
                         viewType = typeof(LoginLogoutViews);
                         break;
-
                     default:
                         CurrentView = new WorkInProgressView();
                         return;

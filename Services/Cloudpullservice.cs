@@ -11,23 +11,32 @@ namespace MyWPFCRUDApp.Services
 {
     /// <summary>
     /// Pulls customer, customer-purchase, customer-return, payment, petty-cash,
-    /// login/logout, and product-quantity rows from the cloud database into the
-    /// local database.
+    /// login/logout, godown/store stock tables, product Rack values, and
+    /// product-quantity rows from the cloud database into the local database.
     ///
     /// ADDITIVE ONLY: for MCustomer / MCustomerPurchaseMaster /
     /// MCustomerPurchaseDetail / MCustomerPayment / MCustomerReturnMaster /
-    /// MCustomerReturnDetail / MPettyCash / MLoginLogout, nothing is deleted.
-    /// For each table we read the cloud's rows, work out which Ids don't exist
-    /// locally yet, and INSERT only those. Existing local rows - including their
-    /// current field values - are left completely untouched.
+    /// MCustomerReturnDetail / MPettyCash / MLoginLogout and the godown/store
+    /// tables (MGodown, MStore, GodownStock, StoreStock, StockTransfer,
+    /// StockTransferItem, StockLedger, StoreStockTransfer,
+    /// StoreStockTransferItem), nothing is deleted. For each table we read the
+    /// cloud's rows, work out which Ids don't exist locally yet, and INSERT only
+    /// those. Existing local rows - including their current field values - are
+    /// left completely untouched.
     ///
     /// CAVEAT: because this is additive-only, a row that gets mutated on another
     /// terminal AFTER it was already pulled once will NOT have that mutation
     /// reflected locally (e.g. MCustomerPurchaseMaster.IsReturned/ReturnDate set
     /// later, MPettyCash.Accepted flipped later, MLoginLogout.logoutTime/
-    /// Settlement filled in later). If any of those need to stay in sync, add a
-    /// small targeted "upsert just these columns" pass for that specific table -
-    /// there's a clearly marked spot below for it.
+    /// Settlement filled in later, GodownStock/StoreStock.Quantity changed later,
+    /// StockTransfer.Status moved on later). If any of those need to stay in
+    /// sync, add a small targeted "upsert just these columns" pass for that
+    /// specific table - there's a clearly marked spot below for it.
+    ///
+    /// PRODUCT RACK: MProducts.Rack is refreshed from the cloud for every product
+    /// that already exists locally (matched by Barcode). ONLY the Rack column is
+    /// written. A NULL Rack in the cloud is skipped, so it never wipes a rack
+    /// that is already set locally.
     ///
     /// PRODUCT QUANTITY: the Quantity column is NEVER set from the cloud's raw
     /// Quantity value. It's only ever adjusted by the per-barcode sale/return
@@ -63,6 +72,17 @@ namespace MyWPFCRUDApp.Services
             "MCustomerReturnDetail",
             "MPettyCash",
             "MLoginLogout",
+
+            // Godown / store stock tables - parent-before-child.
+            "MGodown",
+            "MStore",
+            "GodownStock",
+            "StoreStock",
+            "StockTransfer",
+            "StockTransferItem",
+            "StockLedger",
+            "StoreStockTransfer",
+            "StoreStockTransferItem",
         };
 
         private const string PurchaseDetailTable = "MCustomerPurchaseDetail";
@@ -131,6 +151,10 @@ namespace MyWPFCRUDApp.Services
                 await ApplyQuantityAdjustmentsAsync(
                     localConn, transaction, newReturnRows, productBarcodeMap, sign: +1,
                     label: "return", progress, cancellationToken);
+
+                // ---- Product Rack refresh (ONLY the Rack column of MProducts) ----
+                progress?.Report("Refreshing product Rack values from the cloud...");
+                await RefreshProductRacksFromCloudAsync(cloudConn, localConn, transaction, progress, cancellationToken);
 
                 // ---- PurchaseQuantity refresh (Quantity column is NEVER touched here) ----
                 progress?.Report("Refreshing PurchaseQuantity for existing barcodes (Quantity left untouched)...");
@@ -328,6 +352,73 @@ namespace MyWPFCRUDApp.Services
                 + (missingLocally > 0 ? $", {missingLocally} skipped (no local ProductQuantity row)" : "")
                 + (skippedUnknownProduct > 0 ? $", {skippedUnknownProduct} row(s) skipped (unknown ProductId)" : "")
                 + ".");
+        }
+
+        /// <summary>
+        /// For every product that already exists locally (matched by Barcode),
+        /// overwrites ONLY the Rack column of MProducts with the cloud's current
+        /// value. No other MProducts column is read or written. Cloud products
+        /// that don't exist locally are skipped (this is a Rack refresh, not a
+        /// product import), and a NULL / non-numeric cloud Rack is skipped so it
+        /// can never blank out a rack that's already set locally.
+        /// </summary>
+        private static async Task RefreshProductRacksFromCloudAsync(
+            MySqlConnection cloudConn,
+            MySqlConnection localConn,
+            MySqlTransaction localTx,
+            IProgress<string>? progress,
+            CancellationToken cancellationToken)
+        {
+            var cloudRows = new DataTable();
+            using (var adapter = new MySqlDataAdapter("SELECT Barcode, Rack FROM `MProducts`;", cloudConn))
+            {
+                adapter.Fill(cloudRows);
+            }
+
+            if (cloudRows.Rows.Count == 0)
+            {
+                progress?.Report("MProducts: nothing in the cloud to read Rack from.");
+                return;
+            }
+
+            var updated = 0;
+            var skippedNoRack = 0;
+
+            foreach (DataRow row in cloudRows.Rows)
+            {
+                cancellationToken.ThrowIfCancellationRequested();
+
+                if (row["Barcode"] == DBNull.Value)
+                    continue;
+
+                if (row["Rack"] == DBNull.Value ||
+                    !long.TryParse(row["Rack"].ToString(), out var rack))
+                {
+                    skippedNoRack++;
+                    continue;
+                }
+
+                var barcode = row["Barcode"].ToString()!;
+
+                // "<=>" is MySQL's NULL-safe equals, so rows whose Rack already
+                // matches are left alone (no pointless writes / ModifiedDate bumps).
+                using var cmd = new MySqlCommand(@"
+                    UPDATE MProducts
+                    SET Rack = @rack
+                    WHERE Barcode = @barcode
+                      AND NOT (Rack <=> @rack);", localConn, localTx);
+                cmd.Parameters.AddWithValue("@rack", rack);
+                cmd.Parameters.AddWithValue("@barcode", barcode);
+
+                var affected = await cmd.ExecuteNonQueryAsync(cancellationToken);
+                if (affected > 0)
+                    updated++;
+            }
+
+            progress?.Report(
+                $"MProducts: Rack updated for {updated} existing product(s)"
+                + (skippedNoRack > 0 ? $", {skippedNoRack} cloud product(s) skipped (no Rack set)" : "")
+                + ". No other product column was touched.");
         }
 
         /// <summary>

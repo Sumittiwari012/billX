@@ -39,8 +39,9 @@ namespace MyWPFCRUDApp.Views
                 { "Size",            ColSize },
                 { "Colour",          ColColour },
                 { "Rack",            ColRack },
+                { "OpeningStock",    ColOpeningStock },   // NEW
                 { "HSNCode",         ColHSN },
-                { "DiscountPercentage",Coldis}
+                { "DiscountPercentage", Coldis }
             };
             foreach (var col in _vm.ProductColumns)
             {
@@ -120,14 +121,6 @@ namespace MyWPFCRUDApp.Views
         }
 
         // ── Purchase History overlay ────────────────────────────────────────
-        // Clicking the ▾ button in the Quantity cell sets the overlay's
-        // DataContext to that row's product and reveals it, centered over
-        // the whole page regardless of grid scroll position.
-        //
-        // The overlay also lets the user re-sort the purchase batches (by
-        // invoice, supplier, quantity, batch, mfg date or exp date), nudge
-        // individual rows up/down with the ▲ ▼ arrows, reset back to the saved
-        // order, and save the resulting order to ProductQuantity.PurchaseQuantity.
         private ProductDisplayModel? _historyProduct;
         private List<PurchaseBatchDisplay>? _originalBatchOrder;   // snapshot of the saved order
         private bool _batchOrderDirty;
@@ -136,11 +129,9 @@ namespace MyWPFCRUDApp.Views
         {
             _batchOrderDirty = dirty;
             SaveOrderButton.IsEnabled = dirty;
-            ResetOrderButton.IsEnabled = dirty;   // nothing to undo unless the order has changed
+            ResetOrderButton.IsEnabled = dirty;
         }
 
-        // Dirty only if the current order actually differs from the saved one
-        // (so moving a row and then moving it back correctly clears the flag).
         private void UpdateBatchOrderDirty()
         {
             if (_historyProduct == null || _originalBatchOrder == null) return;
@@ -152,7 +143,7 @@ namespace MyWPFCRUDApp.Views
             if (sender is Button btn && btn.Tag is ProductDisplayModel product)
             {
                 _historyProduct = product;
-                _originalBatchOrder = product.PurchaseBatches.ToList();   // snapshot for revert / dirty check
+                _originalBatchOrder = product.PurchaseBatches.ToList();
                 SetBatchOrderDirty(false);
 
                 HistoryOverlay.DataContext = product;
@@ -171,7 +162,6 @@ namespace MyWPFCRUDApp.Views
             UpdateBatchOrderDirty();
         }
 
-        // ▲ / ▼ arrows on each row — shift that row one position up or down.
         private void MoveBatchUp_Click(object sender, RoutedEventArgs e) => MoveBatch(sender, -1);
         private void MoveBatchDown_Click(object sender, RoutedEventArgs e) => MoveBatch(sender, +1);
 
@@ -183,14 +173,12 @@ namespace MyWPFCRUDApp.Views
             var list = _historyProduct.PurchaseBatches;
             int from = list.IndexOf(item);
             int to = from + offset;
-            if (from < 0 || to < 0 || to >= list.Count) return;   // already at the top / bottom
+            if (from < 0 || to < 0 || to >= list.Count) return;
 
             list.Move(from, to);
             UpdateBatchOrderDirty();
         }
 
-        // Undo every sort / arrow move made since the overlay was opened
-        // (or since the last Save Order) and go back to the saved order.
         private void ResetOrderButton_Click(object sender, RoutedEventArgs e)
         {
             if (_historyProduct == null || _originalBatchOrder == null) return;
@@ -212,8 +200,6 @@ namespace MyWPFCRUDApp.Views
             }
         }
 
-        // Shared by the ✖ button and the backdrop click. If there's an unsaved
-        // order, asks whether to save, discard or cancel before closing.
         private void CloseHistoryOverlay()
         {
             if (_batchOrderDirty && _historyProduct != null && _originalBatchOrder != null)
@@ -225,11 +211,11 @@ namespace MyWPFCRUDApp.Views
 
                 if (r == MessageBoxResult.Yes)
                 {
-                    if (!_vm.SavePurchaseBatchOrder(_historyProduct)) return;   // save failed → stay open
+                    if (!_vm.SavePurchaseBatchOrder(_historyProduct)) return;
                 }
                 else
                 {
-                    _historyProduct.ApplyBatchOrder(_originalBatchOrder);       // discard → back to saved order
+                    _historyProduct.ApplyBatchOrder(_originalBatchOrder);
                 }
                 SetBatchOrderDirty(false);
             }
@@ -238,12 +224,7 @@ namespace MyWPFCRUDApp.Views
         }
 
         private void CloseHistoryOverlay_Click(object sender, RoutedEventArgs e) => CloseHistoryOverlay();
-
-        // Clicking the dimmed backdrop (outside the card) closes the overlay.
         private void HistoryOverlay_MouseDown(object sender, MouseButtonEventArgs e) => CloseHistoryOverlay();
-
-        // Stops a click inside the card from bubbling up to the backdrop's
-        // MouseDown handler above (which would otherwise close it instantly).
         private void HistoryCard_MouseDown(object sender, MouseButtonEventArgs e) => e.Handled = true;
     }
 }

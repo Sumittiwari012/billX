@@ -1,4 +1,4 @@
-﻿using MySql.Data.MySqlClient;
+using MySql.Data.MySqlClient;
 using MyWPFCRUDApp.Models;
 using System;
 using System.Collections.Generic;
@@ -80,7 +80,7 @@ namespace MyWPFCRUDApp.Services
                     "SupplierName" => Sort<string>(b => !string.IsNullOrWhiteSpace(b.SupplierName), b => b.SupplierName!, StringComparer.OrdinalIgnoreCase),
                     "Batch" => Sort<string>(b => !string.IsNullOrWhiteSpace(b.Batch), b => b.Batch!, StringComparer.OrdinalIgnoreCase),
                     "Quantity" => Sort<double>(_ => true, b => b.Quantity),
-                    "PurchasePrice" => Sort<decimal>(_ => true, b => b.PurchasePrice),   // ← NEW
+                    "PurchasePrice" => Sort<decimal>(_ => true, b => b.PurchasePrice),
                     "MfgDate" => Sort<DateTime>(b => b.MfgDate.HasValue, b => b.MfgDate!.Value),
                     "ExpDate" => Sort<DateTime>(b => b.ExpDate.HasValue, b => b.ExpDate!.Value),
                     _ => null
@@ -107,7 +107,8 @@ namespace MyWPFCRUDApp.Services
 
             // Inventory
             public string? Godown { get; set; }
-            public string? Rack { get; set; }
+            public long? Rack { get; set; }
+            public double? OpeningStock { get; set; }          // NEW
             public string? Batch { get; set; }
             public DateTime? MfgDate { get; set; }
             public DateTime? ExpDate { get; set; }
@@ -212,6 +213,10 @@ namespace MyWPFCRUDApp.Services
             }
         }
 
+        // Reads OpeningStock safely: NULL -> null, otherwise a double.
+        private static double? ReadOpeningStock(MySqlDataReader reader)
+            => reader["OpeningStock"] == DBNull.Value ? (double?)null : Convert.ToDouble(reader["OpeningStock"]);
+
         // Returns display list with joined CategoryName, SubCategoryName, UnitName
         public List<ProductDisplayModel> GetProductDisplay()
         {
@@ -263,7 +268,8 @@ ORDER BY p.createdDate";
                     PartGroup = reader["PartGroup"] == DBNull.Value ? null : reader.GetString("PartGroup"),
                     Description = reader["Description"] == DBNull.Value ? null : reader.GetString("Description"),
                     Godown = reader["Godown"] == DBNull.Value ? null : reader.GetString("Godown"),
-                    Rack = reader["Rack"] == DBNull.Value ? null : reader.GetString("Rack"),
+                    Rack = reader["Rack"] == DBNull.Value ? (long?)null : Convert.ToInt64(reader["Rack"]),
+                    OpeningStock = ReadOpeningStock(reader),                                                  // NEW
                     Batch = reader["Batch"] == DBNull.Value ? null : reader.GetString("Batch"),
                     MfgDate = reader["MfgDate"] == DBNull.Value ? null : reader.GetDateTime("MfgDate"),
                     ExpDate = reader["ExpDate"] == DBNull.Value ? null : reader.GetDateTime("ExpDate"),
@@ -322,13 +328,13 @@ ORDER BY p.createdDate";
     ProductCode, ProductName, Barcode, CategoryId, SubCategoryId, UnitId, 
     HSNCode, PartGroup, Description, PurchasePrice, RetailSalePrice, 
     WholesalePrice, DiscountPercentage, CGST, SGST, IGST, CESS, MRP, 
-    Godown, Rack, Batch, MfgDate, ExpDate, Size, Colour, 
+    Godown, Rack, OpeningStock, Batch, MfgDate, ExpDate, Size, Colour, 
     IMEI1, IMEI2, CreatedDate, CreatedBy -- Match case sensitivity of SQL
 ) VALUES (
     @ProductCode, @ProductName, @Barcode, @CategoryId, @SubCategoryId, @UnitId,
     @HSNCode, @PartGroup, @Description, @PurchasePrice, @RetailSalePrice, 
     @WholesalePrice, @DiscountPercentage, @CGST, @SGST, @IGST, @CESS, @MRP, 
-    @Godown, @Rack, @Batch, @MfgDate, @ExpDate, @Size, @Colour, 
+    @Godown, @Rack, @OpeningStock, @Batch, @MfgDate, @ExpDate, @Size, @Colour, 
     @IMEI1, @IMEI2, @CreatedDate, @CreatedBy
 )";
 
@@ -353,6 +359,7 @@ ORDER BY p.createdDate";
                 cmdProd.Parameters.AddWithValue("@MRP", p.MRP);
                 cmdProd.Parameters.AddWithValue("@Godown", p.Godown ?? (object)DBNull.Value);
                 cmdProd.Parameters.AddWithValue("@Rack", p.Rack ?? (object)DBNull.Value);
+                cmdProd.Parameters.AddWithValue("@OpeningStock", p.OpeningStock ?? (object)DBNull.Value);     // NEW
                 cmdProd.Parameters.AddWithValue("@Batch", p.Batch ?? (object)DBNull.Value);
                 cmdProd.Parameters.AddWithValue("@MfgDate", p.MfgDate ?? (object)DBNull.Value);
                 cmdProd.Parameters.AddWithValue("@ExpDate", p.ExpDate ?? (object)DBNull.Value);
@@ -400,9 +407,6 @@ ORDER BY p.createdDate";
             using var trans = conn.BeginTransaction();
             try
             {
-                // FIX: MfgDate was missing from this UPDATE (Batch and ExpDate
-                // were there), so an edited manufacturing date was never
-                // written to the product master.
                 var sql = @"UPDATE MProducts SET
                     ProductName        = @ProductName,
                     ProductCode        = @ProductCode,
@@ -419,6 +423,8 @@ ORDER BY p.createdDate";
                     SGST               = @SGST,
                     IGST               = @IGST,
                     CESS               = @CESS,
+                    Rack               = @Rack,
+                    OpeningStock       = @OpeningStock,
                     Batch              = @Batch,
                     MfgDate            = @MfgDate,
                     ExpDate            = @ExpDate,
@@ -444,6 +450,8 @@ ORDER BY p.createdDate";
                 cmd.Parameters.AddWithValue("@IGST", p.IGST);
                 cmd.Parameters.AddWithValue("@SGST", p.SGST);
                 cmd.Parameters.AddWithValue("@CESS", p.CESS);
+                cmd.Parameters.AddWithValue("@Rack", p.Rack ?? (object)DBNull.Value);
+                cmd.Parameters.AddWithValue("@OpeningStock", p.OpeningStock ?? (object)DBNull.Value);         // NEW
                 cmd.Parameters.AddWithValue("@Batch", p.Batch ?? (object)DBNull.Value);
                 cmd.Parameters.AddWithValue("@MfgDate", p.MfgDate ?? (object)DBNull.Value);
                 cmd.Parameters.AddWithValue("@ExpDate", p.ExpDate ?? (object)DBNull.Value);
@@ -543,7 +551,8 @@ ORDER BY p.createdDate";
                     IGST = Convert.ToDouble(reader["IGST"]),
                     MRP = Convert.ToDecimal(reader["MRP"]),
                     Godown = reader["Godown"] == DBNull.Value ? null : reader["Godown"].ToString(),
-                    Rack = reader["Rack"] == DBNull.Value ? null : reader["Rack"].ToString(),
+                    Rack = reader["Rack"] == DBNull.Value ? (long?)null : Convert.ToInt64(reader["Rack"]),
+                    OpeningStock = ReadOpeningStock(reader),                                                  // NEW
                     Batch = reader["Batch"] == DBNull.Value ? null : reader["Batch"].ToString(),
                     MfgDate = reader["MfgDate"] == DBNull.Value ? null : Convert.ToDateTime(reader["MfgDate"]),
                     ExpDate = reader["ExpDate"] == DBNull.Value ? null : Convert.ToDateTime(reader["ExpDate"]),
@@ -563,13 +572,8 @@ ORDER BY p.createdDate";
 
         // ─── GET BY BARCODE ────────────────────────────────────────────────────
         // Returns a FULLY populated MProducts — every column, same as
-        // GetProducts(). Previously this only set a handful of fields
-        // (UnitId, PurchasePrice, RetailSalePrice, WholesalePrice, MRP,
-        // Godown, Rack, MfgDate, PartGroup, IMEI1, IMEI2, DiscountPercentage,
-        // CESS were all left at their default — UnitId defaulting to 0 is
-        // what caused "Add Copies" to fail with a UnitId foreign-key error,
-        // since anything built from a row that came through this method
-        // silently carried UnitId = 0 into InsertProduct).
+        // GetProducts(). (Includes OpeningStock so bulk edit, which loads the
+        // row from here and passes it to UpdateProduct, never wipes it.)
         public MProducts? GetByBarcode(string barcode)
         {
             using var conn = new MySqlConnection(Con);
@@ -604,7 +608,8 @@ ORDER BY p.createdDate";
                 CESS = Convert.ToDouble(reader["CESS"]),
                 MRP = Convert.ToDecimal(reader["MRP"]),
                 Godown = reader["Godown"] == DBNull.Value ? null : reader["Godown"].ToString(),
-                Rack = reader["Rack"] == DBNull.Value ? null : reader["Rack"].ToString(),
+                Rack = reader["Rack"] == DBNull.Value ? (long?)null : Convert.ToInt64(reader["Rack"]),
+                OpeningStock = ReadOpeningStock(reader),                                                      // NEW
                 Batch = reader["Batch"] == DBNull.Value ? null : reader["Batch"].ToString(),
                 MfgDate = reader["MfgDate"] == DBNull.Value ? null : Convert.ToDateTime(reader["MfgDate"]),
                 ExpDate = reader["ExpDate"] == DBNull.Value ? null : Convert.ToDateTime(reader["ExpDate"]),
@@ -654,7 +659,8 @@ ORDER BY p.createdDate";
                 CESS = Convert.ToDouble(reader["CESS"]),
                 MRP = Convert.ToDecimal(reader["MRP"]),
                 Godown = reader["Godown"] == DBNull.Value ? null : reader["Godown"].ToString(),
-                Rack = reader["Rack"] == DBNull.Value ? null : reader["Rack"].ToString(),
+                Rack = reader["Rack"] == DBNull.Value ? (long?)null : Convert.ToInt64(reader["Rack"]),
+                OpeningStock = ReadOpeningStock(reader),                                                      // NEW
                 Batch = reader["Batch"] == DBNull.Value ? null : reader["Batch"].ToString(),
                 MfgDate = reader["MfgDate"] == DBNull.Value ? null : Convert.ToDateTime(reader["MfgDate"]),
                 ExpDate = reader["ExpDate"] == DBNull.Value ? null : Convert.ToDateTime(reader["ExpDate"]),
@@ -723,6 +729,46 @@ ORDER BY p.createdDate";
             }
         }
 
+        // ─── ADD TO QUANTITY (relative change) ────────────────────────────────────
+        // Adds `delta` (may be negative) to ProductQuantity.Quantity in one atomic
+        // UPDATE and never lets stock drop below 0. Used so that entering or changing
+        // a product's OpeningStock is reflected in its current stock.
+        public bool AddToProductQuantity(string barcode, long delta)
+        {
+            if (string.IsNullOrWhiteSpace(barcode) || delta == 0) return true;
+
+            using var conn = new MySqlConnection(Con);
+            conn.Open();
+
+            using var cmd = new MySqlCommand(@"
+        UPDATE ProductQuantity
+        SET    Quantity     = GREATEST(0, Quantity + @Delta),
+               ModifiedDate = @Now,
+               ModifiedBy   = @User
+        WHERE  Barcode = @Barcode", conn);
+
+            cmd.Parameters.AddWithValue("@Delta", delta);
+            cmd.Parameters.AddWithValue("@Now", DateTime.Now);
+            cmd.Parameters.AddWithValue("@User", "ADMIN");
+            cmd.Parameters.AddWithValue("@Barcode", barcode);
+
+            return cmd.ExecuteNonQuery() > 0;
+        }
+
+        // Returns the OpeningStock currently stored for a product (0 if NULL / not found).
+        public double GetOpeningStockById(long id)
+        {
+            using var conn = new MySqlConnection(Con);
+            conn.Open();
+
+            using var cmd = new MySqlCommand(
+                "SELECT OpeningStock FROM MProducts WHERE Id = @Id", conn);
+            cmd.Parameters.AddWithValue("@Id", id);
+
+            var result = cmd.ExecuteScalar();
+            return (result == null || result == DBNull.Value) ? 0 : Convert.ToDouble(result);
+        }
+
         // ─── SET QUANTITY (absolute set, used by the edit form) ───────────────────
         public bool SetProductQuantity(string barcode, long quantity)
         {
@@ -787,13 +833,7 @@ ORDER BY p.createdDate";
         // ─── GET LAST AUTO-GENERATED BARCODE ──────────────────────────────────
         // Used to generate the next sequential barcode (e.g. "GR7809" -> "GR7810").
         // Only barcodes matching "letters followed by digits" count as part of
-        // the auto-increment sequence — a purely numeric barcode (e.g. a scanned
-        // manufacturer code like "145239745") is a different naming scheme
-        // entirely. If GetLastBarcode()'s simple "most recent row" approach picked
-        // that up, the sequence would jump to some unrelated huge number instead
-        // of continuing from the last GR-style barcode. This walks backward from
-        // the most recent product and returns the first one that actually fits
-        // the auto-increment shape, skipping anything that doesn't.
+        // the auto-increment sequence; purely numeric (scanned) barcodes are skipped.
         public string? GetLastAutoBarcode()
         {
             using var conn = new MySqlConnection(Con);

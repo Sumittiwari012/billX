@@ -292,6 +292,22 @@ namespace MyWPFCRUDApp.Views
         }
 
         // ── Visuals ──────────────────────────────────────────────────────────
+
+        // FIX: the designer rotates each element by putting a RotateTransform on
+        // its wrapper Border (see ApplyRotation). If TemplateRenderer.BuildVisual
+        // ALSO applies el.Rotation to the content it returns, the content gets
+        // rotated twice (or around a different pivot), so it no longer lines up
+        // with the dashed selection outline — you only saw the true result after
+        // saving. Build the content with Rotation = 0 so the Border is the one
+        // and only place rotation is applied on the design canvas.
+        private FrameworkElement BuildContent(LabelElement el)
+        {
+            double saved = el.Rotation;
+            el.Rotation = 0;
+            try { return TemplateRenderer.BuildVisual(el, _sampleRow); }
+            finally { el.Rotation = saved; }
+        }
+
         private void AddVisual(LabelElement el)
         {
             var border = new Border
@@ -305,7 +321,7 @@ namespace MyWPFCRUDApp.Views
                 // Line) leaves gaps that wouldn't otherwise catch a click.
                 Background = Brushes.Transparent,
                 Cursor = Cursors.SizeAll,
-                Child = TemplateRenderer.BuildVisual(el, _sampleRow),
+                Child = BuildContent(el),
                 Tag = el
             };
             ApplyRotation(border, el);
@@ -327,7 +343,7 @@ namespace MyWPFCRUDApp.Views
         private void RefreshVisual(LabelElement el)
         {
             if (!_visuals.TryGetValue(el, out var border)) return;
-            border.Child = TemplateRenderer.BuildVisual(el, _sampleRow);
+            border.Child = BuildContent(el);
             border.Width = el.Width * PxPerMm;
             border.Height = el.Height * PxPerMm;
             Canvas.SetLeft(border, el.X * PxPerMm + OffsetPx);
@@ -337,12 +353,14 @@ namespace MyWPFCRUDApp.Views
 
         // Rotates the element visual around its own center, in place. Doesn't
         // change X/Y/Width/Height — those still describe the un-rotated
-        // bounding box, exactly as before rotation support was added.
+        // bounding box. RenderTransformOrigin (relative 0.5,0.5) keeps the pivot
+        // at the true center regardless of the Border's current width/height.
         private static void ApplyRotation(Border border, LabelElement el)
         {
+            border.RenderTransformOrigin = new Point(0.5, 0.5);
             border.RenderTransform = el.Rotation == 0
                 ? Transform.Identity
-                : new RotateTransform(el.Rotation, border.Width / 2, border.Height / 2);
+                : new RotateTransform(el.Rotation);
         }
 
         // ── Selection + drag-to-move ─────────────────────────────────────────

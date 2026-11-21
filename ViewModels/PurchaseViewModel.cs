@@ -86,6 +86,17 @@ namespace MyWPFCRUDApp.ViewModels
             set => SetProperty(ref _isHistoryOpen, value);
         }
         public ObservableCollection<MProducts> Products { get; set; }
+
+        // Godown this purchase's stock is posted into.
+        public ObservableCollection<Godown> Godowns { get; set; } = new();
+
+        private Godown _selectedGodown;
+        public Godown SelectedGodown
+        {
+            get => _selectedGodown;
+            set => SetProperty(ref _selectedGodown, value);
+        }
+
         public ObservableCollection<MPurchaseDetail> PurchaseItems { get; set; }
         public ObservableCollection<MTaxCategory> TaxCategories { get; set; }
 
@@ -750,6 +761,19 @@ namespace MyWPFCRUDApp.ViewModels
             _originalInvoiceTotal = master.TotalAmount;
 
             _editingMasterId = master.Id;
+
+            // Reselect the godown this invoice was originally posted to.
+            try
+            {
+                long? gid = _purchaseService.GetPurchaseGodownId(master.Id);
+                if (gid.HasValue)
+                {
+                    var g = Godowns.FirstOrDefault(x => x.Id == gid.Value);
+                    if (g != null) SelectedGodown = g;
+                }
+            }
+            catch { }
+
             PurchaseMaster.InvoiceNumber = master.InvoiceNumber;
             PurchaseMaster.VendorInvoiceNumber = master.VendorInvoiceNumber;
             PurchaseMaster.PurchaseDate = master.PurchaseDate;
@@ -1191,6 +1215,15 @@ namespace MyWPFCRUDApp.ViewModels
             Discount = PurchaseMaster.Discount;
             NewItem = new MPurchaseDetail();
             PurchaseItems = new ObservableCollection<MPurchaseDetail>();
+
+            try
+            {
+                Godowns = new ObservableCollection<Godown>(GodownService.GetAll().Where(g => g.IsActive));
+                SelectedGodown = Godowns.FirstOrDefault();
+            }
+            catch { Godowns = new ObservableCollection<Godown>(); SelectedGodown = null; }
+            OnPropertyChanged(nameof(Godowns));
+
             Suppliers = new ObservableCollection<MSupplier>(_supplierService.GetAllSuppliers());
             Products = new ObservableCollection<MProducts>(_productService.GetProducts());
 
@@ -1285,6 +1318,13 @@ namespace MyWPFCRUDApp.ViewModels
             { MessageBox.Show("Please select a supplier."); return; }
             if (!PurchaseItems.Any())
             { MessageBox.Show("Please add at least one item."); return; }
+            if (SelectedGodown == null)
+            {
+                MessageBox.Show("Please select a godown for this purchase.\n\n" +
+                    "If the list is empty, create an active godown in Godown Master first.",
+                    "Godown Required", MessageBoxButton.OK, MessageBoxImage.Information);
+                return;
+            }
 
             // ── Commit everything Bulk Edit staged — deletes, then updates,
             //    then inserts. This is the ONLY place any of these actually
@@ -1426,7 +1466,7 @@ namespace MyWPFCRUDApp.ViewModels
                     // UPDATE existing invoice — supplier wallet is adjusted
                     // below by the DIFFERENCE in total, not recalculated
                     // from scratch.
-                    success = _purchaseService.UpdatePurchase(_editingMasterId, PurchaseMaster);
+                    success = _purchaseService.UpdatePurchase(_editingMasterId, PurchaseMaster, SelectedGodown.Id);
                 }
                 else
                 {
@@ -1434,7 +1474,7 @@ namespace MyWPFCRUDApp.ViewModels
                     // too; since _originalInvoiceTotal is 0 for a new
                     // invoice, the "difference" applied is simply the full
                     // invoice total, same net effect as before.
-                    success = _purchaseService.AddPurchase(PurchaseMaster);
+                    success = _purchaseService.AddPurchase(PurchaseMaster, SelectedGodown.Id);
                 }
             }
             catch (Exception ex)
@@ -1489,7 +1529,7 @@ namespace MyWPFCRUDApp.ViewModels
                     ? "✔ Invoice updated successfully!"
                     : newProductsCreated > 0
                         ? $"✔ Purchase recorded!\n📦 {newProductsCreated} new product(s) added."
-                        : "✔ Purchase recorded and stock updated!";
+                        : $"✔ Purchase recorded and stock updated!\n🏬 Stock added to godown: {SelectedGodown.GodownName}";
 
                 MessageBox.Show(msg, "Saved", MessageBoxButton.OK, MessageBoxImage.Information);
                 //ResetForm();

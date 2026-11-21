@@ -108,6 +108,29 @@ SIZE / COLOUR:
   Blue, Silver). If no colour is printed or implied for a row, leave colour
   as an empty string.
 
+MULTIPLE SIZES ON ONE ROW (SPLIT INTO SEPARATE ITEMS):
+- Sometimes a single row lists several sizes together in the size column,
+  separated by commas (or slashes), e.g. ""M,L,XL"" or ""M/L/XL"" or ""28,30,32"".
+  When this happens, do NOT return one item with the combined text. Return
+  ONE SEPARATE item for EACH size, in the same order the sizes are written.
+- Every split item gets exactly ONE size value (e.g. ""M"", then ""L"", then
+  ""XL"") and copies everything else from the original row unchanged:
+  description, hsn_code, colour, purchase_price, mrp, retail_price,
+  wholesale_price, cgst, sgst, igst.
+- DIVIDE the row's quantity across the split items as evenly as possible, in
+  whole pieces. If it does not divide evenly, give the extra pieces to the
+  EARLIEST sizes in the list. Examples: 12 pcs over M,L,XL -> 4,4,4.
+  10 pcs over M,L,XL -> 4,3,3. 7 pcs over S,M -> 4,3.
+- The split quantities must add up EXACTLY to the original row's quantity.
+  Never repeat the full quantity on every split item.
+- Each split item's ""amount"" = its own quantity × purchase_price.
+- Never output an item with quantity 0. If the quantity is smaller than the
+  number of sizes (e.g. 2 pcs over 3 sizes), give 1 piece each to the first
+  sizes in the list and leave out the remaining sizes.
+- This applies only to a genuine list of standalone sizes. A single size, a
+  blank size, or spec values inside the product name (10000mAh, 1m, 6-Socket)
+  are NOT split — follow the SIZE / COLOUR rules above for those.
+
 Return ONLY valid JSON, no markdown, no backticks, no explanation:
 {
   ""invoice_number"": ""string or empty"",
@@ -118,7 +141,14 @@ Return ONLY valid JSON, no markdown, no backticks, no explanation:
     { ""description"": ""string"", ""hsn_code"": ""string or empty"", ""size"": ""string or empty"", ""colour"": ""string or empty"", ""quantity"": 44, ""purchase_price"": 380, ""amount"": 16720, ""mrp"": 0, ""retail_price"": 0, ""wholesale_price"": 0, ""cgst"": 0, ""sgst"": 0, ""igst"": 0 }
   ],
   ""grand_total"": 45520
-}";
+}
+
+EXAMPLE OF A MULTI-SIZE ROW:
+Bill row: ""Cotton Shirt | Size: M,L,XL | Qty 10 | Rate 500""
+Becomes THREE items:
+    { ""description"": ""Cotton Shirt"", ""hsn_code"": """", ""size"": ""M"", ""colour"": """", ""quantity"": 4, ""purchase_price"": 500, ""amount"": 2000, ""mrp"": 0, ""retail_price"": 0, ""wholesale_price"": 0, ""cgst"": 0, ""sgst"": 0, ""igst"": 0 },
+    { ""description"": ""Cotton Shirt"", ""hsn_code"": """", ""size"": ""L"", ""colour"": """", ""quantity"": 3, ""purchase_price"": 500, ""amount"": 1500, ""mrp"": 0, ""retail_price"": 0, ""wholesale_price"": 0, ""cgst"": 0, ""sgst"": 0, ""igst"": 0 },
+    { ""description"": ""Cotton Shirt"", ""hsn_code"": """", ""size"": ""XL"", ""colour"": """", ""quantity"": 3, ""purchase_price"": 500, ""amount"": 1500, ""mrp"": 0, ""retail_price"": 0, ""wholesale_price"": 0, ""cgst"": 0, ""sgst"": 0, ""igst"": 0 }";
 
         // ── Main entry: single image (kept for backward compatibility) ────────
         public Task<ScannedBillResult> ScanBillAsync(string filePath)

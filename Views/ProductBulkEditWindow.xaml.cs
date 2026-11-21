@@ -11,6 +11,7 @@ using System.Runtime.CompilerServices;
 using System.Text.RegularExpressions;
 using System.Windows;
 using System.Windows.Controls;
+using System.Windows.Data;
 using System.Windows.Input;
 using System.Windows.Media;
 
@@ -94,6 +95,15 @@ namespace MyWPFCRUDApp.Views
             => PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(name));
     }
 
+    // One entry in the grouped SubCategory dropdown. CategoryName is the
+    // group header (e.g. "Mens"); SubCategoryName is the item listed beneath it.
+    public class SubCategoryOption
+    {
+        public long Id { get; set; }
+        public string SubCategoryName { get; set; } = "";
+        public string CategoryName { get; set; } = "";
+    }
+
     public partial class ProductBulkEditWindow : Window
     {
         private readonly ProductService _productService = new ProductService();
@@ -105,6 +115,11 @@ namespace MyWPFCRUDApp.Views
         public List<MCategory> Categories { get; private set; } = new();
         public List<MSubCategory> SubCategories { get; private set; } = new();
         public List<MUnit> Units { get; private set; } = new();
+
+        // SubCategories grouped by Category (Mens → its subcategories, etc.).
+        // Bound by the SubCategory dropdowns in the grid and in Bulk apply.
+        public ICollectionView SubCategoryOptions { get; private set; } = null!;
+
         public List<BulkEditResultLine> ResultLines { get; private set; } = new();
 
         // Columns that can never be hidden — not offered in the picker.
@@ -284,6 +299,23 @@ namespace MyWPFCRUDApp.Views
             Categories = _categoryService.GetCategory();
             SubCategories = _subCategoryService.GetSubCategoryList();
             Units = _unitService.GetUnit();
+
+            // Same subcategories, but tagged with their category name and
+            // grouped, so the dropdown reads: Mens → (its subcategories),
+            // Womens → (...), etc. Categories and subcategories are both
+            // sorted alphabetically.
+            var options = SubCategories.Select(s => new SubCategoryOption
+            {
+                Id = s.Id,
+                SubCategoryName = s.SubCategoryName,
+                CategoryName = CategoryNameFor(s.CategoryId)
+            }).ToList();
+
+            var view = new ListCollectionView(options);
+            view.GroupDescriptions.Add(new PropertyGroupDescription(nameof(SubCategoryOption.CategoryName)));
+            view.SortDescriptions.Add(new SortDescription(nameof(SubCategoryOption.CategoryName), ListSortDirection.Ascending));
+            view.SortDescriptions.Add(new SortDescription(nameof(SubCategoryOption.SubCategoryName), ListSortDirection.Ascending));
+            SubCategoryOptions = view;
         }
 
         private string CategoryNameFor(long id) =>
@@ -659,7 +691,7 @@ namespace MyWPFCRUDApp.Views
             }
             else if (field == "SubCategoryId")
             {
-                ComboBulkValue.ItemsSource = SubCategories;
+                ComboBulkValue.ItemsSource = SubCategoryOptions;   // grouped by category
                 SetBulkValueMode(dropdown: true, "SubCategoryName", "Id");
             }
             else if (field == "UnitId")

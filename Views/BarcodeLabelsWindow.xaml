@@ -189,67 +189,19 @@
                     <Border Grid.Row="5" BorderBrush="#B0A090" BorderThickness="1" CornerRadius="6"
                             Background="#FAFAFA" Padding="10" VerticalAlignment="Top" MinHeight="180">
                         <Grid>
-                            <!-- All three built-in templates live here, one visible at a
-                                 time, each bound to the DataGrid's SelectedItem. -->
-
-                            <StackPanel x:Name="StandardPreview" HorizontalAlignment="Center"
-                                        DataContext="{Binding ElementName=LabelsGrid, Path=SelectedItem}">
-                                <TextBlock Text="My Store" FontSize="11" FontWeight="Bold"
-                                           Foreground="#1F3A5F" HorizontalAlignment="Center"/>
-                                <TextBlock Text="{Binding ProductName}" FontSize="13" FontWeight="SemiBold"
-                                           HorizontalAlignment="Center" TextWrapping="Wrap"
-                                           TextAlignment="Center" Margin="0,2,0,4"/>
-                                <Image Source="{Binding BarcodeImage}" Width="200" Height="55" Stretch="Fill"/>
-                                <TextBlock Text="{Binding Barcode}" FontFamily="Consolas" FontSize="10"
-                                           HorizontalAlignment="Center" Margin="0,2,0,4"/>
-                                <StackPanel Orientation="Horizontal" HorizontalAlignment="Center">
-                                    <TextBlock Text="MRP: ₹" FontSize="11" FontWeight="Bold"/>
-                                    <TextBlock Text="{Binding MRP, StringFormat=N2}" FontSize="11" FontWeight="Bold" Margin="0,0,10,0"/>
-                                    <TextBlock Text="Sale: ₹" FontSize="10"/>
-                                    <TextBlock Text="{Binding Retail, StringFormat=N2}" FontSize="10"/>
-                                </StackPanel>
+                            <!-- Live "as it will print" preview. It uses the same BuildStrip()
+                                 routine as printing, so it always reflects the chosen
+                                 template, Labels across and Gap (mm). The grey area is
+                                 the strip/roll; white blocks are the labels. -->
+                            <StackPanel x:Name="StripPreviewPanel" HorizontalAlignment="Center" Visibility="Collapsed">
+                                <Viewbox x:Name="StripPreviewViewbox" Stretch="Uniform" StretchDirection="DownOnly"
+                                         MaxWidth="276" MaxHeight="220">
+                                    <ContentControl x:Name="StripPreviewHost"/>
+                                </Viewbox>
+                                <TextBlock x:Name="StripInfoText" FontSize="10" Foreground="#868E96"
+                                           HorizontalAlignment="Center" TextAlignment="Center"
+                                           TextWrapping="Wrap" Margin="0,8,0,0"/>
                             </StackPanel>
-
-                            <StackPanel x:Name="CompactPreview" HorizontalAlignment="Center" Visibility="Collapsed"
-                                        DataContext="{Binding ElementName=LabelsGrid, Path=SelectedItem}">
-                                <Image Source="{Binding BarcodeImage}" Width="200" Height="60" Stretch="Fill"/>
-                                <TextBlock Text="{Binding Barcode}" FontFamily="Consolas" FontWeight="SemiBold"
-                                           FontSize="11" HorizontalAlignment="Center" Margin="0,3,0,0"/>
-                            </StackPanel>
-
-                            <StackPanel x:Name="DetailedPreview" HorizontalAlignment="Center" Visibility="Collapsed"
-                                        DataContext="{Binding ElementName=LabelsGrid, Path=SelectedItem}">
-                                <TextBlock Text="My Store" FontSize="11" FontWeight="Bold"
-                                           Foreground="#1F3A5F" HorizontalAlignment="Center"/>
-                                <TextBlock Text="{Binding ProductName}" FontSize="13" FontWeight="SemiBold"
-                                           HorizontalAlignment="Center" TextWrapping="Wrap"
-                                           TextAlignment="Center" Margin="0,2,0,4"/>
-                                <Image Source="{Binding BarcodeImage}" Width="200" Height="50" Stretch="Fill"/>
-                                <TextBlock Text="{Binding Barcode}" FontFamily="Consolas" FontSize="10"
-                                           HorizontalAlignment="Center" Margin="0,2,0,4"/>
-                                <StackPanel Orientation="Horizontal" HorizontalAlignment="Center">
-                                    <TextBlock Text="MRP: ₹" FontSize="11" FontWeight="Bold"/>
-                                    <TextBlock Text="{Binding MRP, StringFormat=N2}" FontSize="11" FontWeight="Bold" Margin="0,0,10,0"/>
-                                    <TextBlock Text="Sale: ₹" FontSize="10"/>
-                                    <TextBlock Text="{Binding Retail, StringFormat=N2}" FontSize="10"/>
-                                </StackPanel>
-                                <StackPanel Orientation="Horizontal" HorizontalAlignment="Center" Margin="0,4,0,0">
-                                    <TextBlock Text="HSN: " FontSize="9" Foreground="#868E96"/>
-                                    <TextBlock Text="{Binding HSNCode}" FontSize="9" Foreground="#868E96" Margin="0,0,8,0"/>
-                                    <TextBlock Text="Size: " FontSize="9" Foreground="#868E96"/>
-                                    <TextBlock Text="{Binding Size}" FontSize="9" Foreground="#868E96" Margin="0,0,8,0"/>
-                                    <TextBlock Text="Colour: " FontSize="9" Foreground="#868E96"/>
-                                    <TextBlock Text="{Binding Colour}" FontSize="9" Foreground="#868E96"/>
-                                </StackPanel>
-                            </StackPanel>
-
-                            <!-- Custom (user-designed) templates render here at runtime
-                                 via TemplateRenderer.Render — see UpdatePreviewVisibility()
-                                 in the code-behind. Scaled down if larger than the box. -->
-                            <Viewbox x:Name="CustomTemplateViewbox" Stretch="Uniform" StretchDirection="DownOnly"
-                                     MaxWidth="260" MaxHeight="220" Visibility="Collapsed">
-                                <ContentControl x:Name="CustomTemplatePreview"/>
-                            </Viewbox>
 
                             <TextBlock Text="Select a row on the left to preview its label"
                                        x:Name="NoSelectionHint"
@@ -263,6 +215,20 @@
         </Grid>
 
         <StackPanel Grid.Row="2" Orientation="Horizontal" HorizontalAlignment="Right" Margin="0,12,0,0">
+            <!-- Print layout. Both values are typed in by the user and remembered
+                 between runs by LabelPrintSettingsService. -->
+            <TextBlock Text="Labels across (1-20):" VerticalAlignment="Center" Margin="0,0,6,0"/>
+            <TextBox x:Name="LabelsAcrossBox" Width="50" Height="30" Margin="0,0,16,0"
+                     Text="1" VerticalContentAlignment="Center" HorizontalContentAlignment="Center"
+                     ToolTip="How many labels side by side on one strip (1 to 20)"
+                     PreviewTextInput="DigitsOnly_PreviewTextInput"
+                     TextChanged="LabelsAcrossBox_TextChanged"/>
+
+            <TextBlock Text="Gap (mm):" VerticalAlignment="Center" Margin="0,0,6,0"/>
+            <TextBox x:Name="GapMmBox" Width="50" Height="30" Margin="0,0,24,0"
+                     Text="2" VerticalContentAlignment="Center" HorizontalContentAlignment="Center"
+                     TextChanged="GapMmBox_TextChanged"/>
+
             <Button Content="🖨 Print Selected"
                     Click="PrintSelectedButton_Click"
                     Width="140" Height="36" Margin="0,0,8,0"

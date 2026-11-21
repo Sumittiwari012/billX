@@ -10,5 +10,8 @@
 
         // Display-only, populated via JOIN in GetUsers(); not written back to DB directly
         public string UserTypeName { get; set; }
+        public long? StoreId { get; set; }
+        public string StoreName { get; set; }
+
     }
 }

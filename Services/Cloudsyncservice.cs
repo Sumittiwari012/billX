@@ -38,14 +38,22 @@ namespace MyWPFCRUDApp.Services
         /// MPettyCash / MLoginLogout are intentionally left out of this push list -
         /// those flow the other direction (cloud -> local) via CloudPullService's
         /// additive pull, so pushing them here would wipe cloud history. Everything
-        /// else - including the supplier/purchase-side tables we just added models
-        /// for - is master/transaction data owned by this terminal, so it's pushed
-        /// (wiped + re-populated) in full below.
+        /// else - including the supplier/purchase-side tables and the godown/store
+        /// stock tables - is master/transaction data owned by this terminal, so it's
+        /// pushed (wiped + re-populated) in full below. The godown/store tables are
+        /// ALSO pulled additively (rows missing locally) before the push, so rows
+        /// created on another terminal are brought in first and then pushed back up
+        /// instead of being wiped.
         /// </summary>
         private static readonly string[] TablesInDependencyOrder =
         {
             "MCategory",
             "MUnit",
+
+            // Godown / store masters - before MUser, which references MStore.
+            "MGodown",
+            "MStore",
+
             "MUserType",
             "MUser",
             "MCounterNew",
@@ -63,6 +71,15 @@ namespace MyWPFCRUDApp.Services
             "MPurchaseReturnMaster",
             "MPurchaseReturnDetail",
             "MPayment",
+
+            // Godown / store stock tables - need MProducts, MGodown, MStore above.
+            "GodownStock",
+            "StoreStock",
+            "StockTransfer",
+            "StockTransferItem",
+            "StockLedger",
+            "StoreStockTransfer",
+            "StoreStockTransferItem",
         };
 
         /// <summary>

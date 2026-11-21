@@ -207,7 +207,7 @@
                     </StackPanel>
 
                     <!-- Supplier Wallet (unchanged) -->
-                    <StackPanel>
+                    <StackPanel Margin="0,0,15,0">
                         <Label Content="Supplier Wallet" FontSize="11" FontWeight="Bold" Foreground="#495057"/>
                         <Border Background="#F1F3F5" BorderBrush="#DEE2E6" BorderThickness="1"
                 CornerRadius="4" Height="32" Padding="10,0" MinWidth="110">
@@ -508,9 +508,18 @@
                                 </ComboBox.ItemTemplate>
                             </ComboBox>
 
-                            
+
                         </StackPanel>
                     </Expander>
+
+                    <!-- Godown: purchased stock is saved into the godown picked here -->
+                    <StackPanel Margin="0,0,0,8">
+                        <TextBlock Text="SAVE STOCK TO GODOWN *" Foreground="#495057" FontWeight="Bold" FontSize="12" Margin="0,5,0,4"/>
+                        <ComboBox ItemsSource="{Binding Godowns}"
+                                  SelectedItem="{Binding SelectedGodown, Mode=TwoWay}"
+                                  DisplayMemberPath="GodownName"
+                                  Height="30" VerticalContentAlignment="Center"/>
+                    </StackPanel>
 
                     <StackPanel>
                         <TextBlock Text="INVOICE SUMMARY" Foreground="#495057" FontWeight="Bold" FontSize="12" Margin="0,5,0,8"/>

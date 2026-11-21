@@ -30,6 +30,13 @@ namespace MyWPFCRUDApp.ViewModels
             set => SetProperty(ref _userTypes, value);
         }
 
+        private ObservableCollection<Store> _stores;
+        public ObservableCollection<Store> Stores
+        {
+            get => _stores;
+            set => SetProperty(ref _stores, value);
+        }
+
         private MUser _selectedUser;
         public MUser SelectedUser
         {
@@ -43,9 +50,11 @@ namespace MyWPFCRUDApp.ViewModels
                         Id = value.Id,
                         UserName = value.UserName,
                         UserTypeId = value.UserTypeId,
+                        StoreId = value.StoreId,
                         MobileNumber = value.MobileNumber
                     };
-                    SelectedUserType = UserTypes.FirstOrDefault(t => t.Id == value.UserTypeId);
+                    SelectedUserType = UserTypes?.FirstOrDefault(t => t.Id == value.UserTypeId);
+                    SelectedStore = Stores?.FirstOrDefault(s => s.Id == value.StoreId);
                 }
             }
         }
@@ -64,13 +73,19 @@ namespace MyWPFCRUDApp.ViewModels
             set => SetProperty(ref _selectedUserType, value);
         }
 
+        private Store _selectedStore;
+        public Store SelectedStore
+        {
+            get => _selectedStore;
+            set => SetProperty(ref _selectedStore, value);
+        }
+
         public void LoadData()
         {
-            var userTypeData = _userTypeService.GetUserType();
-            UserTypes = new ObservableCollection<MUserType>(userTypeData);
-
-            var userData = _userAccountService.GetUsers();
-            Users = new ObservableCollection<MUser>(userData);
+            // Load lookups first so SelectedUser can resolve its type/store
+            UserTypes = new ObservableCollection<MUserType>(_userTypeService.GetUserType());
+            Stores = new ObservableCollection<Store>(_userAccountService.GetStores());
+            Users = new ObservableCollection<MUser>(_userAccountService.GetUsers());
         }
 
         private void Reset()
@@ -78,6 +93,7 @@ namespace MyWPFCRUDApp.ViewModels
             CurrentUser = new MUser();
             SelectedUser = null;
             SelectedUserType = null;
+            SelectedStore = null;
         }
 
         private void Save()
@@ -85,6 +101,11 @@ namespace MyWPFCRUDApp.ViewModels
             if (string.IsNullOrWhiteSpace(CurrentUser.UserName))
             {
                 System.Windows.MessageBox.Show("User Name is required!");
+                return;
+            }
+            if (SelectedStore == null)
+            {
+                System.Windows.MessageBox.Show("Please select a Store!");
                 return;
             }
             if (SelectedUserType == null)
@@ -99,12 +120,20 @@ namespace MyWPFCRUDApp.ViewModels
             }
 
             CurrentUser.UserTypeId = SelectedUserType.Id;
+            CurrentUser.StoreId = SelectedStore.Id;
 
             bool success;
-            if (CurrentUser.Id <= 0)
-                success = _userAccountService.InsertUser(CurrentUser);
-            else
-                success = _userAccountService.UpdateUser(CurrentUser);
+            try
+            {
+                success = CurrentUser.Id <= 0
+                    ? _userAccountService.InsertUser(CurrentUser)
+                    : _userAccountService.UpdateUser(CurrentUser);
+            }
+            catch (MySql.Data.MySqlClient.MySqlException ex) when (ex.Number == 1062)
+            {
+                System.Windows.MessageBox.Show("This user already exists in the selected store.");
+                return;
+            }
 
             if (success)
             {
@@ -115,7 +144,9 @@ namespace MyWPFCRUDApp.ViewModels
 
         private void Delete()
         {
-            var result = System.Windows.MessageBox.Show("Are you sure you want to delete this user?", "Confirm Delete", System.Windows.MessageBoxButton.YesNo);
+            var result = System.Windows.MessageBox.Show(
+                "Are you sure you want to delete this user?", "Confirm Delete",
+                System.Windows.MessageBoxButton.YesNo);
             if (result == System.Windows.MessageBoxResult.Yes)
             {
                 if (_userAccountService.DeleteUser(SelectedUser.Id))

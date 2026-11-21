@@ -47,7 +47,7 @@ namespace MyWPFCRUDApp.Services
         /// the product is first auto-inserted into MProducts + ProductQuantity using the
         /// Barcode and ProductName already on the detail row, then stock is incremented.
         /// </summary>
-        public bool AddPurchase(MPurchaseMaster purchase)
+        public bool AddPurchase(MPurchaseMaster purchase, long? godownId = null)
         {
             if (purchase == null || purchase.MPurchaseDetail == null) return false;
 
@@ -62,10 +62,10 @@ namespace MyWPFCRUDApp.Services
 
                 var masterSql = @"INSERT INTO MPurchaseMaster (
     InvoiceNumber, VendorInvoiceNumber, SupplierId, PurchaseDate, TotalAmount,
-    Discount, PaymentMode, AmountPaid, Remarks, CreatedBy, CreatedDate
+    Discount, PaymentMode, AmountPaid, Remarks, CreatedBy, CreatedDate, GodownId
 ) VALUES (
     @InvoiceNumber, @VendorInvoiceNumber, @SupplierId, @PurchaseDate, @TotalAmount,
-    @Discount, @PaymentMode, @AmountPaid, @Remarks, @CreatedBy, @CreatedDate
+    @Discount, @PaymentMode, @AmountPaid, @Remarks, @CreatedBy, @CreatedDate, @GodownId
 ); SELECT LAST_INSERT_ID();";
 
                 long masterId;
@@ -82,6 +82,7 @@ namespace MyWPFCRUDApp.Services
                     cmdMaster.Parameters.AddWithValue("@CreatedBy", "WPFUser");
                     cmdMaster.Parameters.AddWithValue("@CreatedDate", DateTime.Now);
                     cmdMaster.Parameters.AddWithValue("@AmountPaid", purchase.AmountPaid);
+                    cmdMaster.Parameters.AddWithValue("@GodownId", godownId.HasValue ? (object)godownId.Value : DBNull.Value);
 
                     masterId = Convert.ToInt64(cmdMaster.ExecuteScalar());
                 }
@@ -177,6 +178,12 @@ namespace MyWPFCRUDApp.Services
                             purchase.InvoiceNumber, supplierName,
                             detail.Batch, detail.MfgDate, detail.ExpDate,
                             conn, trans);
+
+                        // ── E. Godown copy: same quantity goes into GodownStock
+                        //    (+ a StockLedger row), inside the same transaction.
+                        if (godownId.HasValue)
+                            AdjustGodown(conn, trans, godownId.Value, detail.Barcode,
+                                (decimal)detail.Quantity, MoveBuy, masterId, purchase.InvoiceNumber);
                     }
                 }
 
@@ -257,6 +264,104 @@ namespace MyWPFCRUDApp.Services
             }
 
             return newProductId;
+        }
+
+        // ══════════════════════════════════════════════════════════════════
+        // GODOWN STOCK SYNC
+        // Every purchase quantity is mirrored into GodownStock through
+        // StockService.Apply, the one place that changes stock, so each
+        // change also writes a StockLedger row. Everything below runs inside
+        // the caller's transaction: if the invoice fails, the godown rolls back too.
+        // ══════════════════════════════════════════════════════════════════
+        private const string MoveBuy = "Purchase";
+        private const string MoveEdit = "PurchaseEdit";
+        private const string MoveDelete = "PurchaseDelete";
+
+        /// <summary>
+        /// +delta adds to the godown. -delta removes from it, but never more than
+        /// the godown currently holds (same "clamp at 0" rule as ProductQuantity),
+        /// so editing or deleting an old invoice can't fail just because some of
+        /// that stock was already transferred out.
+        /// </summary>
+        private static void AdjustGodown(
+            MySqlConnection conn, MySqlTransaction trans,
+            long godownId, string barcode, decimal delta,
+            string movement, long masterId, string? invoiceNumber)
+        {
+            if (delta == 0 || string.IsNullOrWhiteSpace(barcode)) return;
+
+            long productId;
+            string realBarcode;
+            using (var cmd = new MySqlCommand(
+                "SELECT Id, Barcode FROM MProducts WHERE Barcode = @Bc", conn, trans))
+            {
+                cmd.Parameters.AddWithValue("@Bc", barcode.Trim());
+                using var rdr = cmd.ExecuteReader();
+                if (!rdr.Read()) return;                       // unknown product - nothing to post
+                productId = Convert.ToInt64(rdr["Id"]);
+                realBarcode = rdr["Barcode"].ToString()!;
+            }
+
+            if (delta < 0)
+            {
+                decimal available = 0;
+                using (var cmd = new MySqlCommand(
+                    "SELECT Quantity FROM GodownStock WHERE GodownId = @G AND Barcode = @Bc FOR UPDATE",
+                    conn, trans))
+                {
+                    cmd.Parameters.AddWithValue("@G", godownId);
+                    cmd.Parameters.AddWithValue("@Bc", realBarcode);
+                    var o = cmd.ExecuteScalar();
+                    if (o != null && o != DBNull.Value) available = Convert.ToDecimal(o);
+                }
+                decimal reduceBy = Math.Min(-delta, available);
+                if (reduceBy <= 0) return;
+                delta = -reduceBy;
+            }
+
+            StockService.Apply(conn, trans, LocationType.Godown, godownId, productId, realBarcode,
+                delta, movement, "Purchase", masterId, "WPFUser", invoiceNumber);
+        }
+
+        /// <summary>
+        /// Brings GodownStock in line with an edited invoice.
+        ///   • same godown  → only the per-barcode difference moves
+        ///   • godown changed → old quantities are backed out of the old godown,
+        ///                      new quantities go into the new one
+        ///   • old godown NULL (invoice saved before this feature) → nothing
+        ///     was ever posted for it, so the full new quantity is added
+        /// </summary>
+        private static void SyncGodownOnUpdate(
+            MySqlConnection conn, MySqlTransaction trans, long masterId, string? invoiceNumber,
+            long? oldGodownId, long? newGodownId,
+            Dictionary<string, double> oldQty, Dictionary<string, double> newQty)
+        {
+            if (!newGodownId.HasValue) return;
+            bool same = oldGodownId.HasValue && oldGodownId.Value == newGodownId.Value;
+
+            if (oldGodownId.HasValue && !same)
+                foreach (var (bc, q) in oldQty)
+                    AdjustGodown(conn, trans, oldGodownId.Value, bc, -(decimal)q, MoveEdit, masterId, invoiceNumber);
+
+            var all = new HashSet<string>(oldQty.Keys, StringComparer.OrdinalIgnoreCase);
+            all.UnionWith(newQty.Keys);
+            foreach (var bc in all)
+            {
+                decimal prev = same && oldQty.TryGetValue(bc, out var o) ? (decimal)o : 0m;
+                decimal next = newQty.TryGetValue(bc, out var n) ? (decimal)n : 0m;
+                AdjustGodown(conn, trans, newGodownId.Value, bc, next - prev, MoveEdit, masterId, invoiceNumber);
+            }
+        }
+
+        /// <summary>Godown an existing invoice was posted to (null = none / older invoice).</summary>
+        public long? GetPurchaseGodownId(long masterId)
+        {
+            using var conn = new MySqlConnection(Con);
+            conn.Open();
+            using var cmd = new MySqlCommand("SELECT GodownId FROM MPurchaseMaster WHERE Id = @Id", conn);
+            cmd.Parameters.AddWithValue("@Id", masterId);
+            var o = cmd.ExecuteScalar();
+            return o == null || o == DBNull.Value ? (long?)null : Convert.ToInt64(o);
         }
 
         // ── Helper: get first long value from a query, returns 1 as fallback ─
@@ -615,7 +720,7 @@ namespace MyWPFCRUDApp.Services
         // Bulk Edit / manually deleted before Save) has its old quantity backed
         // out in full. A barcode that's brand-new to this invoice has its full
         // new quantity added, same as a fresh purchase line.
-        public bool UpdatePurchase(long masterId, MPurchaseMaster purchase)
+        public bool UpdatePurchase(long masterId, MPurchaseMaster purchase, long? godownId = null)
         {
             if (purchase == null || purchase.MPurchaseDetail == null) return false;
 
@@ -625,6 +730,17 @@ namespace MyWPFCRUDApp.Services
 
             try
             {
+                // 0a. Which godown did this invoice originally post to?
+                long? oldGodownId = null;
+                using (var cmd = new MySqlCommand(
+                    "SELECT GodownId FROM MPurchaseMaster WHERE Id = @MasterId FOR UPDATE", conn, trans))
+                {
+                    cmd.Parameters.AddWithValue("@MasterId", masterId);
+                    var o = cmd.ExecuteScalar();
+                    if (o != null && o != DBNull.Value) oldGodownId = Convert.ToInt64(o);
+                }
+                long? newGodownId = godownId ?? oldGodownId;
+
                 // 0. Snapshot the OLD quantity per barcode, BEFORE the old detail
                 //    lines are deleted, so we know what to back out below.
                 var oldQtyByBarcode = new Dictionary<string, double>(StringComparer.OrdinalIgnoreCase);
@@ -660,6 +776,7 @@ namespace MyWPFCRUDApp.Services
             PaymentMode         = @PaymentMode,
             AmountPaid          = @AmountPaid,
             Remarks             = @Remarks,
+            GodownId            = @GodownId,
             ModifiedBy          = 'WPFUser',
             ModifiedDate        = @Now
             WHERE Id = @MasterId";
@@ -675,6 +792,7 @@ namespace MyWPFCRUDApp.Services
                     cmd.Parameters.AddWithValue("@PaymentMode", purchase.PaymentMode ?? (object)DBNull.Value);
                     cmd.Parameters.AddWithValue("@AmountPaid", purchase.AmountPaid);
                     cmd.Parameters.AddWithValue("@Remarks", purchase.Remarks ?? (object)DBNull.Value);
+                    cmd.Parameters.AddWithValue("@GodownId", newGodownId.HasValue ? (object)newGodownId.Value : DBNull.Value);
                     cmd.Parameters.AddWithValue("@Now", DateTime.Now);
                     cmd.Parameters.AddWithValue("@MasterId", masterId);
                     cmd.ExecuteNonQuery();
@@ -820,6 +938,10 @@ namespace MyWPFCRUDApp.Services
                     cmdQty.ExecuteNonQuery();
                 }
 
+                // 5. Same edit, mirrored into the godown.
+                SyncGodownOnUpdate(conn, trans, masterId, purchase.InvoiceNumber,
+                    oldGodownId, newGodownId, oldQtyByBarcode, newQtyByBarcode);
+
                 trans.Commit();
                 return true;
             }
@@ -916,8 +1038,9 @@ namespace MyWPFCRUDApp.Services
                 //    needed to clean up matching MPayment rows and to recalc the balance.
                 string invoiceNumber = null;
                 long supplierId = 0;
+                long? godownId = null;
                 using (var cmd = new MySqlCommand(
-                    "SELECT InvoiceNumber, SupplierId FROM MPurchaseMaster WHERE Id = @MasterId",
+                    "SELECT InvoiceNumber, SupplierId, GodownId FROM MPurchaseMaster WHERE Id = @MasterId",
                     conn, trans))
                 {
                     cmd.Parameters.AddWithValue("@MasterId", masterId);
@@ -926,6 +1049,7 @@ namespace MyWPFCRUDApp.Services
                     {
                         invoiceNumber = rdr.GetString("InvoiceNumber");
                         supplierId = rdr.GetInt64("SupplierId");
+                        if (rdr["GodownId"] != DBNull.Value) godownId = Convert.ToInt64(rdr["GodownId"]);
                     }
                 }
 
@@ -986,6 +1110,11 @@ namespace MyWPFCRUDApp.Services
                 //    PurchaseQuantity JSON.
                 foreach (var (barcode, qty) in qtyByBarcode)
                 {
+                    // Back this invoice's quantity out of its godown too.
+                    if (godownId.HasValue)
+                        AdjustGodown(conn, trans, godownId.Value, barcode, -(decimal)qty,
+                            MoveDelete, masterId, invoiceNumber);
+
                     using (var cmd = new MySqlCommand(@"
                 UPDATE ProductQuantity SET
                     Quantity     = GREATEST(0, Quantity - @Qty),
