@@ -38,6 +38,13 @@ namespace MyWPFCRUDApp.Services
     /// written. A NULL Rack in the cloud is skipped, so it never wipes a rack
     /// that is already set locally.
     ///
+    /// PRODUCT OPENING STOCK: MProducts.OpeningStock is refreshed from the cloud for
+    /// every product that already exists locally (matched by Barcode). ONLY the
+    /// OpeningStock column is written. A NULL OpeningStock in the cloud is skipped,
+    /// so it never wipes a value that is already set locally. If either database
+    /// does not have the OpeningStock column yet, this step is skipped (the rest of
+    /// the pull still runs).
+    ///
     /// PRODUCT QUANTITY: the Quantity column is NEVER set from the cloud's raw
     /// Quantity value. It's only ever adjusted by the per-barcode sale/return
     /// deltas computed below, or left alone entirely. PurchaseQuantity, however,
@@ -155,6 +162,10 @@ namespace MyWPFCRUDApp.Services
                 // ---- Product Rack refresh (ONLY the Rack column of MProducts) ----
                 progress?.Report("Refreshing product Rack values from the cloud...");
                 await RefreshProductRacksFromCloudAsync(cloudConn, localConn, transaction, progress, cancellationToken);
+
+                // ---- Product OpeningStock refresh (ONLY the OpeningStock column of MProducts) ----
+                progress?.Report("Refreshing product OpeningStock values from the cloud...");
+                await RefreshProductOpeningStockFromCloudAsync(cloudConn, localConn, transaction, progress, cancellationToken);
 
                 // ---- PurchaseQuantity refresh (Quantity column is NEVER touched here) ----
                 progress?.Report("Refreshing PurchaseQuantity for existing barcodes (Quantity left untouched)...");
@@ -418,6 +429,97 @@ namespace MyWPFCRUDApp.Services
             progress?.Report(
                 $"MProducts: Rack updated for {updated} existing product(s)"
                 + (skippedNoRack > 0 ? $", {skippedNoRack} cloud product(s) skipped (no Rack set)" : "")
+                + ". No other product column was touched.");
+        }
+
+        /// <summary>
+        /// For every product that already exists locally (matched by Barcode),
+        /// overwrites ONLY the OpeningStock column of MProducts with the cloud's
+        /// current value. No other MProducts column is read or written. Cloud
+        /// products that don't exist locally are skipped, and a NULL cloud
+        /// OpeningStock is skipped so it can never blank out a local value.
+        /// </summary>
+        private static async Task RefreshProductOpeningStockFromCloudAsync(
+            MySqlConnection cloudConn,
+            MySqlConnection localConn,
+            MySqlTransaction localTx,
+            IProgress<string>? progress,
+            CancellationToken cancellationToken)
+        {
+            // Skip (instead of failing the whole pull) if the column is missing on either side.
+            var localColumns = await GetLocalColumnsAsync(localConn, localTx, "MProducts", cancellationToken);
+            if (!localColumns.Contains("OpeningStock"))
+            {
+                progress?.Report("MProducts: local database has no OpeningStock column yet, skipped.");
+                return;
+            }
+
+            bool cloudHasColumn;
+            using (var check = new MySqlCommand(@"
+                SELECT COUNT(*)
+                FROM INFORMATION_SCHEMA.COLUMNS
+                WHERE TABLE_SCHEMA = DATABASE()
+                  AND TABLE_NAME = 'MProducts'
+                  AND COLUMN_NAME = 'OpeningStock';", cloudConn))
+            {
+                cloudHasColumn = Convert.ToInt64(await check.ExecuteScalarAsync(cancellationToken)) > 0;
+            }
+
+            if (!cloudHasColumn)
+            {
+                progress?.Report("MProducts: cloud database has no OpeningStock column yet, skipped.");
+                return;
+            }
+
+            var cloudRows = new DataTable();
+            using (var adapter = new MySqlDataAdapter("SELECT Barcode, OpeningStock FROM `MProducts`;", cloudConn))
+            {
+                adapter.Fill(cloudRows);
+            }
+
+            if (cloudRows.Rows.Count == 0)
+            {
+                progress?.Report("MProducts: nothing in the cloud to read OpeningStock from.");
+                return;
+            }
+
+            var updated = 0;
+            var skippedNoValue = 0;
+
+            foreach (DataRow row in cloudRows.Rows)
+            {
+                cancellationToken.ThrowIfCancellationRequested();
+
+                if (row["Barcode"] == DBNull.Value)
+                    continue;
+
+                if (row["OpeningStock"] == DBNull.Value)
+                {
+                    skippedNoValue++;
+                    continue;
+                }
+
+                var opening = Convert.ToDouble(row["OpeningStock"]);
+                var barcode = row["Barcode"].ToString()!;
+
+                // "<=>" is MySQL's NULL-safe equals, so rows that already match are
+                // left alone (no pointless writes / ModifiedDate bumps).
+                using var cmd = new MySqlCommand(@"
+                    UPDATE MProducts
+                    SET OpeningStock = @opening
+                    WHERE Barcode = @barcode
+                      AND NOT (OpeningStock <=> @opening);", localConn, localTx);
+                cmd.Parameters.AddWithValue("@opening", opening);
+                cmd.Parameters.AddWithValue("@barcode", barcode);
+
+                var affected = await cmd.ExecuteNonQueryAsync(cancellationToken);
+                if (affected > 0)
+                    updated++;
+            }
+
+            progress?.Report(
+                $"MProducts: OpeningStock updated for {updated} existing product(s)"
+                + (skippedNoValue > 0 ? $", {skippedNoValue} cloud product(s) skipped (no OpeningStock set)" : "")
                 + ". No other product column was touched.");
         }
 
