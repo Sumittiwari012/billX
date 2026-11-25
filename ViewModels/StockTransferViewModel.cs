@@ -2,6 +2,7 @@ using MyWPFCRUDApp.Models;
 using MyWPFCRUDApp.Services;
 using System;
 using System.Collections.ObjectModel;
+using System.Collections.Generic;
 using System.Linq;
 using System.Windows.Input;
 
@@ -28,6 +29,8 @@ namespace MyWPFCRUDApp.ViewModels
         long? _fromId, _toId;
         string _remarks = "", _scanBarcode = "", _actionRemarks = "";
         decimal _scanQty = 1;
+        // Snapshot of quantities already posted before the user edits this receipt.
+        readonly Dictionary<long, decimal> _loadedReceivedQty = new Dictionary<long, decimal>();
 
         // ----- list -----
         public string StatusFilter { get => _statusFilter; set { if (Set(ref _statusFilter, value)) Refresh(); } }
@@ -59,7 +62,7 @@ namespace MyWPFCRUDApp.ViewModels
         public string BillFormat { get => _billFormat; set => Set(ref _billFormat, value); }
         public string ScanBarcode { get => _scanBarcode; set => Set(ref _scanBarcode, value); }
         public decimal ScanQty { get => _scanQty; set => Set(ref _scanQty, value); }
-        /// <summary>Reason used by Reject.</summary>
+        /// <summary>Reason used by Reject / Cancel.</summary>
         public string ActionRemarks { get => _actionRemarks; set => Set(ref _actionRemarks, value); }
 
         // ----- state flags for the view -----
@@ -68,15 +71,21 @@ namespace MyWPFCRUDApp.ViewModels
         public bool IsNotDraft => !IsDraft;
         public bool IsDispatched => _current.Status == TransferStatus.Dispatched;
         public bool IsPartial => _current.Status == TransferStatus.PartiallyReceived;
-        public bool ShowScan => IsDraft || IsDispatched;
-        public bool ReceiptGridReadOnly => !IsDispatched;
+        public bool IsAwaitingReceipt => IsDispatched || IsPartial;
+        public bool ShowScan => IsDraft || IsAwaitingReceipt;
+        public string ScanPrompt => IsDraft ? "Scan product barcode" : "Scan received barcode";
+        public bool ReceiptGridReadOnly => !IsAwaitingReceipt;
         public bool CanDeleteDraft => IsDraft && _current.Id != 0;
         public bool CanPrintBill => _current.Id != 0;
+        public bool CanCancelTransfer => (_current.Status == TransferStatus.Draft || _current.Status == TransferStatus.Dispatched)
+                                         && _current.Id != 0;
 
         void NotifyState()
         {
             foreach (var n in new[] { nameof(Title), nameof(IsDraft), nameof(IsNotDraft), nameof(IsDispatched),
-                                      nameof(IsPartial), nameof(ShowScan), nameof(ReceiptGridReadOnly), nameof(CanDeleteDraft), nameof(CanPrintBill) })
+                                      nameof(IsPartial), nameof(IsAwaitingReceipt), nameof(ScanPrompt), nameof(ShowScan),
+                                      nameof(ReceiptGridReadOnly), nameof(CanDeleteDraft), nameof(CanPrintBill),
+                                      nameof(CanCancelTransfer) })
                 OnPropertyChanged(n);
         }
 
@@ -90,8 +99,10 @@ namespace MyWPFCRUDApp.ViewModels
         public ICommand DeleteDraftCommand { get; }
         public ICommand ReceiveAllCommand { get; }
         public ICommand ConfirmReceiptCommand { get; }
+        public ICommand ConfirmAdditionalReceiptCommand { get; }
         public ICommand RejectCommand { get; }
         public ICommand CancelDispatchCommand { get; }
+        public ICommand CancelTransferCommand { get; }
         public ICommand ResolveShortageCommand { get; }   // parameter: "return" or "writeoff"
         public ICommand PrintBillCommand { get; }
         public ICommand EditTermsCommand { get; }
@@ -110,8 +121,10 @@ namespace MyWPFCRUDApp.ViewModels
             DeleteDraftCommand = new DelegateCommand(DeleteDraft);
             ReceiveAllCommand = new DelegateCommand(() => { foreach (var i in Items) i.ReceivedQty = i.DispatchedQty; });
             ConfirmReceiptCommand = new DelegateCommand(ConfirmReceipt);
+            ConfirmAdditionalReceiptCommand = new DelegateCommand(ConfirmAdditionalReceipt);
             RejectCommand = new DelegateCommand(Reject);
             CancelDispatchCommand = new DelegateCommand(CancelDispatch);
+            CancelTransferCommand = new DelegateCommand(CancelTransfer);
             ResolveShortageCommand = new DelegateCommand(p => ResolveShortage(Convert.ToString(p) == "return"));
             PrintBillCommand = new DelegateCommand(PrintBill);
             EditTermsCommand = new DelegateCommand(EditTerms);
@@ -168,7 +181,12 @@ namespace MyWPFCRUDApp.ViewModels
                 Remarks = t.Remarks ?? ""; ActionRemarks = ""; ScanBarcode = ""; ScanQty = 1;
 
                 Items.Clear();
-                foreach (var i in StockTransferService.GetItems(t.Id)) Items.Add(i);
+                _loadedReceivedQty.Clear();
+                foreach (var i in StockTransferService.GetItems(t.Id))
+                {
+                    Items.Add(i);
+                    _loadedReceivedQty[i.Id] = i.ReceivedQty ?? 0m;
+                }
                 NotifyState();
             }
             catch (Exception ex) { Msg.Error(ex, "Transfers"); }
@@ -190,28 +208,38 @@ namespace MyWPFCRUDApp.ViewModels
         }
 
         // ----- scanning / items -----
+        static bool IsWholePositiveQuantity(decimal quantity) =>
+            quantity > 0 && quantity == decimal.Truncate(quantity);
+
+        static bool SameBarcode(string left, string right) =>
+            string.Equals(left?.Trim(), right?.Trim(), StringComparison.OrdinalIgnoreCase);
+
         void AddItem()
         {
             try
             {
                 var bc = _scanBarcode?.Trim();
                 if (string.IsNullOrEmpty(bc)) return;
-                if (_scanQty <= 0) throw new InvalidOperationException("Quantity must be greater than zero.");
 
-                if (IsDispatched)
+                if (!IsWholePositiveQuantity(_scanQty))
+                    throw new InvalidOperationException("Quantity must be a positive whole number.");
+
+                if (IsAwaitingReceipt)
                 {
-                    // Receiving: each scan adds to the received quantity of that line.
-                    var line = Items.FirstOrDefault(i => i.Barcode == bc);
-                    if (line == null) throw new InvalidOperationException($"Barcode '{bc}' is not part of this transfer.");
-                    var next = (line.ReceivedQty ?? 0) + _scanQty;
-                    if (next > line.DispatchedQty) throw new InvalidOperationException($"Received would exceed dispatched ({line.DispatchedQty:0.###}).");
+                    var line = Items.FirstOrDefault(i => SameBarcode(i.Barcode, bc));
+                    if (line == null)
+                        throw new InvalidOperationException($"Barcode '{bc}' is not part of this transfer.");
+
+                    var next = (line.ReceivedQty ?? 0m) + _scanQty;
+                    if (next > line.DispatchedQty)
+                        throw new InvalidOperationException($"Received would exceed dispatched ({line.DispatchedQty:0}).");
                     line.ReceivedQty = next;
                 }
                 else if (IsDraft)
                 {
                     var prod = StockService.FindProduct(bc);
                     if (prod == null) throw new InvalidOperationException($"No product found with barcode '{bc}'.");
-                    var existing = Items.FirstOrDefault(i => i.Barcode == bc);
+                    var existing = Items.FirstOrDefault(i => SameBarcode(i.Barcode, bc));
                     if (existing != null) existing.DispatchedQty += _scanQty;
                     else Items.Add(new StockTransferItem
                     {
@@ -222,7 +250,13 @@ namespace MyWPFCRUDApp.ViewModels
                         SourceQty = _fromId.HasValue ? StockService.GetQuantity(_fromType, _fromId.Value, bc) : 0
                     });
                 }
-                ScanBarcode = ""; ScanQty = 1;
+                else
+                {
+                    throw new InvalidOperationException("Items can only be scanned into a draft or while receiving a dispatched transfer.");
+                }
+
+                ScanBarcode = "";
+                ScanQty = 1;
             }
             catch (Exception ex) { Msg.Error(ex, "Transfers"); }
         }
@@ -231,6 +265,9 @@ namespace MyWPFCRUDApp.ViewModels
         long SaveDraftInternal()
         {
             if (!_fromId.HasValue || !_toId.HasValue) throw new InvalidOperationException("Select both source and destination.");
+            if (_fromType == _toType && _fromId.Value == _toId.Value)
+                throw new InvalidOperationException("Source and destination must be different locations.");
+
             var header = new StockTransfer
             {
                 Id = _current.Id,
@@ -320,7 +357,7 @@ namespace MyWPFCRUDApp.ViewModels
         {
             try
             {
-                if (_current.Id == 0 || !Msg.Confirm("Delete this draft?")) return;
+                if (_current.Id == 0 || !IsDraft || !Msg.Confirm("Delete this draft?")) return;
                 StockTransferService.DeleteDraft(_current.Id);
                 NewTransfer();
                 Refresh();
@@ -332,6 +369,9 @@ namespace MyWPFCRUDApp.ViewModels
         {
             try
             {
+                if (_current.Id == 0 || !IsDispatched)
+                    throw new InvalidOperationException("Only a dispatched transfer can be received.");
+
                 var shortLines = Items.Count(i => i.Shortage > 0);
                 var text = shortLines == 0 ? "Confirm receipt of all lines?" : $"{shortLines} line(s) are short. Confirm receipt anyway?";
                 if (!Msg.Confirm(text)) return;
@@ -341,33 +381,70 @@ namespace MyWPFCRUDApp.ViewModels
             catch (Exception ex) { Msg.Error(ex, "Receive"); }
         }
 
+        void ConfirmAdditionalReceipt()
+        {
+            try
+            {
+                if (_current.Id == 0 || !IsPartial)
+                    throw new InvalidOperationException("This transfer is not awaiting an additional receipt.");
+
+                var hasIncrease = Items.Any(i =>
+                {
+                    var previouslyReceived = _loadedReceivedQty.TryGetValue(i.Id, out var oldQty) ? oldQty : 0m;
+                    return (i.ReceivedQty ?? 0m) > previouslyReceived;
+                });
+
+                if (!hasIncrease)
+                    throw new InvalidOperationException("Scan or enter at least one additional received quantity first.");
+
+                if (!Msg.Confirm("Post only the additional quantities received to this destination?")) return;
+                StockTransferService.Receive(_current.Id, Items.ToList(), StockContext.CurrentUser);
+                Open(_current.Id);
+            }
+            catch (Exception ex) { Msg.Error(ex, "Additional receipt"); }
+        }
+
         void Reject()
         {
             try
             {
                 if (string.IsNullOrWhiteSpace(_actionRemarks)) throw new InvalidOperationException("Enter a reason in the remarks box first.");
                 if (!Msg.Confirm("Reject the whole shipment? Stock returns to the source.")) return;
-                StockTransferService.Reject(_current.Id, StockContext.CurrentUser, _actionRemarks);
+                StockTransferService.Reject(_current.Id, StockContext.CurrentUser, _actionRemarks.Trim());
                 Open(_current.Id);
             }
             catch (Exception ex) { Msg.Error(ex, "Reject"); }
         }
 
-        void CancelDispatch()
+        // Kept for compatibility with the existing XAML command binding.
+        void CancelDispatch() => CancelTransfer();
+
+        void CancelTransfer()
         {
             try
             {
-                if (!Msg.Confirm("Cancel this dispatch? Stock returns to the source.")) return;
-                StockTransferService.CancelDispatch(_current.Id, StockContext.CurrentUser);
+                if (_current.Id == 0 || !CanCancelTransfer)
+                    throw new InvalidOperationException("Only draft or dispatched transfers can be cancelled.");
+
+                var reason = _actionRemarks?.Trim();
+                if (!Msg.Confirm(IsDraft
+                    ? "Cancel this draft transfer?"
+                    : "Cancel this dispatch? Dispatched stock will be returned to the source."))
+                    return;
+
+                StockTransferService.CancelTransfer(_current.Id, StockContext.CurrentUser, reason);
                 Open(_current.Id);
             }
-            catch (Exception ex) { Msg.Error(ex, "Cancel"); }
+            catch (Exception ex) { Msg.Error(ex, "Cancel transfer"); }
         }
 
         void ResolveShortage(bool returnToSource)
         {
             try
             {
+                if (_current.Id == 0 || !IsPartial)
+                    throw new InvalidOperationException("This transfer has no open shortage.");
+
                 var text = returnToSource ? "Return the missing quantity to the source?" : "Write off the missing quantity?";
                 if (!Msg.Confirm(text)) return;
                 StockTransferService.ResolveShortage(_current.Id, StockContext.CurrentUser, returnToSource);

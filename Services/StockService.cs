@@ -172,6 +172,11 @@ namespace MyWPFCRUDApp.Services
             barcode = barcode?.Trim();
             if (string.IsNullOrEmpty(barcode)) throw new InvalidOperationException("Barcode is required.");
             if (qty == 0) throw new InvalidOperationException("Quantity cannot be zero.");
+
+            // The supplied web controller uses whole-number stock quantities.
+            if (qty != decimal.Truncate(qty))
+                throw new InvalidOperationException("Godown stock quantities must be whole numbers.");
+
             if (movement == MovementType.OpeningStock && qty < 0) throw new InvalidOperationException("Opening stock must be positive.");
             if (movement == MovementType.Adjustment && string.IsNullOrWhiteSpace(reason))
                 throw new InvalidOperationException("A reason is required for adjustments.");

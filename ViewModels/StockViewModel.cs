@@ -103,13 +103,28 @@ namespace MyWPFCRUDApp.ViewModels
         {
             try
             {
-                if (LocFilter == null) throw new InvalidOperationException("Select a specific godown first.");
+                if (!CanPost)
+                    throw new InvalidOperationException("Manual stock posting is available only for godowns.");
+
+                if (LocFilter == null)
+                    throw new InvalidOperationException("Select a specific godown first.");
+
+                if (_postQty != decimal.Truncate(_postQty))
+                    throw new InvalidOperationException("Quantity must be a whole number.");
+
+                if (string.IsNullOrWhiteSpace(_postBarcode))
+                    throw new InvalidOperationException("Barcode is required.");
+
+                if (_postMode != "Opening Stock" && _postMode != "Adjustment")
+                    throw new InvalidOperationException("Select a valid stock posting mode.");
+
                 var movement = _postMode == "Opening Stock" ? MovementType.OpeningStock : MovementType.Adjustment;
-                StockService.PostGodownStock(LocFilter.Value, _postBarcode, _postQty, movement, _postReason, StockContext.CurrentUser);
+                StockService.PostGodownStock(LocFilter.Value, _postBarcode.Trim(), _postQty, movement, _postReason, StockContext.CurrentUser);
                 PostBarcode = ""; PostQty = 0; PostReason = "";
                 Refresh();
+                LoadLedger();
             }
-            catch (Exception ex) { Msg.Error(ex); }
+            catch (Exception ex) { Msg.Error(ex, "Godown stock"); }
         }
     }
 }

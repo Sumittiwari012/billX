@@ -12,7 +12,7 @@
             <ColumnDefinition Width="*"/>
         </Grid.ColumnDefinitions>
 
-        <!-- ================= LEFT: transfer list ================= -->
+        <!-- LEFT: transfer list -->
         <Grid Grid.Column="0" Margin="0,0,12,0">
             <Grid.RowDefinitions>
                 <RowDefinition Height="Auto"/>
@@ -40,13 +40,13 @@
                     <DataGridTextColumn Header="No." Binding="{Binding TransferNo}" Width="85"/>
                     <DataGridTextColumn Header="From" Binding="{Binding FromDisplay}" Width="*"/>
                     <DataGridTextColumn Header="To" Binding="{Binding ToDisplay}" Width="*"/>
-                    <DataGridTextColumn Header="Status" Binding="{Binding Status}" Width="95"/>
+                    <DataGridTextColumn Header="Status" Binding="{Binding Status}" Width="110"/>
                     <DataGridTextColumn Header="Lines" Binding="{Binding ItemCount}" Width="45"/>
                 </DataGrid.Columns>
             </DataGrid>
         </Grid>
 
-        <!-- ================= RIGHT: editor ================= -->
+        <!-- RIGHT: transfer details and actions -->
         <Grid Grid.Column="1">
             <Grid.RowDefinitions>
                 <RowDefinition Height="Auto"/>
@@ -58,7 +58,7 @@
 
             <TextBlock Text="{Binding Title}" FontSize="18" FontWeight="SemiBold" Margin="0,0,0,8"/>
 
-            <!-- Header: editable only while Draft -->
+            <!-- Header is editable only while Draft -->
             <Grid Grid.Row="1" IsEnabled="{Binding IsDraft}" Margin="0,0,0,8">
                 <Grid.ColumnDefinitions>
                     <ColumnDefinition Width="60"/>
@@ -85,10 +85,10 @@
                 <TextBox Grid.Row="2" Grid.Column="1" Grid.ColumnSpan="2" Text="{Binding Remarks, UpdateSourceTrigger=PropertyChanged}"/>
             </Grid>
 
-            <!-- Scan row: add barcodes (draft) or tick off received barcodes (dispatched) -->
+            <!-- Scan row: draft item entry, or received barcode entry while awaiting receipt -->
             <StackPanel Grid.Row="2" Orientation="Horizontal" Margin="0,0,0,8"
                         Visibility="{Binding ShowScan, Converter={StaticResource BoolToVis}}">
-                <TextBlock Text="Scan barcode" VerticalAlignment="Center" Margin="0,0,6,0"/>
+                <TextBlock Text="{Binding ScanPrompt}" VerticalAlignment="Center" Margin="0,0,6,0"/>
                 <TextBox Text="{Binding ScanBarcode, UpdateSourceTrigger=PropertyChanged}" Width="200" Margin="0,0,8,0">
                     <TextBox.InputBindings>
                         <KeyBinding Key="Enter" Command="{Binding AddItemCommand}"/>
@@ -99,7 +99,7 @@
                 <Button Content="Add" Command="{Binding AddItemCommand}" Width="60"/>
             </StackPanel>
 
-            <!-- Lines: draft grid and receipt grid share the same cell -->
+            <!-- Draft lines / dispatched and partially received lines -->
             <Grid Grid.Row="3">
                 <DataGrid ItemsSource="{Binding Items}" AutoGenerateColumns="False" CanUserAddRows="False"
                           HeadersVisibility="Column"
@@ -136,11 +136,9 @@
                 </DataGrid>
             </Grid>
 
-            <!-- Actions -->
+            <!-- Footer actions -->
             <StackPanel Grid.Row="4" Margin="0,10,0,0">
-                <!-- Dispatch bill: Standard (built-in, with terms & conditions) or Custom (your own template) -->
-                <WrapPanel Margin="0,0,0,8"
-                           Visibility="{Binding CanPrintBill, Converter={StaticResource BoolToVis}}">
+                <WrapPanel Margin="0,0,0,8" Visibility="{Binding CanPrintBill, Converter={StaticResource BoolToVis}}">
                     <TextBlock Text="Dispatch bill" VerticalAlignment="Center" Margin="0,0,6,4"/>
                     <ComboBox ItemsSource="{Binding BillFormats}" SelectedItem="{Binding BillFormat}" Width="100" Margin="0,0,8,4"/>
                     <Button Content="Print / Preview bill" Command="{Binding PrintBillCommand}" Padding="12,4" Margin="0,0,8,4"/>
@@ -150,8 +148,7 @@
                     <Button Content="Remove signature" Command="{Binding RemoveSignatureCommand}" Padding="12,4" Margin="0,0,8,4"/>
                 </WrapPanel>
 
-                <StackPanel Orientation="Horizontal"
-                            Visibility="{Binding IsDraft, Converter={StaticResource BoolToVis}}">
+                <StackPanel Orientation="Horizontal" Visibility="{Binding IsDraft, Converter={StaticResource BoolToVis}}">
                     <Button Content="Save draft" Command="{Binding SaveDraftCommand}" Padding="12,4" Margin="0,0,8,0"/>
                     <Button Content="Dispatch" Command="{Binding DispatchCommand}" Padding="12,4" Margin="0,0,8,0"/>
                     <Button Content="Delete draft" Command="{Binding DeleteDraftCommand}" Padding="12,4"
@@ -171,12 +168,19 @@
                     </StackPanel>
                 </StackPanel>
 
-                <StackPanel Orientation="Horizontal" Visibility="{Binding IsPartial, Converter={StaticResource BoolToVis}}">
-                    <TextBlock Text="Shortage open:" VerticalAlignment="Center" Margin="0,0,8,0"/>
-                    <Button Content="Return shortage to source" Command="{Binding ResolveShortageCommand}"
-                            CommandParameter="return" Padding="12,4" Margin="0,0,8,0"/>
-                    <Button Content="Write off shortage" Command="{Binding ResolveShortageCommand}"
-                            CommandParameter="writeoff" Padding="12,4"/>
+                <!-- Partial receipt: show remaining quantities and provide a continuation action.
+                     The matching StockTransferService.Receive implementation must accept PartiallyReceived. -->
+                <StackPanel Visibility="{Binding IsPartial, Converter={StaticResource BoolToVis}}">
+                    <TextBlock Text="Partial receipt — enter any additional quantities received. Previously received quantities are retained."
+                               TextWrapping="Wrap" Margin="0,0,0,6"/>
+                    <StackPanel Orientation="Horizontal" Margin="0,0,0,6">
+                        <Button Content="Confirm additional receipt" Command="{Binding ConfirmAdditionalReceiptCommand}"
+                                Padding="12,4" Margin="0,0,8,0"/>
+                        <Button Content="Return remaining shortage to source" Command="{Binding ResolveShortageCommand}"
+                                CommandParameter="return" Padding="12,4" Margin="0,0,8,0"/>
+                        <Button Content="Write off remaining shortage" Command="{Binding ResolveShortageCommand}"
+                                CommandParameter="writeoff" Padding="12,4"/>
+                    </StackPanel>
                 </StackPanel>
             </StackPanel>
         </Grid>
